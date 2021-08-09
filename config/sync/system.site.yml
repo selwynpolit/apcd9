@@ -1,0 +1,14 @@
+uuid: 40159e34-b9c0-4d86-9dc6-75ed5e22a2fb
+name: d9starter
+mail: website@d9starter.com
+slogan: ''
+page:
+  403: ''
+  404: ''
+  front: /node
+admin_compact_mode: false
+weight_select_max: 100
+langcode: en
+default_langcode: en
+_core:
+  default_config_hash: yTxtFqBHnEWxQswuWvkjE8mKw2t8oKuCL1q8KnfHuGE
