@@ -1,0 +1,18 @@
+uuid: c17fcc66-54a0-4f62-84d4-49c030bb0b56
+langcode: en
+status: true
+dependencies:
+  module:
+    - menu_ui
+third_party_settings:
+  menu_ui:
+    available_menus:
+      - main
+    parent: 'main:'
+name: 'My Work'
+type: my_work
+description: 'Examples of the work I''ve done'
+help: ''
+new_revision: true
+preview_mode: 1
+display_submitted: true

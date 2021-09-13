@@ -1,10 +1,12 @@
-uuid: 6d875436-8fb0-4a90-92ab-01b6491a89b8
+uuid: 6a033f97-f629-4db3-8091-f7258b384e98
 langcode: en
 status: true
 dependencies:
   config:
     - core.entity_view_mode.node.teaser
     - field.field.node.page.body
+    - field.field.node.page.feeds_item
+    - field.field.node.page.field_import_id
     - node.type.page
   module:
     - text
@@ -27,4 +29,6 @@ content:
   links:
     weight: 101
     region: content
-hidden: {  }
+hidden:
+  feeds_item: true
+  field_import_id: true

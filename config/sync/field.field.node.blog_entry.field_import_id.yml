@@ -1,0 +1,23 @@
+uuid: b99594bb-0d0e-4ea8-a17a-4f09d9ae7e1b
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_import_id
+    - node.type.blog_entry
+id: node.blog_entry.field_import_id
+field_name: field_import_id
+entity_type: node
+bundle: blog_entry
+label: 'Import ID'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: null
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: integer

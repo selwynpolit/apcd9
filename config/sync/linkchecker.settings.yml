@@ -22,14 +22,23 @@ extract:
 check:
   connections_max: 8
   connections_max_per_domain: 2
-  disable_link_check_for_urls: "example.com\nexample.net\nexample.org"
+  disable_link_check_for_urls: |-
+    example.com
+    example.net
+    example.org
   library: core
   interval: 2419200
   useragent: 'Drupal (+http://drupal.org/)'
 error:
   action_status_code_301: 0
   action_status_code_404: 0
-  ignore_response_codes: "200\n206\n302\n304\n401\n403"
+  ignore_response_codes: |-
+    200
+    206
+    302
+    304
+    401
+    403
   impersonate_account: admin
 logging:
   level: 6

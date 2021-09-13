@@ -1,0 +1,23 @@
+uuid: 948d96ea-16aa-4176-951b-48a99fdc36c5
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_import_id
+    - node.type.page
+id: node.page.field_import_id
+field_name: field_import_id
+entity_type: node
+bundle: page
+label: 'Import ID'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: null
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: integer

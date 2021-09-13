@@ -1,9 +1,11 @@
-uuid: 3cf4bc3e-e9db-4c6e-9261-8c917bc2437f
+uuid: cf63ce89-c5b7-4026-9320-54bbdd53d204
 langcode: en
 status: true
 dependencies:
   config:
     - field.field.node.page.body
+    - field.field.node.page.feeds_item
+    - field.field.node.page.field_import_id
     - node.type.page
   module:
     - path
@@ -31,6 +33,13 @@ content:
     region: content
     settings: {  }
     third_party_settings: {  }
+  field_import_id:
+    weight: 121
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+    type: number
+    region: content
   path:
     type: path
     weight: 30
@@ -76,4 +85,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  feeds_item: true

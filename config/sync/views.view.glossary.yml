@@ -1,4 +1,4 @@
-uuid: aec2c646-0cc1-4078-936e-5dcb766326bb
+uuid: ec0aa127-73ce-4f08-95c0-603cfe8b02e5
 langcode: en
 status: false
 dependencies:
@@ -8,7 +8,7 @@ dependencies:
     - node
     - user
 _core:
-  default_config_hash: Z1Lg95xnf11BTHIugkzple_pdxZdECiqLRcrLVo3bcw
+  default_config_hash: _TuOQPG7BoDmbu8Qdrik_4uMn7IcbwPVpSh9IOV2IDg
 id: glossary
 label: Glossary
 module: node
@@ -310,6 +310,19 @@ display:
       empty: {  }
       sorts: {  }
       filters:
+        status:
+          expose:
+            operator: ''
+            operator_limit_selection: false
+            operator_list: {  }
+          field: status
+          group: 1
+          id: status
+          table: node_field_data
+          value: '1'
+          plugin_id: boolean
+          entity_type: node
+          entity_field: status
         langcode:
           id: langcode
           table: node_field_data
@@ -352,19 +365,6 @@ display:
           plugin_id: language
           entity_type: node
           entity_field: langcode
-        status:
-          expose:
-            operator: ''
-            operator_limit_selection: false
-            operator_list: {  }
-          field: status
-          group: 1
-          id: status
-          table: node_field_data
-          value: '1'
-          plugin_id: boolean
-          entity_type: node
-          entity_field: status
       display_extenders: {  }
     cache_metadata:
       contexts:

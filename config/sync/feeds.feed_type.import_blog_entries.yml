@@ -1,0 +1,98 @@
+uuid: 63773740-a547-47e3-ba4e-9cb683d71004
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.blog_entry.body
+    - field.field.node.blog_entry.field_import_id
+    - field.field.node.blog_entry.field_tags
+    - node.type.blog_entry
+  module:
+    - feeds_tamper
+    - node
+third_party_settings:
+  feeds_tamper:
+    tampers:
+      33c6ca1b-03f1-4400-b04d-8f19e4e5efcd:
+        separator: ','
+        limit: null
+        plugin: explode
+        source: category
+        weight: 0
+        label: Explode
+        uuid: 33c6ca1b-03f1-4400-b04d-8f19e4e5efcd
+id: import_blog_entries
+label: 'Import Blog Entries'
+description: 'import blog entries'
+help: ''
+import_period: -1
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:node'
+processor_configuration:
+  langcode: en
+  update_existing: 2
+  update_non_existent: _keep
+  expire: -1
+  owner_feed_author: false
+  owner_id: 8
+  authorize: true
+  skip_hash_check: true
+  values:
+    type: blog_entry
+custom_sources:
+  nid:
+    label: Nid
+    value: Nid
+    machine_name: nid
+  title:
+    label: Title
+    value: Title
+    machine_name: title
+  body:
+    label: Body
+    value: Body
+    machine_name: body
+  category:
+    label: Category
+    value: Category
+    machine_name: category
+mappings:
+  -
+    target: field_import_id
+    map:
+      value: nid
+    unique:
+      value: '1'
+    settings:
+      language: null
+  -
+    target: title
+    map:
+      value: title
+    unique: {  }
+    settings:
+      language: null
+  -
+    target: body
+    map:
+      value: body
+      summary: ''
+    settings:
+      language: ''
+      format: full_html
+  -
+    target: field_tags
+    map:
+      target_id: category
+    settings:
+      language: ''
+      reference_by: name
+      autocreate: '1'

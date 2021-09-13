@@ -1,0 +1,23 @@
+uuid: 66a2147a-f4d0-4d0d-8e87-0f01dcc9907a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_import_id
+    - node.type.my_work
+id: node.my_work.field_import_id
+field_name: field_import_id
+entity_type: node
+bundle: my_work
+label: 'Import ID'
+description: 'unique field used for feeds import'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: null
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: integer

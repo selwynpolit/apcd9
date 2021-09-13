@@ -1,0 +1,73 @@
+uuid: 89ddd19f-afff-459e-b725-9be15db97003
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.page.body
+    - field.field.node.page.field_import_id
+    - node.type.page
+  module:
+    - node
+id: import_pages_csv
+label: 'Import Pages CSV'
+description: 'import pages'
+help: ''
+import_period: -1
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:node'
+processor_configuration:
+  langcode: en
+  update_existing: 2
+  update_non_existent: _keep
+  expire: -1
+  owner_feed_author: false
+  owner_id: 8
+  authorize: true
+  skip_hash_check: true
+  values:
+    type: page
+custom_sources:
+  title:
+    label: Title
+    value: Title
+    machine_name: title
+  nid:
+    label: Nid
+    value: Nid
+    machine_name: nid
+  body:
+    label: Body
+    value: Body
+    machine_name: body
+mappings:
+  -
+    target: title
+    map:
+      value: title
+    unique: {  }
+    settings:
+      language: null
+  -
+    target: field_import_id
+    map:
+      value: nid
+    unique:
+      value: '1'
+    settings:
+      language: null
+  -
+    target: body
+    map:
+      value: body
+      summary: ''
+    settings:
+      language: ''
+      format: full_html

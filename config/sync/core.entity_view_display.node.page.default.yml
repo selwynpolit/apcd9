@@ -1,9 +1,11 @@
-uuid: 3aa42c85-24d4-4cc6-babe-48c894d15a92
+uuid: a0ddc382-59aa-4168-8ff2-a456be4f593c
 langcode: en
 status: true
 dependencies:
   config:
     - field.field.node.page.body
+    - field.field.node.page.feeds_item
+    - field.field.node.page.field_import_id
     - node.type.page
   module:
     - text
@@ -18,11 +20,23 @@ content:
   body:
     label: hidden
     type: text_default
-    weight: 100
+    weight: 1
     region: content
     settings: {  }
     third_party_settings: {  }
-  links:
-    weight: 101
+  field_import_id:
+    weight: 0
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    type: number_integer
     region: content
-hidden: {  }
+  links:
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  feeds_item: true
