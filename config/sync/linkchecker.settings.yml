@@ -1,3 +1,5 @@
+_core:
+  default_config_hash: FzFKuqOuk667AkDorrqvXkc_-M4D-Ac1XeGGusxS1JU
 check_links_types: 1
 default_url_scheme: 'http://'
 base_path: ''
@@ -42,5 +44,3 @@ error:
   impersonate_account: admin
 logging:
   level: 6
-_core:
-  default_config_hash: FzFKuqOuk667AkDorrqvXkc_-M4D-Ac1XeGGusxS1JU

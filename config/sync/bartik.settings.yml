@@ -1,12 +1,12 @@
+favicon:
+  mimetype: image/jpeg
+  path: 'public://apc2_favicon.jpg'
+  use_default: false
 features:
-  node_user_picture: true
   comment_user_picture: true
   comment_user_verification: true
   favicon: true
+  node_user_picture: true
 logo:
-  use_default: false
   path: 'public://apc_logo.jpg'
-favicon:
   use_default: false
-  path: 'public://apc2_favicon.jpg'
-  mimetype: image/jpeg

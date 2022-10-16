@@ -4,9 +4,7 @@ status: true
 dependencies:
   config:
     - field.field.node.my_work.body
-    - field.field.node.my_work.feeds_item
     - field.field.node.my_work.field_image
-    - field.field.node.my_work.field_import_id
     - node.type.my_work
   module:
     - image
@@ -18,34 +16,24 @@ bundle: my_work
 mode: default
 content:
   body:
-    label: hidden
     type: text_default
-    weight: 101
+    label: hidden
     settings: {  }
     third_party_settings: {  }
+    weight: 101
     region: content
   field_image:
-    weight: 102
-    label: above
-    settings:
-      image_style: ''
-      image_link: ''
-    third_party_settings: {  }
     type: image
-    region: content
-  field_import_id:
-    weight: 103
     label: above
     settings:
-      thousand_separator: ''
-      prefix_suffix: true
+      image_link: ''
+      image_style: ''
     third_party_settings: {  }
-    type: number_integer
+    weight: 102
     region: content
   links:
-    weight: 100
     settings: {  }
     third_party_settings: {  }
+    weight: 100
     region: content
-hidden:
-  feeds_item: true
+hidden: {  }

@@ -8,8 +8,8 @@ dependencies:
     - node.type.page
   module:
     - node
-id: import_pages_csv
 label: 'Import Pages CSV'
+id: import_pages_csv
 description: 'import pages'
 help: ''
 import_period: -1
@@ -24,45 +24,49 @@ parser_configuration:
   line_limit: 100
 processor: 'entity:node'
 processor_configuration:
+  values:
+    type: page
   langcode: en
+  insert_new: 1
   update_existing: 2
   update_non_existent: _keep
+  skip_hash_check: true
+  authorize: true
   expire: -1
   owner_feed_author: false
   owner_id: 8
-  authorize: true
-  skip_hash_check: true
-  values:
-    type: page
 custom_sources:
   title:
-    label: Title
     value: Title
+    label: Title
     machine_name: title
+    type: csv
   nid:
-    label: Nid
     value: Nid
+    label: Nid
     machine_name: nid
+    type: csv
   body:
-    label: Body
     value: Body
+    label: Body
     machine_name: body
+    type: csv
 mappings:
   -
     target: title
     map:
       value: title
-    unique: {  }
     settings:
       language: null
+    unique: {  }
   -
     target: field_import_id
     map:
       value: nid
-    unique:
-      value: '1'
     settings:
       language: null
+    unique:
+      value: '1'
   -
     target: body
     map:

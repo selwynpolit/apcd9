@@ -5,9 +5,7 @@ dependencies:
   config:
     - core.entity_view_mode.node.teaser
     - field.field.node.my_work.body
-    - field.field.node.my_work.feeds_item
     - field.field.node.my_work.field_image
-    - field.field.node.my_work.field_import_id
     - node.type.my_work
   module:
     - text
@@ -18,19 +16,17 @@ bundle: my_work
 mode: teaser
 content:
   body:
-    label: hidden
     type: text_summary_or_trimmed
-    weight: 101
+    label: hidden
     settings:
       trim_length: 600
     third_party_settings: {  }
+    weight: 101
     region: content
   links:
-    weight: 100
     settings: {  }
     third_party_settings: {  }
+    weight: 100
     region: content
 hidden:
-  feeds_item: true
   field_image: true
-  field_import_id: true
