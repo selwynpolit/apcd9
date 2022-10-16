@@ -29,8 +29,9 @@
         "drupal/core-project-message": "^9",
         "drupal/core-recommended": "^9",
         "drupal/entity_clone": "^1.0@beta",
-        "drupal/feeds": "^3.0@alpha",
+        "drupal/feeds": "^3.0@beta",
         "drupal/feeds_tamper": "^2.0@beta",
+        "drupal/jquery_ui_touch_punch": "^1.0",
         "drupal/linkchecker": "^1.0@alpha",
         "drupal/module_filter": "^3.1",
         "drupal/password_policy": "^3.0@beta",
@@ -54,7 +55,12 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/installers": true,
+            "drupal/core-composer-scaffold": true,
+            "drupal/core-project-message": true
+        }
     },
     "extra": {
         "drupal-scaffold": {
