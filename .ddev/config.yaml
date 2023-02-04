@@ -1,7 +1,7 @@
 name: apcd9
 type: drupal9
 docroot: web
-php_version: "7.4"
+php_version: "8.1"
 webserver_type: nginx-fpm
 router_http_port: "80"
 router_https_port: "443"
@@ -9,8 +9,8 @@ xdebug_enabled: false
 additional_hostnames: []
 additional_fqdns: []
 database:
-  type: mariadb
-  version: "10.3"
+    type: mariadb
+    version: "10.5"
 nfs_mount_enabled: false
 mutagen_enabled: false
 use_dns_when_possible: true
@@ -27,7 +27,7 @@ nodejs_version: "16"
 
 # docroot: <relative_path> # Relative path to the directory containing index.php.
 
-# php_version: "7.4"  # PHP version to use, "5.6", "7.0", "7.1", "7.2", "7.3", "7.4", "8.0", "8.1"
+# php_version: "7.4"  # PHP version to use, "5.6", "7.0", "7.1", "7.2", "7.3", "7.4", "8.0", "8.1", "8.2"
 
 # You can explicitly specify the webimage but this
 # is not recommended, as the images are often closely tied to ddev's' behavior,
@@ -116,11 +116,11 @@ nodejs_version: "16"
 
 # nfs_mount_enabled: false
 # Great performance improvement but requires host configuration first.
-# See https://ddev.readthedocs.io/en/stable/users/performance/#using-nfs-to-mount-the-project-into-the-container
+# See https://ddev.readthedocs.io/en/latest/users/install/performance/#nfs
 
 # mutagen_enabled: false
 # Performance improvement using mutagen asynchronous updates.
-# See https://ddev.readthedocs.io/en/latest/users/performance/#using-mutagen
+# See https://ddev.readthedocs.io/en/latest/users/install/performance/#mutagen
 
 # fail_on_hook_fail: False
 # Decide whether 'ddev start' should be interrupted by a failing hook
