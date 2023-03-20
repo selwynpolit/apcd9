@@ -16,13 +16,13 @@ third_party_settings:
       33c6ca1b-03f1-4400-b04d-8f19e4e5efcd:
         separator: ','
         limit: null
+        uuid: 33c6ca1b-03f1-4400-b04d-8f19e4e5efcd
         plugin: explode
         source: category
         weight: 0
         label: Explode
-        uuid: 33c6ca1b-03f1-4400-b04d-8f19e4e5efcd
-id: import_blog_entries
 label: 'Import Blog Entries'
+id: import_blog_entries
 description: 'import blog entries'
 help: ''
 import_period: -1
@@ -37,49 +37,54 @@ parser_configuration:
   line_limit: 100
 processor: 'entity:node'
 processor_configuration:
+  values:
+    type: blog_entry
   langcode: en
+  insert_new: 1
   update_existing: 2
   update_non_existent: _keep
+  skip_hash_check: true
+  authorize: true
   expire: -1
   owner_feed_author: false
   owner_id: 8
-  authorize: true
-  skip_hash_check: true
-  values:
-    type: blog_entry
 custom_sources:
   nid:
-    label: Nid
     value: Nid
+    label: Nid
     machine_name: nid
+    type: csv
   title:
-    label: Title
     value: Title
+    label: Title
     machine_name: title
+    type: csv
   body:
-    label: Body
     value: Body
+    label: Body
     machine_name: body
+    type: csv
   category:
-    label: Category
     value: Category
+    label: Category
     machine_name: category
+    type: csv
 mappings:
   -
     target: field_import_id
     map:
       value: nid
-    unique:
-      value: '1'
     settings:
       language: null
+    unique:
+      value: '1'
   -
     target: title
     map:
       value: title
-    unique: {  }
     settings:
       language: null
+    unique: {  }
   -
     target: body
     map:

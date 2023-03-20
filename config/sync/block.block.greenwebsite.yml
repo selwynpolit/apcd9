@@ -1,0 +1,25 @@
+uuid: 1cd57a00-e5bf-4ca5-ad34-1c1afc6dfae3
+langcode: en
+status: true
+dependencies:
+  content:
+    - 'block_content:basic:63c57167-713f-4b45-a24b-dc8518271559'
+  module:
+    - block_content
+  theme:
+    - olivero
+id: greenwebsite
+theme: olivero
+region: footer_bottom
+weight: 0
+provider: null
+plugin: 'block_content:63c57167-713f-4b45-a24b-dc8518271559'
+settings:
+  id: 'block_content:63c57167-713f-4b45-a24b-dc8518271559'
+  label: 'Green Website'
+  label_display: visible
+  provider: block_content
+  status: true
+  info: ''
+  view_mode: full
+visibility: {  }
