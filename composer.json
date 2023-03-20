@@ -42,7 +42,7 @@
         "drupal/select2_all": "^1.0@alpha",
         "drupal/shield": "^1.4",
         "drupal/simple_sitemap": "^3.8",
-        "drupal/smart_date": "^3.0",
+        "drupal/smart_date": "^3.7",
         "drupal/token": "^1.7",
         "drupal/twig_tweak": "^2.6",
         "drupal/views_bulk_operations": "^4.0",
@@ -54,7 +54,12 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/installers": true,
+            "drupal/core-composer-scaffold": true,
+            "drupal/core-project-message": true
+        }
     },
     "extra": {
         "drupal-scaffold": {
