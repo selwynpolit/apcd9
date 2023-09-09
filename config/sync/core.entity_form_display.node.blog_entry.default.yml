@@ -5,14 +5,12 @@ dependencies:
   config:
     - field.field.node.blog_entry.body
     - field.field.node.blog_entry.feeds_item
-    - field.field.node.blog_entry.field_comments
     - field.field.node.blog_entry.field_image
     - field.field.node.blog_entry.field_import_id
     - field.field.node.blog_entry.field_tags
     - image.style.thumbnail
     - node.type.blog_entry
   module:
-    - comment
     - image
     - path
     - text
@@ -34,12 +32,6 @@ content:
   created:
     type: datetime_timestamp
     weight: 2
-    region: content
-    settings: {  }
-    third_party_settings: {  }
-  field_comments:
-    type: comment_default
-    weight: 26
     region: content
     settings: {  }
     third_party_settings: {  }
