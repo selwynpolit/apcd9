@@ -41,7 +41,7 @@
         "drupal/seckit": "^2.0",
         "drupal/select2_all": "^1.0@alpha",
         "drupal/shield": "^1.4",
-        "drupal/simple_sitemap": "^3.8",
+        "drupal/simple_sitemap": "^4.1",
         "drupal/smart_date": "^3.7",
         "drupal/token": "^1.7",
         "drupal/twig_tweak": "^2.6",
