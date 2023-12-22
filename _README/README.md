@@ -9,22 +9,29 @@ Create a .ddev/config.local.yaml and include the following:
 router_http_port: "80"
 router_https_port: "443"
 timezone: America/Chicago
-# and for nfs
-nfs_mount_enabled: true
 ```
 
 
 
 ## Drush usage
 
-Note ddev v1.15 has some new idiosyncracies to be aware of
+If you want to use global drush command from the host.  e.g. `drush en token` like you used to in, you will notice errors and the command will fail.
 
-If you want to use global drush command from the host.  e.g. `drush en token` like you used to in Drupal 8, you will notice errors and the command will fail.
+To allow local drush on host:
 
-The fix is to add a sites/default/settings.local.php with the following code:
+
+`ddev get rfay/ddev-drushonhost`
+
+In sites/default/settings.local.php with the following code:
 ```
 <?php
 putenv("IS_DDEV_PROJECT=true");
 ```
+
+https://selwynpolit.github.io/d9book/drush#global-drush
+
+See https://github.com/rfay/ddev-drushonhost for docs
+
+Discussion: https://github.com/ddev/ddev/pull/5328
 
 
