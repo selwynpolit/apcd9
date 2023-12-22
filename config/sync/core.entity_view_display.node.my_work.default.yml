@@ -5,6 +5,7 @@ dependencies:
   config:
     - field.field.node.my_work.body
     - field.field.node.my_work.field_image
+    - image.style.medium
     - node.type.my_work
   module:
     - image
@@ -24,10 +25,10 @@ content:
     region: content
   field_image:
     type: image
-    label: above
+    label: hidden
     settings:
-      image_link: ''
-      image_style: ''
+      image_link: file
+      image_style: medium
       image_loading:
         attribute: lazy
     third_party_settings: {  }
