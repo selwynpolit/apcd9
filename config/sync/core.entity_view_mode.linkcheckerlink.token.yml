@@ -6,5 +6,6 @@ dependencies:
     - linkchecker
 id: linkcheckerlink.token
 label: Token
+description: ''
 targetEntityType: linkcheckerlink
 cache: true

@@ -11,7 +11,7 @@ third_party_settings:
     parent: 'main:'
 name: 'My Work'
 type: my_work
-description: 'Examples of the work I''ve done'
+description: "Examples of the work I've done"
 help: ''
 new_revision: true
 preview_mode: 1
