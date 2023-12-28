@@ -7,6 +7,7 @@ dependencies:
     - field.field.node.blog_entry.feeds_item
     - field.field.node.blog_entry.field_image
     - field.field.node.blog_entry.field_import_id
+    - field.field.node.blog_entry.field_media_image
     - field.field.node.blog_entry.field_tags
     - image.style.large
     - node.type.blog_entry
@@ -24,7 +25,7 @@ content:
     label: hidden
     settings: {  }
     third_party_settings: {  }
-    weight: 1
+    weight: 2
     region: content
   field_image:
     type: image
@@ -35,7 +36,16 @@ content:
       image_loading:
         attribute: lazy
     third_party_settings: {  }
-    weight: 2
+    weight: 3
+    region: content
+  field_media_image:
+    type: entity_reference_entity_view
+    label: hidden
+    settings:
+      view_mode: default
+      link: false
+    third_party_settings: {  }
+    weight: 1
     region: content
   field_tags:
     type: entity_reference_label
@@ -43,7 +53,7 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 3
+    weight: 4
     region: content
   links:
     settings: {  }
