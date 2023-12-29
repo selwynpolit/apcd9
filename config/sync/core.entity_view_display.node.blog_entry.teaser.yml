@@ -10,8 +10,10 @@ dependencies:
     - field.field.node.blog_entry.field_import_id
     - field.field.node.blog_entry.field_media_image
     - field.field.node.blog_entry.field_tags
+    - image.style.media_library
     - node.type.blog_entry
   module:
+    - media
     - text
     - user
 id: node.blog_entry.teaser
@@ -25,7 +27,18 @@ content:
     settings:
       trim_length: 600
     third_party_settings: {  }
-    weight: 1
+    weight: 0
+    region: content
+  field_media_image:
+    type: media_thumbnail
+    label: hidden
+    settings:
+      image_link: content
+      image_style: media_library
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 2
     region: content
   field_tags:
     type: entity_reference_label
@@ -33,15 +46,14 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 2
+    weight: 3
     region: content
   links:
     settings: {  }
     third_party_settings: {  }
-    weight: 0
+    weight: 1
     region: content
 hidden:
   feeds_item: true
   field_image: true
   field_import_id: true
-  field_media_image: true

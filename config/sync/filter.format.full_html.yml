@@ -2,8 +2,12 @@ uuid: afbc70ed-eb79-4263-b246-a6b85161be77
 langcode: en
 status: true
 dependencies:
+  config:
+    - core.entity_view_mode.media.full
+    - core.entity_view_mode.media.media_library
   module:
     - editor
+    - media
 _core:
   default_config_hash: WNeK5FbcY8pXgEpbD_KgRzlF1-5PL3BJXwqaBctPTqw
 name: 'Full HTML'
@@ -49,3 +53,18 @@ filters:
     status: true
     weight: 12
     settings: {  }
+  media_embed:
+    id: media_embed
+    provider: media
+    status: true
+    weight: 100
+    settings:
+      default_view_mode: default
+      allowed_view_modes:
+        default: default
+        full: full
+        media_library: media_library
+      allowed_media_types:
+        image: image
+        remote_video: remote_video
+        video: video
