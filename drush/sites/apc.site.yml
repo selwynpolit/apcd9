@@ -1,0 +1,10 @@
+# APCD9 prod environment.
+prod:
+  host: chi204.greengeeks.net
+  user: austinpr
+  root: /home/austinpr/public_html/d9/web
+  uri: d9.austinprogressivecalendar.com
+  ssh:
+    tty: 0
+  paths:
+    drush-script: /home/austinpr/public_html/d9/vendor/bin/drush
