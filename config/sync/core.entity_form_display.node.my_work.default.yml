@@ -9,6 +9,7 @@ dependencies:
     - node.type.my_work
   module:
     - image
+    - imce
     - path
     - text
 id: node.my_work.default
@@ -39,7 +40,9 @@ content:
     settings:
       progress_indicator: throbber
       preview_image_style: thumbnail
-    third_party_settings: {  }
+    third_party_settings:
+      imce:
+        enabled: true
   path:
     type: path
     weight: 30
@@ -52,6 +55,16 @@ content:
     region: content
     settings:
       display_label: true
+    third_party_settings: {  }
+  simple_sitemap:
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  simple_sitemap_index_now:
+    weight: 130
+    region: content
+    settings: {  }
     third_party_settings: {  }
   status:
     type: boolean_checkbox
