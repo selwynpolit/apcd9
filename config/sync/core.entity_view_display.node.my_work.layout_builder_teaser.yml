@@ -1,8 +1,9 @@
-uuid: ef9554e7-b7e9-4956-a139-b4a5bde46a44
+uuid: 06ad1357-8ae1-415b-a9fe-a5d97b7745d7
 langcode: en
 status: true
 dependencies:
   config:
+    - core.entity_view_mode.node.layout_builder_teaser
     - field.field.node.my_work.body
     - field.field.node.my_work.field_image
     - image.style.medium
@@ -21,40 +22,11 @@ third_party_settings:
       -
         layout_id: layout_onecol
         layout_settings:
-          label: ''
+          label: 'Top Section'
+          context_mapping: {  }
         components:
-          95c985dd-1bd0-453a-95ba-89fc2730cc17:
-            uuid: 95c985dd-1bd0-453a-95ba-89fc2730cc17
-            region: content
-            configuration:
-              id: 'field_block:node:my_work:body'
-              label_display: '0'
-              context_mapping:
-                entity: layout_builder.entity
-              formatter:
-                type: text_default
-                label: hidden
-                settings: {  }
-                third_party_settings: {  }
-            weight: 2
-            additional: {  }
-          2327b5b2-61d1-4e54-a403-1b6c05d8551b:
-            uuid: 2327b5b2-61d1-4e54-a403-1b6c05d8551b
-            region: content
-            configuration:
-              id: 'extra_field_block:node:my_work:links'
-              label: Links
-              label_display: '0'
-              provider: layout_builder
-              context_mapping:
-                entity: layout_builder.entity
-              formatter:
-                settings: {  }
-                third_party_settings: {  }
-            weight: 3
-            additional: {  }
-          b2c08b1d-9172-4a1f-a5e4-819e60b36dfd:
-            uuid: b2c08b1d-9172-4a1f-a5e4-819e60b36dfd
+          4bf1dea6-9783-4be8-a863-601dbe74c5d6:
+            uuid: 4bf1dea6-9783-4be8-a863-601dbe74c5d6
             region: content
             configuration:
               id: 'field_block:node:my_work:field_image'
@@ -73,13 +45,67 @@ third_party_settings:
                   image_loading:
                     attribute: lazy
                 third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          2f35f71b-4125-485c-b849-7b8f1d96b3a9:
+            uuid: 2f35f71b-4125-485c-b849-7b8f1d96b3a9
+            region: content
+            configuration:
+              id: 'field_block:node:my_work:body'
+              label: Body
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: text_default
+                label: hidden
+                settings: {  }
+                third_party_settings: {  }
             weight: 1
             additional: {  }
+          e119e3db-67aa-40bd-8a2b-e36d66658444:
+            uuid: e119e3db-67aa-40bd-8a2b-e36d66658444
+            region: content
+            configuration:
+              id: 'extra_field_block:node:my_work:links'
+              label: Links
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                settings: {  }
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
         third_party_settings: {  }
-id: node.my_work.default
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: ''
+          context_mapping: {  }
+          column_widths: 75-25
+        components: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: 'Lower section'
+          context_mapping: {  }
+        components: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+id: node.my_work.layout_builder_teaser
 targetEntityType: node
 bundle: my_work
-mode: default
+mode: layout_builder_teaser
 content:
   body:
     type: text_default
