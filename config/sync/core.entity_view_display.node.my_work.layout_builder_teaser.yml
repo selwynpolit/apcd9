@@ -38,7 +38,7 @@ third_party_settings:
                 view_mode: view_mode
               formatter:
                 type: image
-                label: above
+                label: hidden
                 settings:
                   image_link: file
                   image_style: large
