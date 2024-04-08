@@ -1,0 +1,11 @@
+uuid: e0a2ad92-ceff-4f40-aafc-a15b6d8d8e3d
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+id: node.layout_builder_teaser
+label: 'Layout Builder Teaser'
+description: ''
+targetEntityType: node
+cache: true

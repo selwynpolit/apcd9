@@ -3,9 +3,10 @@ langcode: en
 status: true
 dependencies:
   config:
+    - core.entity_view_mode.node.layout_builder_teaser
     - field.storage.node.body
     - field.storage.node.field_image
-    - image.style.medium
+    - image.style.large
     - node.type.my_work
   module:
     - image
@@ -66,7 +67,7 @@ display:
             preserve_tags: ''
             html: false
           element_type: ''
-          element_class: ''
+          element_class: my-work-image
           element_label_type: ''
           element_label_class: ''
           element_label_colon: false
@@ -81,9 +82,9 @@ display:
           type: image
           settings:
             image_link: file
-            image_style: medium
+            image_style: large
             image_loading:
-              attribute: eager
+              attribute: lazy
           group_column: ''
           group_columns: {  }
           group_rows: true
@@ -307,7 +308,10 @@ display:
           row_class: ''
           default_row_class: true
       row:
-        type: fields
+        type: 'entity:node'
+        options:
+          relationship: none
+          view_mode: layout_builder_teaser
       query:
         type: views_query
         options:
