@@ -23,7 +23,10 @@
 # Ignore .env files as they are personal
 /.env
 
-# Not sure why ddev doesn't exclude this already 
+# Not sure why ddev doesn't exclude this already
 .ddev/addon-metadata
 .ddev/config.drushonhost.yaml
 
+# Local db dumps
+*.sql
+*.sql.gz
