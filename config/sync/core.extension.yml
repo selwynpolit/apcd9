@@ -44,6 +44,7 @@ module:
   jquery_ui_slider: 0
   jquery_ui_touch_punch: 0
   layout_builder: 0
+  layout_builder_expose_all_field_blocks: 0
   layout_discovery: 0
   link: 0
   linkchecker: 0
