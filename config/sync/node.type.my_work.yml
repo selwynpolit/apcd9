@@ -12,7 +12,7 @@ third_party_settings:
 name: 'My Work'
 type: my_work
 description: "Examples of the work I've done"
-help: ''
+help: null
 new_revision: true
 preview_mode: 1
 display_submitted: true
