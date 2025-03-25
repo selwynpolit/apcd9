@@ -26,7 +26,6 @@
         "drupal/core-composer-scaffold": "^10.0",
         "drupal/core-project-message": "^10.0",
         "drupal/core-recommended": "^10.0",
-        "drupal/devel": "^5.1",
         "drupal/dynamic_entity_reference": "^4.0@alpha",
         "drupal/editor_advanced_link": "^2.2",
         "drupal/extlink": "^2.0",
@@ -120,6 +119,7 @@
         }
     },
     "require-dev": {
+        "drupal/devel": "^5.3",
         "drupal/stage_file_proxy": "^3.1"
     }
 }
