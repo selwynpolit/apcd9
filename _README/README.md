@@ -68,7 +68,7 @@ timezone: America/Chicago
 - ssh into greengeeks
 - cd ~/www/d9
 - git pull
-- composer install
+- composer install --no-dev
 - drush updb
 - drush cr
 - drush cst
