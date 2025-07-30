@@ -5,8 +5,8 @@ hosted at greengeeks.com
 
 
 ## Sites
-- www.austinprogressivecalendar.com - d10 live site - ~/www/d9 (/home/austinpr/www/d9)
-- d9.austinprogressivecalendar.com - redirects to d10 live site
+- www.austinprogressivecalendar.com - Drupal 10 live site - ~/www/d9 (/home/austinpr/www/d9)
+- d9.austinprogressivecalendar.com - redirects to Drupal10 live site
 
 - d7.austinprogressivecalendar.com - old d7 live site - ~/www/live
 - dev.austinprogressivecalendar.com - d7 dev site - ~/www/dev
@@ -64,4 +64,15 @@ timezone: America/Chicago
 ```
 
 
+## Deployment
+- ssh into greengeeks
+- cd ~/www/d9
+- git pull
+- composer install
+- drush updb
+- drush cr
+- drush cst
+- drush cim -y
+- drush cr
+-
 
