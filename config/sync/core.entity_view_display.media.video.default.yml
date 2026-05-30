@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - field.field.media.video.field_media_video_file
+    - field.field.media.video.rabbit_hole__settings
     - media.type.video
   module:
     - file
@@ -31,5 +32,6 @@ content:
 hidden:
   created: true
   name: true
+  rabbit_hole__settings: true
   thumbnail: true
   uid: true

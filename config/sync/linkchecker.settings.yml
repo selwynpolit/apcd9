@@ -1,8 +1,10 @@
 _core:
   default_config_hash: FzFKuqOuk667AkDorrqvXkc_-M4D-Ac1XeGGusxS1JU
+scan_blocks: null
 check_links_types: 1
 default_url_scheme: 'http://'
 base_path: ''
+search_published_contents_only: true
 extract:
   from_a: true
   from_audio: false
@@ -12,15 +14,18 @@ extract:
   from_object: false
   from_video: false
   filter_blacklist:
+    filter_caption: filter_caption
     filter_align: filter_align
     filter_autop: filter_autop
-    filter_caption: filter_caption
-    insert_block: insert_block
-    insert_view: insert_view
-    smiley: smiley
-    smileys: smileys
-    weblinks_embed: weblinks_embed
-    weblinks_filter: weblinks_filter
+    filter_url: filter_url
+    linkit: linkit
+    editor_file_reference: '0'
+    filter_html_escape: '0'
+    filter_image_lazy_load: '0'
+    filter_html: '0'
+    filter_htmlcorrector: '0'
+    filter_html_image_secure: '0'
+    media_embed: '0'
 check:
   connections_max: 8
   connections_max_per_domain: 2
@@ -29,18 +34,12 @@ check:
     example.net
     example.org
   library: core
-  interval: 2419200
-  useragent: 'Drupal (+http://drupal.org/)'
+  interval: 604800
+  useragent: 'Drupal (+https://drupal.org/)'
 error:
   action_status_code_301: 0
   action_status_code_404: 0
-  ignore_response_codes: |-
-    200
-    206
-    302
-    304
-    401
-    403
+  ignore_response_codes: "200\r\n206\r\n302\r\n304\r\n401\r\n403"
   impersonate_account: admin
 logging:
   level: 6

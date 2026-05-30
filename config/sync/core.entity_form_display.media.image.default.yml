@@ -4,11 +4,13 @@ status: true
 dependencies:
   config:
     - field.field.media.image.field_media_image
+    - field.field.media.image.rabbit_hole__settings
     - image.style.thumbnail
     - media.type.image
   module:
     - image
     - path
+    - rabbit_hole
 _core:
   default_config_hash: WeM0d1VqhuyGELo4SRiDJfhDQSLqfKavISEbrnlcTaE
 id: media.image.default
@@ -35,6 +37,13 @@ content:
     weight: 30
     region: content
     settings: {  }
+    third_party_settings: {  }
+  rabbit_hole__settings:
+    type: rabbit_hole_default
+    weight: 100
+    region: content
+    settings:
+      advanced: true
     third_party_settings: {  }
   status:
     type: boolean_checkbox

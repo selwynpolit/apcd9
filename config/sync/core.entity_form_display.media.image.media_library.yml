@@ -5,6 +5,7 @@ dependencies:
   config:
     - core.entity_form_mode.media.media_library
     - field.field.media.image.field_media_image
+    - field.field.media.image.rabbit_hole__settings
     - image.style.thumbnail
     - media.type.image
   module:
@@ -28,5 +29,6 @@ hidden:
   created: true
   name: true
   path: true
+  rabbit_hole__settings: true
   status: true
   uid: true

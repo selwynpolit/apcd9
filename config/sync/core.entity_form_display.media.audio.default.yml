@@ -4,10 +4,12 @@ status: true
 dependencies:
   config:
     - field.field.media.audio.field_media_audio_file
+    - field.field.media.audio.rabbit_hole__settings
     - media.type.audio
   module:
     - file
     - path
+    - rabbit_hole
 _core:
   default_config_hash: HGa6EpWJApUec2IS8zsOnJ3NhIhwY2QYNmLY7eS5zLM
 id: media.audio.default
@@ -33,6 +35,13 @@ content:
     weight: 30
     region: content
     settings: {  }
+    third_party_settings: {  }
+  rabbit_hole__settings:
+    type: rabbit_hole_default
+    weight: 100
+    region: content
+    settings:
+      advanced: true
     third_party_settings: {  }
   status:
     type: boolean_checkbox

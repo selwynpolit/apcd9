@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - field.field.media.audio.field_media_audio_file
+    - field.field.media.audio.rabbit_hole__settings
     - media.type.audio
   module:
     - file
@@ -28,5 +29,6 @@ content:
 hidden:
   created: true
   name: true
+  rabbit_hole__settings: true
   thumbnail: true
   uid: true

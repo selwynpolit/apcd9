@@ -5,6 +5,7 @@ dependencies:
   config:
     - core.entity_view_mode.media.media_library
     - field.field.media.document.field_media_document
+    - field.field.media.document.rabbit_hole__settings
     - image.style.thumbnail
     - media.type.document
   module:
@@ -31,4 +32,5 @@ hidden:
   created: true
   field_media_document: true
   name: true
+  rabbit_hole__settings: true
   uid: true

@@ -4,10 +4,12 @@ status: true
 dependencies:
   config:
     - field.field.media.video.field_media_video_file
+    - field.field.media.video.rabbit_hole__settings
     - media.type.video
   module:
     - file
     - path
+    - rabbit_hole
 _core:
   default_config_hash: QcsaoQN46kJyeffkXCqa7aX7pPtpqJjITEqeBse33D0
 id: media.video.default
@@ -33,6 +35,13 @@ content:
     weight: 30
     region: content
     settings: {  }
+    third_party_settings: {  }
+  rabbit_hole__settings:
+    type: rabbit_hole_default
+    weight: 100
+    region: content
+    settings:
+      advanced: true
     third_party_settings: {  }
   status:
     type: boolean_checkbox
