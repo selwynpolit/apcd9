@@ -5,6 +5,7 @@ dependencies:
   config:
     - core.entity_form_mode.media.media_library
     - field.field.media.video.field_media_video_file
+    - field.field.media.video.rabbit_hole__settings
     - media.type.video
 _core:
   default_config_hash: kGv8YsopqHvzTzb7QTINWcv0fnNa5ZDQyZxpOQR2vro
@@ -18,5 +19,6 @@ hidden:
   field_media_video_file: true
   name: true
   path: true
+  rabbit_hole__settings: true
   status: true
   uid: true

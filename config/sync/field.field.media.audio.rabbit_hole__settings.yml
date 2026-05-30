@@ -1,0 +1,21 @@
+uuid: 22ffbfc0-cbd5-46ef-ac7a-b4fc90114429
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.media.rabbit_hole__settings
+    - media.type.audio
+  module:
+    - rabbit_hole
+id: media.audio.rabbit_hole__settings
+field_name: rabbit_hole__settings
+entity_type: media
+bundle: audio
+label: 'Rabbit Hole settings'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: rabbit_hole
