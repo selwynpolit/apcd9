@@ -10,6 +10,8 @@ module:
   block_content: 0
   breakpoint: 0
   captcha: 0
+  chosen: 0
+  chosen_lib: 0
   ckeditor5: 0
   comment: 0
   config: 0
@@ -44,7 +46,6 @@ module:
   jquery_ui_slider: 0
   jquery_ui_touch_punch: 0
   layout_builder: 0
-  layout_builder_expose_all_field_blocks: 0
   layout_discovery: 0
   link: 0
   linkchecker: 0
@@ -77,7 +78,6 @@ module:
   text: 0
   token: 0
   toolbar: 0
-  tour: 0
   update: 0
   user: 0
   views_bulk_operations: 0
