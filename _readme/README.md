@@ -74,5 +74,17 @@ timezone: America/Chicago
 - drush cst
 - drush cim -y
 - drush cr
--
 
+
+## Local setup
+- clone repo: `git clone git@github.com:selwynpolit/apcd9.git apc3`
+- ddev config
+- edit .ddev/config.yaml to remove the upload_dirs entry for upgrade_status/tests/modules/upgrade_status_test_11_compatible/node_modules
+- also remove name from .ddev/config.yaml
+- create .ddev/config.local.yaml with timezone: America/Chicago, name: apc3 (assuming this is your dir name)
+- ddev start
+- ddev composer install
+- grab prod db: `ddev drush @apc.prod sql-dump >dbprod.sql`
+- gzip it: `gzip dbprod.sql`
+- import it: `ddev import-db --file=dbprod.sql.gz`
+- launch site: `ddev launch $(ddev drush uli)`
