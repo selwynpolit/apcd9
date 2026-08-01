@@ -185,9 +185,28 @@ Side effect to be aware of: writing to the tempstore starts a session for that v
 ## 6. Public display
 
 ### 6a. `/calendar` — FullCalendar view
-Content view, type = Calendar Event, Published = Yes, display type **FullCalendar**, path `/calendar`. Map Start/End to `field_event_date`'s `value`/`end_value`.
-- **Verify at build time**: confirm the field-mapping dropdown actually offers Smart Date's sub-fields as Start/End options — if not, check Smart Date's "Smart Date and Views" documentation for the correct exposed properties rather than guessing.
-- Deselect "Show multiple values in the same row" on the date field's Views settings so recurring instances render as separate calendar entries.
+Content view, type = Calendar Event, Published = Yes, display type **FullCalendar**, path `/calendar`.
+
+> **Field mapping — the original instruction was wrong and produced an empty calendar.** The plan said to map Start/End to `field_event_date`'s `value`/`end_value` sub-properties. Those report as generic date fields, and `SmartDateProcessor::process()` returns early on them (`if (strpos($start_field_options['type'], 'smartdate') !== 0) return;`), so the entries never receive their real start/end and the calendar silently renders zero events.
+>
+> **Correct mapping:** Start = `field_event_date` (the base field, formatter `smartdate_default`), End = **left empty**. The processor reads `end_value` off the same field. This is what is now in `views.view.calendar.yml`.
+
+> **Do NOT deselect "Show multiple values in the same row"** (`group_rows`). The original plan called for this; it would cause the exact duplication it was meant to avoid. `FullcalendarViewPreprocess` never uses Views' rendered date output — it reads deltas directly off the entity and emits one calendar entry per delta, so recurring instances already separate on their own. Setting `group_rows: false` makes Views emit one *row* per delta, and since that loop runs per row with no entity dedup, you get rows × deltas. Leave `group_rows: true`.
+
+**Pager must be "Display all items."** FullCalendar View is client-side: every event is serialized into `drupalSettings` on page load, and prev/next merely re-renders what is already there. A paged view therefore does not paginate the calendar — it permanently truncates it. The build initially shipped `type: mini, items_per_page: 10`, which meant `/calendar` contained only 10 event nodes total, selected by creation date, with every other event missing from every month and no visible error.
+
+**Bounding the payload.** With the pager unbounded, and `smart_date_recur`'s `month_limit: 12` materialising ~52 deltas for a weekly event, the serialized payload grows without limit as content accumulates. A filter on `field_event_date_end_value >= -1 month` (granularity: day) keeps it bounded.
+
+- Granularity **day**, not second: the boundary then moves once per day rather than every second, which matters because the view uses tag-based caching and cannot invalidate on time passing alone.
+- **Trade-off to be aware of:** because navigation is client-side, anything excluded by this filter is unreachable — users cannot browse back further than the window. Widen it if browsing history matters more than payload size.
+
+**`distinct: true` is required, not optional.** Filtering on `field_event_date_end_value` joins `node__field_event_date`, which has one row per delta — so a weekly event would return ~52 duplicate result rows, and the preprocessor emits every delta again for each one. Without `distinct`, adding the date filter multiplies events on the calendar. Verify by hand after any change here: create a weekly recurring event and confirm each occurrence appears exactly once.
+
+**No sort.** Deliberately empty. FullCalendar orders events client-side, so a Views sort buys nothing, and sorting on the multi-delta `field_event_date_value` alongside `DISTINCT` invites "ORDER BY expression not in select list" errors under MySQL's `ONLY_FULL_GROUP_BY`. The original `created DESC` sort was also actively harmful in combination with the pager, since it made the truncation cutoff arbitrary with respect to event dates.
+
+**Still at defaults, revisit if they bite:**
+- `eventLimit: '2'` — only two events per day cell before a "+more" link. Low for a calendar whose busy days are the point.
+- `updateAllowed: 1` — drag-to-reschedule. Correctly gated (`if (!$current_entity->access('update')) $entry['editable'] = FALSE;`), so not a security issue, but dragging a Smart Date *recurring instance* is a good way to mangle its rule.
 
 ### 6b. "Upcoming events at this location" view (feeds 4c)
 Content view, type = Calendar Event, machine name `location_upcoming_events`.
@@ -276,8 +295,10 @@ Work through in order, anonymous/incognito session alongside an authenticated ad
 **(d) Recurrence**
 1. Create/edit an event with a recurring rule (e.g. weekly for several weeks).
 2. Confirm multiple date instances generated on re-edit.
-3. Confirm `/calendar` shows each occurrence as a separate entry.
-4. Confirm the location's upcoming-events block reflects future occurrences correctly.
+3. Confirm `/calendar` shows each occurrence as a separate entry — and, critically, **exactly once each**. Duplicated occurrences mean either `distinct` got turned off or `group_rows` got turned off; see §6a.
+4. Confirm an event dated more than a month in the past is absent, and one from last week is present — that is the date filter working.
+5. Confirm the total event count on `/calendar` matches the published events in range. A count that stops suspiciously round (10, 50) means a pager crept back in.
+6. Confirm the location's upcoming-events block reflects future occurrences correctly.
 
 **(e) Add-to-calendar**
 1. On a published event page, confirm Google Calendar/Outlook/Yahoo/.ics links render.
