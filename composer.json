@@ -67,8 +67,10 @@
         "sort-packages": true,
         "allow-plugins": {
             "composer/installers": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
             "drupal/core-composer-scaffold": true,
-            "drupal/core-project-message": true
+            "drupal/core-project-message": true,
+            "php-http/discovery": true
         }
     },
     "extra": {
@@ -126,7 +128,10 @@
         }
     },
     "require-dev": {
+        "drupal/coder": "^9.0",
+        "drupal/core-dev": "^8.0@beta",
         "drupal/devel": "^5.3",
-        "drupal/stage_file_proxy": "^3.1"
+        "drupal/stage_file_proxy": "^3.1",
+        "squizlabs/php_codesniffer": "^4.0"
     }
 }
