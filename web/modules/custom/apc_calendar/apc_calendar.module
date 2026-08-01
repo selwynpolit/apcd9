@@ -5,10 +5,23 @@
  * Primary module hooks for APC Calendar module.
  */
 
+use Drupal\apc_calendar\Controller\EventSubmittedController;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\Core\Url;
+use Drupal\node\NodeInterface;
 use Drupal\taxonomy\TermInterface;
 
 /**
- * Implements hook_ENTITY_TYPE_presave().
+ * Implements hook_ENTITY_TYPE_presave() for taxonomy_term entities.
+ *
+ * Location terms auto-created by anonymous event submitters are saved
+ * unpublished so they stay out of the reference autocomplete (core's
+ * TermSelection::buildEntityQuery() filters on status for non-admins) and off
+ * the public term page until an admin publishes them.
+ *
+ * Core's TermSelection::createNewEntity() explicitly calls setPublished() on
+ * auto-created terms, so this presave is what actually holds the gate shut.
  */
 function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
   if ($term->isNew() && $term->bundle() === 'locations') {
@@ -18,5 +31,125 @@ function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
   }
 }
 
+/**
+ * Implements hook_form_FORM_ID_alter() for node_calendar_event_form.
+ *
+ * Anonymous submitters cannot view their own unpublished node (core blocks
+ * "view own unpublished content" for anonymous — every anonymous node is owned
+ * by uid 0, so the permission would expose the entire moderation queue). Core's
+ * NodeForm::save() therefore falls back to redirecting them to the front page
+ * with a "has been created" message that reads as though the event is live.
+ *
+ * Send them to a dedicated thank-you page with an accurate message instead.
+ */
+function apc_calendar_form_node_calendar_event_form_alter(array &$form, FormStateInterface $form_state): void {
+  if (!\Drupal::currentUser()->isAnonymous()) {
+    return;
+  }
+  // Append after ::save so this redirect wins over the one NodeForm sets.
+  $form['actions']['submit']['#submit'][] = 'apc_calendar_event_submit_confirmation';
+}
 
+/**
+ * Submit handler: redirect anonymous submitters to the thank-you page.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ */
+function apc_calendar_event_submit_confirmation(array $form, FormStateInterface $form_state): void {
+  // Drop NodeForm::save()'s "Calendar Event X has been created." status
+  // message, which implies the event is already live. The confirmation page
+  // renders its own, accurate message.
+  \Drupal::messenger()->deleteByType(MessengerInterface::TYPE_STATUS);
 
+  // Hand the new node's ID to the confirmation controller through the
+  // per-session private tempstore — never through a query parameter, since an
+  // enumerable ?nid= on an unpublished node would expose the pending queue.
+  //
+  // The timestamp travels with it so the controller can enforce its own short
+  // freshness window: tempstore.expire defaults to a week, which would leave a
+  // submission readable to whoever uses the same browser next. That parameter
+  // is shared with Views UI and every other private tempstore consumer, so it
+  // must not be lowered globally to solve a problem local to this page.
+  $node = $form_state->getFormObject()->getEntity();
+  \Drupal::service('tempstore.private')
+    ->get(EventSubmittedController::COLLECTION)
+    ->set(EventSubmittedController::KEY, [
+      'nid' => (int) $node->id(),
+      'time' => \Drupal::time()->getRequestTime(),
+    ]);
+
+  $form_state->setRedirect('apc_calendar.event_submitted');
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for node entities.
+ *
+ * Notify the site email address when an anonymous visitor submits an event, so
+ * the pending queue at /admin/content?type=calendar_event&status=2 does not sit
+ * unreviewed simply because nobody knew it had items in it.
+ */
+function apc_calendar_node_insert(NodeInterface $node): void {
+  if ($node->bundle() !== 'calendar_event' || $node->isPublished()) {
+    return;
+  }
+  if (!\Drupal::currentUser()->isAnonymous()) {
+    return;
+  }
+
+  $site_config = \Drupal::config('system.site');
+  $to = \Drupal::state()->get('apc_calendar.notify_email') ?: $site_config->get('mail');
+  if (empty($to)) {
+    \Drupal::logger('apc_calendar')->warning('Pending event @nid submitted but no notification address is configured.', ['@nid' => $node->id()]);
+    return;
+  }
+
+  // toString(TRUE) returns a GeneratedUrl so cacheability metadata is captured
+  // rather than leaking out of an early-rendering context.
+  $params = [
+    'node' => $node,
+    'site_name' => $site_config->get('name'),
+    'edit_url' => $node->toUrl('edit-form', ['absolute' => TRUE])->toString(TRUE)->getGeneratedUrl(),
+    'queue_url' => Url::fromUserInput('/admin/content', [
+      'absolute' => TRUE,
+      'query' => ['type' => 'calendar_event', 'status' => '2'],
+    ])->toString(TRUE)->getGeneratedUrl(),
+  ];
+
+  \Drupal::service('plugin.manager.mail')->mail(
+    'apc_calendar',
+    'event_pending',
+    $to,
+    \Drupal::languageManager()->getDefaultLanguage()->getId(),
+    $params
+  );
+}
+
+/**
+ * Implements hook_mail().
+ */
+function apc_calendar_mail(string $key, array &$message, array $params): void {
+  if ($key !== 'event_pending') {
+    return;
+  }
+
+  /** @var \Drupal\node\NodeInterface $node */
+  $node = $params['node'];
+
+  $message['subject'] = t('[@site] Event pending review: @title', [
+    '@site' => $params['site_name'],
+    '@title' => $node->label(),
+  ]);
+
+  $message['body'][] = t('A visitor submitted a new event. It is unpublished until someone approves it.');
+  $message['body'][] = t('Title: @title', ['@title' => $node->label()]);
+
+  if (!$node->get('field_location')->isEmpty() && $term = $node->get('field_location')->entity) {
+    $message['body'][] = t('Location: @location (@status)', [
+      '@location' => $term->label(),
+      '@status' => $term->isPublished() ? t('existing') : t('NEW - also needs approval'),
+    ]);
+  }
+
+  $message['body'][] = t('Review and publish: @url', ['@url' => $params['edit_url']]);
+  $message['body'][] = t('Full pending queue: @url', ['@url' => $params['queue_url']]);
+}

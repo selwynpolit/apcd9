@@ -1,0 +1,11 @@
+apc_calendar.event_submitted:
+  path: '/event-submitted'
+  defaults:
+    _title: 'Event Submitted'
+    _controller: '\Drupal\apc_calendar\Controller\EventSubmittedController'
+  requirements:
+    _permission: 'access content'
+  options:
+    # The response renders the visitor's own unpublished node, so it is
+    # per-session and must never be stored in the anonymous page cache.
+    no_cache: TRUE
