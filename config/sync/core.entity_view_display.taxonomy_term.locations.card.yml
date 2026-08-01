@@ -5,7 +5,6 @@ dependencies:
   config:
     - core.entity_view_mode.taxonomy_term.card
     - field.field.taxonomy_term.locations.field_address
-    - field.field.taxonomy_term.locations.field_approved
     - field.field.taxonomy_term.locations.field_geofield
     - field.field.taxonomy_term.locations.field_location_image
     - field.field.taxonomy_term.locations.field_notes
@@ -146,4 +145,3 @@ content:
     region: content
 hidden:
   description: true
-  field_approved: true
