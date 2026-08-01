@@ -1,0 +1,29 @@
+uuid: bf05ca93-c28a-47c6-9a5e-c4c69ac92cb9
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_location_image
+    - media.type.image
+    - taxonomy.vocabulary.locations
+id: taxonomy_term.locations.field_location_image
+field_name: field_location_image
+entity_type: taxonomy_term
+bundle: locations
+label: 'Location Image'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:media'
+  handler_settings:
+    target_bundles:
+      image: image
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: true
+    auto_create_bundle: ''
+field_type: entity_reference

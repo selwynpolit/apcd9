@@ -16,6 +16,8 @@
     ],
     "require": {
         "composer/installers": "^1.9",
+        "drupal/address": "^2.0",
+        "drupal/addtocal": "^3.0@beta",
         "drupal/admin_toolbar": "^3.0",
         "drupal/better_exposed_filters": "^7.1",
         "drupal/captcha": "^1.1",
@@ -30,11 +32,15 @@
         "drupal/feeds": "^3.0@alpha",
         "drupal/feeds_tamper": "^2.0@beta",
         "drupal/fontawesome": "^3.0",
+        "drupal/fullcalendar_view": "^5.2",
+        "drupal/geocoder": "^4.34",
+        "drupal/geofield": "^10.3",
         "drupal/honeypot": "^2.2",
         "drupal/imce": "^3.0",
         "drupal/jquery_ui_datepicker": "^2.1",
         "drupal/jquery_ui_slider": "^2.0.0",
         "drupal/jquery_ui_touch_punch": "^1.1",
+        "drupal/leaflet": "^10.4",
         "drupal/linkchecker": "^2",
         "drupal/linkit": "^7.0",
         "drupal/module_filter": "^5.0",
@@ -49,7 +55,8 @@
         "drupal/token": "^1.7",
         "drupal/upgrade_status": "^4.0",
         "drupal/views_bulk_operations": "^4.0",
-        "drush/drush": "^13.7"
+        "drush/drush": "^13.7",
+        "geocoder-php/nominatim-provider": "^5.8"
     },
     "conflict": {
         "drupal/drupal": "*"

@@ -1,0 +1,5 @@
+name: 'APC Calendar'
+type: module
+description: 'Support for Event Calendar Functions'
+package: APC
+core_version_requirement: ^10 || ^11
