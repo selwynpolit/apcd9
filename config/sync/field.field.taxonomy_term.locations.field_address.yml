@@ -1,0 +1,32 @@
+uuid: 2ddee0b8-acdb-4c5d-aee7-266633b0d6bd
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_address
+    - taxonomy.vocabulary.locations
+  module:
+    - address
+id: taxonomy_term.locations.field_address
+field_name: field_address
+entity_type: taxonomy_term
+bundle: locations
+label: Address
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  available_countries:
+    US: US
+  langcode_override: ''
+  field_overrides:
+    givenName:
+      override: optional
+    additionalName:
+      override: optional
+    familyName:
+      override: optional
+  fields: {  }
+field_type: address

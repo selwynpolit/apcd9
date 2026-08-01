@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for APC Calendar module.
+ */
+
+use Drupal\taxonomy\TermInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_presave().
+ */
+function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
+  if ($term->isNew() && $term->bundle() === 'locations') {
+    if (\Drupal::currentUser()->isAnonymous()) {
+      $term->setUnpublished();
+    }
+  }
+}
+
+
+
