@@ -153,3 +153,31 @@ function apc_calendar_mail(string $key, array &$message, array $params): void {
   $message['body'][] = t('Review and publish: @url', ['@url' => $params['edit_url']]);
   $message['body'][] = t('Full pending queue: @url', ['@url' => $params['queue_url']]);
 }
+
+/**
+ * Implements hook_library_info_alter().
+ *
+ * Point Moment and RRule at their real composer-installed paths. The npm
+ * package layouts don't match the locations fullcalendar_view expects, so
+ * without this its own alter finds nothing on disk and silently falls back to
+ * loading them from jsdelivr/unpkg.
+ *
+ * Hook order does not matter here. fullcalendar_view's alter only substitutes
+ * a CDN URL when file_exists() fails on the path it finds — so if it runs after
+ * this, its check passes and it leaves these alone; if it runs before, this
+ * simply overwrites its CDN substitution.
+ */
+function apc_calendar_library_info_alter(array &$libraries, string $module): void {
+  if ($module !== 'fullcalendar_view') {
+    return;
+  }
+  $paths = [
+    'libraries.moment' => '/libraries/moment/min/moment.min.js',
+    'libraries.rrule' => '/libraries/rrule/dist/es5/rrule.min.js',
+  ];
+  foreach ($paths as $library => $path) {
+    if (isset($libraries[$library]['js'])) {
+      $libraries[$library]['js'] = [$path => ['minified' => TRUE]];
+    }
+  }
+}
