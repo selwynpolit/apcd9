@@ -12,6 +12,10 @@
         {
             "type": "composer",
             "url": "https://packages.drupal.org/8"
+        },
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
         }
     ],
     "require": {
@@ -56,7 +60,17 @@
         "drupal/upgrade_status": "^4.0",
         "drupal/views_bulk_operations": "^4.0",
         "drush/drush": "^13.7",
-        "geocoder-php/nominatim-provider": "^5.8"
+        "geocoder-php/nominatim-provider": "^5.8",
+        "npm-asset/fullcalendar--core": "4.4.2",
+        "npm-asset/fullcalendar--daygrid": "4.4.2",
+        "npm-asset/fullcalendar--interaction": "4.4.2",
+        "npm-asset/fullcalendar--list": "4.4.2",
+        "npm-asset/fullcalendar--moment": "4.4.2",
+        "npm-asset/fullcalendar--rrule": "4.4.2",
+        "npm-asset/fullcalendar--timegrid": "4.4.2",
+        "npm-asset/moment": "2.29.4",
+        "npm-asset/rrule": "2.6.8",
+        "oomphinc/composer-installers-extender": "^2.0"
     },
     "conflict": {
         "drupal/drupal": "*"
@@ -70,7 +84,8 @@
             "dealerdirect/phpcodesniffer-composer-installer": true,
             "drupal/core-composer-scaffold": true,
             "drupal/core-project-message": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "oomphinc/composer-installers-extender": true
         }
     },
     "extra": {
@@ -79,12 +94,23 @@
                 "web-root": "web/"
             }
         },
+        "installer-types": ["npm-asset"],
         "installer-paths": {
             "web/core": [
                 "type:drupal-core"
             ],
+            "web/libraries/fullcalendar/core": ["npm-asset/fullcalendar--core"],
+            "web/libraries/fullcalendar/daygrid": ["npm-asset/fullcalendar--daygrid"],
+            "web/libraries/fullcalendar/timegrid": ["npm-asset/fullcalendar--timegrid"],
+            "web/libraries/fullcalendar/list": ["npm-asset/fullcalendar--list"],
+            "web/libraries/fullcalendar/interaction": ["npm-asset/fullcalendar--interaction"],
+            "web/libraries/fullcalendar/moment": ["npm-asset/fullcalendar--moment"],
+            "web/libraries/fullcalendar/rrule": ["npm-asset/fullcalendar--rrule"],
+            "web/libraries/moment": ["npm-asset/moment"],
+            "web/libraries/rrule": ["npm-asset/rrule"],
             "web/libraries/{$name}": [
-                "type:drupal-library"
+                "type:drupal-library",
+                "type:npm-asset"
             ],
             "web/modules/contrib/{$name}": [
                 "type:drupal-module"
