@@ -1,0 +1,16 @@
+uuid: 05c50543-0508-4066-bcef-454d592f4f61
+langcode: en
+status: true
+dependencies:
+  config:
+    - taxonomy.vocabulary.locations
+id: taxonomy_term.locations
+targetEntityType: taxonomy_term
+bundle: locations
+action: page_redirect
+no_bypass: true
+bypass_message: false
+configuration:
+  redirect: '/locations/[term:tid]'
+  redirect_code: 302
+  redirect_fallback_action: access_denied

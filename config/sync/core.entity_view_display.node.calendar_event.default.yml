@@ -38,7 +38,7 @@ content:
       parts:
         start: start
         end: end
-        duration: '0'
+        duration: duration
       duration:
         separator: ' | '
         unit: ''
@@ -46,14 +46,14 @@ content:
         suffix: h
       past_display: 2
       upcoming_display: 2
-      show_next: true
+      show_next: false
       current_upcoming: true
     third_party_settings: {  }
     weight: 102
     region: content
   field_location:
     type: entity_reference_entity_view
-    label: above
+    label: hidden
     settings:
       view_mode: card
       link: false
