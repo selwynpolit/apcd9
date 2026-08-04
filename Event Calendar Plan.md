@@ -52,6 +52,27 @@ ddev drush pm:enable address geofield leaflet geocoder geocoder_field geocoder_g
 ddev drush cr
 ```
 
+### 1b. Front-end JS libraries — ADDED DURING BUILD
+
+`fullcalendar_view` ships no libraries of its own. `fullcalendar_view_library_info_alter()` checks `file_exists()` on each expected path and **silently substitutes a CDN URL for anything missing** — so the calendar works out of the box while quietly loading JS from `unpkg.com` and `cdn.jsdelivr.net` on every page view. That is a supply-chain and visitor-privacy exposure, and it would break if `seckit`'s CSP is ever enabled (currently `checkbox: false`).
+
+Libraries are now installed locally via [asset-packagist](https://asset-packagist.org), declared in `composer.json`:
+
+- Repository `https://asset-packagist.org` plus `oomphinc/composer-installers-extender` and `extra.installer-types: ["npm-asset"]`.
+- Explicit `installer-paths` entries mapping each `npm-asset/fullcalendar--*` package into the `web/libraries/fullcalendar/<plugin>/` layout the module expects. **These must precede the generic `web/libraries/{$name}` rule** — `mapCustomInstallPaths()` returns the first match.
+- That generic rule needs `type:npm-asset` alongside `type:drupal-library`, otherwise transitive npm dependencies (`luxon`, `tslib`, pulled in by rrule) have no matching path and `composer install` dies with `Package type "npm-asset" is not supported`.
+
+Two packages cannot be path-matched, because their npm layouts differ from what the module expects (`moment/min/moment.min.js` vs `/libraries/moment/2.29.4/moment.min.js`; `rrule/dist/es5/rrule.min.js` vs `/libraries/rrule/2.6.8/rrule.min.js`). `apc_calendar_library_info_alter()` repoints those two. Hook order is irrelevant: the module's own alter only substitutes a CDN when `file_exists()` fails, so once these point at real files it leaves them alone.
+
+**Deployment consequence:** `web/libraries/` is gitignored, so these arrive via `composer install --no-dev` on GreenGeeks — which now requires `asset-packagist.org` to be reachable from the production host. Verify that before the first deploy that depends on it.
+
+**JSFrame is deliberately not installed.** It is only attached when the `dialogWindow` display option is enabled (`FullcalendarViewPreprocess` line ~445), which this build does not use. Enabling that option later would silently reintroduce a CDN dependency.
+
+Verify no CDN references remain after any change here:
+```bash
+curl -s https://apc3.ddev.site/calendar | grep -oE '(unpkg\.com|jsdelivr\.net)[^"]*'
+```
+
 ---
 
 ## 2. Content model
@@ -115,15 +136,29 @@ function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
 }
 ```
 
-**Anonymous only, by design.** Locations created by authenticated users are published immediately — see the decision note in the Context section. If open self-registration is ever turned on, change the condition to `!\Drupal::currentUser()->hasPermission('administer taxonomy')`.
+**Anonymous only, by design.** Terms created by authenticated users are published immediately — see the decision note in the Context section. If open self-registration is ever turned on, change the condition to `!\Drupal::currentUser()->hasPermission('administer taxonomy')`.
+
+**Restricted to `locations`, also by design — see §3e.** `field_tags` was added after the initial build and is deliberately *not* gated. Any other future reference field with `auto_create` that anonymous users can reach will publish terms immediately unless its bundle is added to this condition.
 
 **Known limitation:** because unapproved locations are invisible, a second submitter typing the same location name creates a *duplicate* term rather than matching the pending one. Duplicates accumulate until an admin approves or merges them. This is inherent to the gate — the alternative (showing unapproved terms in the autocomplete) is what the gate exists to prevent. Watch the pending queue (§7b) for near-duplicate names.
 
 ### 3d. Anonymous permissions (`/admin/people/permissions`, Anonymous row)
 - Check **"Create Calendar Event content"**.
-- Check **"Create terms in Locations"** — this is what core's entity-reference autocreate checks (`$term->access('create')`); safe here because 3a–3c hide anything unapproved.
+- Check **"Create terms in Locations"** — harmless, but note the original rationale for it was **wrong**. This permission does *not* gate entity-reference autocreate. Nothing in the autocreate path checks create access: `EntityAutocomplete::validateEntityAutocomplete()` calls `$handler->createNewEntity()` unconditionally when `#autocreate` is set, and `EntityReferenceItem::preSave()` then calls `$this->entity->save()` unconditionally. **Withholding the permission would not have prevented anonymous term creation.** The gate is held entirely by the presave hook in §3c — that hook is load-bearing, not belt-and-braces.
 - ~~Check **"View own unpublished content"**~~ — **do not grant.** Core ignores it for anonymous users by design; see the Context section.
 - Do **not** grant edit/delete on terms, "Administer taxonomy", or edit on Calendar Event content.
+
+### 3e. Tags — ADDED AFTER INITIAL BUILD, and deliberately NOT gated
+
+`field_tags` (vocabulary `tags`, `auto_create: true`) was added to `calendar_event` to support filtering. Anonymous submitters can create tags, and **those tags are published immediately** — the opposite of the locations rule.
+
+**Why the asymmetry.** An unapproved term is invisible in the autocomplete, so the next submitter who wants it simply retypes it and creates a second one. For locations that is a rare edge case (few people type the same venue name). For tags it is the *normal* case — many submitters will reach for "housing", "mutual aid", "city council" — and the result is a filter facet fragmented across near-duplicates. Core ships no term-merge UI, so that cleanup is manual and unbounded. A gate that reliably produces duplicates defeats the purpose of the field it is protecting.
+
+Tags are therefore reviewed **after** the fact rather than before, at `/admin/content/tags-review` (`views.view.tags_review`): newest first by term ID, with an exposed name filter for spotting near-duplicates, `revision_created` and `revision_user` columns, and the VBO bulk form for delete/publish/unpublish. Term ID descending is the reliable "newest" sort — taxonomy terms have no `created` base field, and `revision_created` reflects the last edit rather than creation once a term has been touched.
+
+**What this accepts.** An anonymous visitor can create a publicly reachable, immediately live taxonomy term by typing it into an event submission. Honeypot and CAPTCHA on the node form are the only things in front of it. Mitigating factors: the *event* is still unpublished, so a spam tag's term page lists no content; and taxonomy terms are not currently included in the XML sitemap (there is no `simple_sitemap.bundle_settings.default.taxonomy_term.*` config), so they are not actively advertised to crawlers. **If taxonomy terms are ever added to the sitemap, revisit this decision** — that would turn an accepted nuisance into an SEO-spam surface.
+
+**Worth doing before launch:** seed the 15–30 tags the calendar actually wants to filter by. Submitters then find a match in the autocomplete instead of inventing one, which cuts duplicates at the source far more effectively than any review queue.
 
 ---
 
@@ -145,7 +180,56 @@ New view mode for Taxonomy Term: `card` (`/admin/structure/display-modes/view`).
 - `field_address` → default Address formatter.
 - Hide `field_approved` (internal only).
 
-Embed the "upcoming events here" view (section 5b) as a **Block** placed in the Content region via Block Layout, visibility: Request Path = `/taxonomy/term/*`. Its contextual filter resolves the term ID from the URL automatically via Views' "Taxonomy term ID from URL" default-argument plugin.
+Embed the "upcoming events here" view (section 5b) as a **Block** placed in the Content region via Block Layout, visibility: Request Path = `/taxonomy/term/*`. Its contextual filter resolves the term ID from the URL automatically via Views' "Taxonomy term ID from URL" default-argument plugin. (`RequestPath::evaluate()` matches both the alias and the internal path, so this keeps working if term aliases are added later.)
+
+> **Superseded during build — see §4c-ter.** The term page turned out to be owned by core's `views.view.taxonomy_term`, which adds its own content listing. Locations now have a dedicated page instead.
+
+### 4c-bis. Date display on the Event page — CORRECTED DURING BUILD
+
+The build shipped `field_event_date` on the **`smartdate_default`** formatter in `core.entity_view_display.node.calendar_event.default.yml`. With unlimited cardinality and `smart_date_recur`'s `month_limit: 12`, a weekly event materialises ~52 deltas — so its node page rendered 52 separate date lines.
+
+Use **`smartdate_recurring`** (from `smart_date_recur`) instead. It collapses instances that share an rrule into a rule summary plus a bounded number of occurrences. It degrades correctly for one-off events, so a bundle carrying both kinds needs no special handling:
+
+```php
+// SmartDateRecurrenceFormatter::viewElements()
+if (empty($item->rrule) || $force_chrono) {
+  // No rule so include the item directly.
+  $elements[$delta] = $this->buildOutput($delta, $item, $settings);
+}
+```
+
+Settings used:
+
+| Setting | Value | Rationale |
+|---|---|---|
+| `format` | `default` | Existing Smart Date Format entity (`D, M j Y` + `g:ia`) |
+| `show_next` | true | Isolates the next occurrence — the most useful thing on an event page |
+| `upcoming_display` | 4 | Enough to convey the pattern without a wall of dates |
+| `past_display` | 1 | Minimal series context; 0 is also defensible |
+| `current_upcoming` | true | An event running *now* reads as on-now rather than past — matters for evening events spanning hours |
+| `force_chronological` | false | Merging rules back into a flat list defeats the purpose |
+
+The **teaser** view mode had `field_event_date` in `hidden` — an event teaser with no date. Now shown with `smartdate_recurring`, format `compact`, `upcoming_display: 1`.
+
+Any future view mode built for this bundle (e.g. the calendar popup) should use `smartdate_recurring` for the same reason.
+
+### 4c-ter. Location pages — REDESIGNED DURING BUILD
+
+**The problem.** `/taxonomy/term/{tid}` is not a plain entity page. Core's `views.view.taxonomy_term` has a page display at `taxonomy/term/%`, and Views' route subscriber overrides `entity.taxonomy_term.canonical` with it — keeping the route *name*, which matters below. That view renders the term itself in a **header area** and lists all content referencing the term as teasers below. So a location page showed the map plus a second, worse event list (no date filter, sorted by node creation).
+
+**Two dead ends, recorded so they aren't retried:**
+
+1. *Filter the core view by content type* (`type not in [calendar_event]`). Works until events are tagged — it then hides events from Tags term pages, which is the whole point of `field_tags`.
+2. *Restrict the `tid` argument to the Tags vocabulary with `fail: empty`.* This **destroys the term header**, because `ViewExecutable::_buildArguments()` `break`s on validation failure *before* recording `$substitutions`, so the header's `{{ raw_arguments.tid }}` token has nothing to resolve against. Row suppression and header rendering are the same code path — no setting separates them. `empty: true` on the area is necessary but not sufficient.
+
+**What was built instead.** A dedicated page, leaving core's view untouched for Tags:
+
+- **`views.view.location_page`** at `locations/%`. Base = node, contextual filter on `field_location_target_id` (*not* `taxonomy_index`, which would also match tags), validator restricted to the `locations` bundle with `fail: not found`. A header area of type **Entity: Taxonomy term** targeting `{{ raw_arguments.field_location_target_id }}` renders the map and address. Upcoming events below, `group_rows: false` for one row per occurrence.
+  - The header token resolves here — unlike dead end 2 — because a valid location tid always passes validation. The failure mode is a clean 404 on a bad ID, not a silently half-rendered page.
+- **Rabbit Hole** (2.x — configured via `rabbit_hole.settings.enabled_entity_types`, *not* the deprecated `rh_taxonomy` submodule) redirects the `locations` vocabulary to `/locations/[term:tid]`. This is what makes every existing and future link to a location term land on the new page, including the linked term name that core's `taxonomy-term.html.twig` already renders inside the Card on event pages. It works despite Views owning the route because Views preserves the route *name*, and Rabbit Hole matches on `^entity\.(.+)\.canonical$`.
+- No pathauto pattern for locations. `/locations/[term:name]` would have collided with the view's own `locations/%` path — aliases resolve before routing, so the readable URL would have landed on the core term page and only `/locations/123` would reach the view. Tags keep `/tags/[term:name]`.
+
+**Debugging note.** Rabbit Hole is bypassed for any user with `rabbit hole bypass taxonomy_term` — which **uid 1 has implicitly**. An admin will see the un-redirected term page while anonymous users redirect correctly. Set `bypass_message: true` on the behavior settings while working, or `no_bypass: true` to force the redirect for everyone. Verify with `curl -sI` (anonymous) rather than a logged-in browser.
 
 ### 4d. Map on the Event page
 Calendar Event → Manage Display: set `field_location` formatter to **Rendered entity**, view mode **Card** (built in 4c) — reuses the same map+address block.
@@ -213,6 +297,15 @@ Content view, type = Calendar Event, machine name `location_upcoming_events`.
 - Filters: Published = Yes; `field_event_date` end/value ≥ "now" (relative date).
 - Contextual filter: Has taxonomy term ID (on `field_location`), default "Taxonomy term ID from URL".
 - Sort: `field_event_date` ascending. Display: Block only.
+- Fields: Title **and `field_event_date`** (formatter `smartdate_default`, format `compact`). The build initially shipped Title only, which left a block whose entire purpose is "when is something happening here" showing no dates.
+
+**`group_rows: false` on the date field — and this is deliberately the opposite of §6a.** Views emits one result row per matching delta and renders only that delta's value, so a weekly event lists as consecutive dated rows ("Weekly Vigil — Tue Aug 5", "— Tue Aug 12") merged chronologically with one-off events. That is the correct shape for a listing.
+
+On `/calendar`, `group_rows` must stay **true**, because FullCalendar's preprocessor reads deltas straight off the entity and splitting rows there multiplies events. Both settings are right for their own display; do not "fix" one to match the other.
+
+**`distinct` stays false here**, also unlike §6a. The row multiplication caused by joining `node__field_event_date` is precisely what produces one row per occurrence — which this view wants and the calendar view does not.
+
+Because the pager is `some / 5`, getting this wrong is very visible: before the date field was added, a single weekly recurring event filled the whole block with five identical copies of itself.
 
 ---
 
@@ -223,6 +316,8 @@ Reuse `/admin/content?type=calendar_event&status=2` — no custom view needed. O
 
 ### 7b. Pending locations (required)
 Taxonomy term view, Vocabulary = Locations, machine name `pending_locations`. Page display at `/admin/content/locations-pending`, access permission: "Administer taxonomy". Admin clicks through, checks **Published**, saves.
+
+This queue covers **locations only**. Tags are published on creation and reviewed separately at `/admin/content/tags-review` — see §3e for why the two vocabularies are treated differently.
 
 - **Filter: `Published = No`** (not `field_approved = No` — that field was dropped; see §2a/§3).
 - **Fields: Name** (linked to term edit form) **+ Address.** Not "Created": taxonomy terms have no `created` base field in core, unlike nodes. Sort by **Term ID descending** for newest-first, which is what "Created" was there to provide. Terms *do* have a `changed` base field if a timestamp column is genuinely wanted.
