@@ -39,7 +39,7 @@ content:
       height: 400
       height_unit: px
       hide_empty_map: false
-      disable_wheel: false
+      disable_wheel: true
       gesture_handling: false
       fitbounds_options: '{"padding":[0,0]}'
       reset_map:
@@ -126,13 +126,14 @@ content:
       map_lazy_load:
         lazy_load: false
     third_party_settings: {  }
-    weight: 3
+    weight: 1
     region: content
   field_location_image:
-    type: entity_reference_label
-    label: above
+    type: entity_reference_entity_view
+    label: hidden
     settings:
-      link: true
+      view_mode: default
+      link: false
     third_party_settings: {  }
     weight: 0
     region: content
@@ -141,7 +142,7 @@ content:
     label: hidden
     settings: {  }
     third_party_settings: {  }
-    weight: 1
+    weight: 3
     region: content
 hidden:
   description: true
