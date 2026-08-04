@@ -11,8 +11,8 @@ dependencies:
     - olivero
 id: olivero_views_block__location_upcoming_events_block_1
 theme: olivero
-region: content
-weight: 0
+region: content_below
+weight: -8
 provider: null
 plugin: 'views_block:location_upcoming_events-block_1'
 settings:
