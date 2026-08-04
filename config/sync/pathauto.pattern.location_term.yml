@@ -1,0 +1,23 @@
+uuid: 85334e06-f84a-45c6-b09d-ab2999cd49ea
+langcode: en
+status: true
+dependencies:
+  config:
+    - taxonomy.vocabulary.locations
+  module:
+    - taxonomy
+id: location_term
+label: 'Location term'
+type: 'canonical_entities:taxonomy_term'
+pattern: '/locations/[term:name]'
+selection_criteria:
+  8a09d70f-2e34-452c-be80-4b628a6625f0:
+    id: 'entity_bundle:taxonomy_term'
+    negate: false
+    context_mapping:
+      taxonomy_term: taxonomy_term
+    bundles:
+      locations: locations
+selection_logic: and
+weight: -5
+relationships: {  }

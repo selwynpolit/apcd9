@@ -1,22 +1,21 @@
-uuid: 03c4923c-7715-40c6-abc3-7f24f7de7e3e
+uuid: 3c1d7f4a-9b02-4e18-8d5a-6a2f7e91c4b3
 langcode: en
 status: true
 dependencies:
   config:
-    - node.type.calendar_event
     - system.menu.main
+    - taxonomy.vocabulary.tags
   module:
-    - better_exposed_filters
-    - node
+    - taxonomy
     - user
     - views_bulk_operations
-id: pending_events
-label: 'Pending events'
+id: tags_review
+label: 'Tags Review'
 module: views
-description: ''
+description: 'Newest tags first, for reviewing and cleaning up terms created by anonymous event submitters.'
 tag: ''
-base_table: node_field_data
-base_field: nid
+base_table: taxonomy_term_field_data
+base_field: tid
 display:
   default:
     id: default
@@ -24,7 +23,7 @@ display:
     display_plugin: default
     position: 0
     display_options:
-      title: 'Pending events'
+      title: 'Tags Review'
       fields:
         views_bulk_operations_bulk_form:
           id: views_bulk_operations_bulk_form
@@ -88,35 +87,35 @@ display:
             -
               action_id: views_bulk_operations_delete_entity
               preconfiguration:
-                add_confirmation: false
+                add_confirmation: true
                 confirm_help_text: ''
                 label_override: ''
                 message_override: ''
             -
-              action_id: 'entity:publish_action:node'
+              action_id: 'entity:publish_action:taxonomy_term'
               preconfiguration:
                 add_confirmation: false
                 confirm_help_text: ''
                 label_override: ''
                 message_override: ''
             -
-              action_id: 'entity:unpublish_action:node'
+              action_id: 'entity:unpublish_action:taxonomy_term'
               preconfiguration:
                 add_confirmation: false
                 confirm_help_text: ''
                 label_override: ''
                 message_override: ''
-        nid:
-          id: nid
-          table: node_field_data
-          field: nid
+        tid:
+          id: tid
+          table: taxonomy_term_field_data
+          field: tid
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: node
-          entity_field: nid
+          entity_type: taxonomy_term
+          entity_field: tid
           plugin_id: field
-          label: ID
+          label: 'Term ID'
           exclude: false
           alter:
             alter_text: false
@@ -172,32 +171,50 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        title:
-          id: title
-          table: node_field_data
-          field: title
+        name:
+          id: name
+          table: taxonomy_term_field_data
+          field: name
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: node
-          entity_field: title
-          plugin_id: field
-          label: Title
+          entity_type: taxonomy_term
+          entity_field: name
+          plugin_id: term_name
+          label: Tag
           exclude: false
           alter:
             alter_text: false
+            text: ''
             make_link: false
+            path: ''
             absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
             word_boundary: false
             ellipsis: false
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
             strip_tags: false
             trim: false
+            preserve_tags: ''
             html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -219,14 +236,15 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+          convert_spaces: false
         status:
           id: status
-          table: node_field_data
+          table: taxonomy_term_field_data
           field: status
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: node
+          entity_type: taxonomy_term
           entity_field: status
           plugin_id: field
           label: Published
@@ -286,17 +304,17 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        created:
-          id: created
-          table: node_field_data
-          field: created
+        revision_created:
+          id: revision_created
+          table: taxonomy_term_revision
+          field: revision_created
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: node
-          entity_field: created
+          entity_type: taxonomy_term
+          entity_field: revision_created
           plugin_id: field
-          label: 'Authored on'
+          label: Created
           exclude: false
           alter:
             alter_text: false
@@ -347,7 +365,7 @@ display:
               date_format: long
               custom_date_format: ''
             time_diff:
-              enabled: false
+              enabled: true
               future_format: '@interval hence'
               past_format: '@interval ago'
               granularity: 2
@@ -363,17 +381,17 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        uid:
-          id: uid
-          table: node_field_data
-          field: uid
+        revision_user:
+          id: revision_user
+          table: taxonomy_term_revision
+          field: revision_user
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: node
-          entity_field: uid
+          entity_type: taxonomy_term
+          entity_field: revision_user
           plugin_id: field
-          label: Author
+          label: 'Created by'
           exclude: false
           alter:
             alter_text: false
@@ -417,7 +435,7 @@ display:
           click_sort_column: target_id
           type: entity_reference_label
           settings:
-            link: true
+            link: false
           group_column: target_id
           group_columns: {  }
           group_rows: true
@@ -428,118 +446,12 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        view_node:
-          id: view_node
-          table: node
-          field: view_node
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: node
-          plugin_id: entity_link
-          label: 'Link to Content'
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          text: view
-          output_url_as_text: true
-          absolute: false
-        edit_node:
-          id: edit_node
-          table: node
-          field: edit_node
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: node
-          plugin_id: entity_link_edit
-          label: Edit
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          text: edit
-          output_url_as_text: false
-          absolute: false
       pager:
         type: mini
         options:
           offset: 0
           pagination_heading_level: h4
-          items_per_page: 20
+          items_per_page: 50
           total_pages: null
           id: 0
           tags:
@@ -554,112 +466,71 @@ display:
             offset: false
             offset_label: Offset
       exposed_form:
-        type: bef
+        type: basic
         options:
           submit_button: Apply
-          reset_button: false
+          reset_button: true
           reset_button_label: Reset
           exposed_sorts_label: 'Sort by'
           expose_sort_order: true
           sort_asc_label: Asc
           sort_desc_label: Desc
-          text_input_required: 'Select any filter and click on Apply to see results'
-          text_input_required_format: basic_html
-          bef:
-            general:
-              autosubmit: true
-              auto_submit_sort_only: false
-              autosubmit_breakpoint: ''
-              autosubmit_exclude_textfield: false
-              autosubmit_textfield_delay: 500
-              autosubmit_textfield_minimum_length: 3
-              autosubmit_hide: true
-              input_required: false
-              allow_secondary: false
-              secondary_label: 'Advanced options'
-              secondary_open: false
-              reset_button_always_show: false
-            filter:
-              status:
-                plugin_id: bef
-                advanced:
-                  sort_options: false
-                  sort_options_method: alphabetical_asc
-                  sort_options_natural: true
-                  rewrite:
-                    filter_rewrite_values: ''
-                    filter_rewrite_values_key: false
-                  collapsible: false
-                  collapsible_disable_automatic_open: false
-                  open_by_default: false
-                  is_secondary: false
-                  hide_label: false
-                  field_classes: ''
-                select_all_none: false
-                select_all_none_nested: false
-                display_inline: true
-                soft_limit: 0
-                soft_limit_label_less: 'Show less'
-                soft_limit_label_more: 'Show more'
-                scrollable: false
-                scrollable_height: 300
       access:
         type: perm
         options:
-          perm: 'edit any calendar_event content'
+          perm: 'administer taxonomy'
       cache:
         type: tag
         options: {  }
       empty: {  }
       sorts:
-        created:
-          id: created
-          table: node_field_data
-          field: created
+        tid:
+          id: tid
+          table: taxonomy_term_field_data
+          field: tid
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: node
-          entity_field: created
-          plugin_id: date
+          entity_type: taxonomy_term
+          entity_field: tid
+          plugin_id: standard
           order: DESC
           expose:
             label: ''
             field_identifier: ''
           exposed: false
-          granularity: second
       arguments: {  }
       filters:
-        status:
-          id: status
-          table: node_field_data
-          field: status
+        vid:
+          id: vid
+          table: taxonomy_term_field_data
+          field: vid
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: node
-          entity_field: status
-          plugin_id: boolean
-          operator: '='
-          value: All
+          entity_type: taxonomy_term
+          entity_field: vid
+          plugin_id: bundle
+          operator: in
+          value:
+            tags: tags
           group: 1
-          exposed: true
+          exposed: false
           expose:
             operator_id: ''
-            label: 'Published status'
+            label: ''
             description: ''
             use_operator: false
-            operator: status_op
+            operator: ''
             operator_limit_selection: false
             operator_list: {  }
-            identifier: status
+            identifier: ''
             required: false
             remember: false
             multiple: false
             remember_roles:
               authenticated: authenticated
-              anonymous: '0'
-              administrator: '0'
+            reduce: false
           is_grouped: false
           group_info:
             label: ''
@@ -672,15 +543,47 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
-        type:
-          id: type
-          table: node_field_data
-          field: type
-          entity_type: node
-          entity_field: type
-          plugin_id: bundle
-          value:
-            calendar_event: calendar_event
+        name:
+          id: name
+          table: taxonomy_term_field_data
+          field: name
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: taxonomy_term
+          entity_field: name
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: name_op
+            label: 'Tag name contains'
+            description: 'Search for near-duplicates before deleting or merging.'
+            use_operator: false
+            operator: name_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: name
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            placeholder: ''
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
       style:
         type: table
         options:
@@ -689,40 +592,26 @@ display:
           default_row_class: true
           columns:
             views_bulk_operations_bulk_form: views_bulk_operations_bulk_form
-            nid: nid
-            title: title
-            uid: uid
-            created: created
+            tid: tid
+            name: name
             status: status
-          default: '-1'
+            revision_created: revision_created
+            revision_user: revision_user
+          default: revision_created
           info:
             views_bulk_operations_bulk_form:
               align: ''
               separator: ''
               empty_column: false
               responsive: ''
-            nid:
-              sortable: false
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-            title:
+            tid:
               sortable: true
-              default_sort_order: asc
+              default_sort_order: desc
               align: ''
               separator: ''
               empty_column: false
-              responsive: ''
-            uid:
-              sortable: true
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-            created:
+              responsive: priority-low
+            name:
               sortable: true
               default_sort_order: asc
               align: ''
@@ -735,11 +624,25 @@ display:
               align: ''
               separator: ''
               empty_column: false
+              responsive: priority-low
+            revision_created:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
               responsive: ''
+            revision_user:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
           override: true
           sticky: true
           summary: ''
-          empty_table: false
+          empty_table: true
           caption: ''
           description: ''
       row:
@@ -763,7 +666,6 @@ display:
         - 'languages:language_interface'
         - url
         - url.query_args
-        - 'user.node_grants:view'
         - user.permissions
       tags: {  }
   page_1:
@@ -773,12 +675,16 @@ display:
     position: 1
     display_options:
       display_extenders: {  }
-      path: admin/content/pending-events
+      path: admin/content/tags-review
       menu:
         type: normal
-        title: 'Pending events'
+        title: 'Tags Review'
+        description: 'Review and clean up tags created by event submitters.'
+        weight: 0
+        expanded: false
         menu_name: main
         parent: ''
+        context: '0'
     cache_metadata:
       max-age: 0
       contexts:
@@ -786,6 +692,5 @@ display:
         - 'languages:language_interface'
         - url
         - url.query_args
-        - 'user.node_grants:view'
         - user.permissions
       tags: {  }

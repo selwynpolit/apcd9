@@ -15,13 +15,11 @@ use Drupal\taxonomy\TermInterface;
 /**
  * Implements hook_ENTITY_TYPE_presave() for taxonomy_term entities.
  *
- * Location terms auto-created by anonymous event submitters are saved
+ * Locations terms auto-created by anonymous event submitters are saved
  * unpublished so they stay out of the reference autocomplete (core's
  * TermSelection::buildEntityQuery() filters on status for non-admins) and off
  * the public term page until an admin publishes them.
  *
- * Core's TermSelection::createNewEntity() explicitly calls setPublished() on
- * auto-created terms, so this presave is what actually holds the gate shut.
  */
 function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
   if ($term->isNew() && $term->bundle() === 'locations') {
