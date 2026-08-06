@@ -6,6 +6,7 @@
  */
 
 use Drupal\apc_calendar\Controller\EventSubmittedController;
+use Drupal\Component\Serialization\Json;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Url;
@@ -41,11 +42,66 @@ function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
  * Send them to a dedicated thank-you page with an accurate message instead.
  */
 function apc_calendar_form_node_calendar_event_form_alter(array &$form, FormStateInterface $form_state): void {
-  if (!\Drupal::currentUser()->isAnonymous()) {
+  $account = \Drupal::currentUser();
+
+  // The confirmation redirect is anonymous-only — authenticated submitters can
+  // view their own unpublished node, so core's default behaviour is correct
+  // for them.
+  if ($account->isAnonymous()) {
+    // Append after ::save so this redirect wins over the one NodeForm sets.
+    $form['actions']['submit']['#submit'][] = 'apc_calendar_event_submit_confirmation';
+  }
+
+  // The add-location affordance is for everyone who may create a location,
+  // gated on the same permission the route requires so the link can never lead
+  // to a 403. Keeping this outside the anonymous branch matters: it carries the
+  // library attachment for the autocomplete enhancement as well as the link.
+  if ($account->hasPermission('create terms in locations')) {
+    apc_calendar_attach_add_location_link($form);
+  }
+}
+
+/**
+ * Adds the "add a new location" modal trigger beneath the Location field.
+ *
+ * The autocomplete does the searching; this only covers the case where nothing
+ * matches. Rendered as a plain link with core's dialog attributes rather than a
+ * button, so it stays quiet next to the field it supplements.
+ *
+ * @see \Drupal\apc_calendar\Form\AddLocationForm
+ */
+function apc_calendar_attach_add_location_link(array &$form): void {
+  if (!isset($form['field_location']['widget'][0]['target_id'])) {
     return;
   }
-  // Append after ::save so this redirect wins over the one NodeForm sets.
-  $form['actions']['submit']['#submit'][] = 'apc_calendar_event_submit_confirmation';
+
+  // The modal's AJAX response writes the new location back into this element,
+  // so give it a stable hook that does not depend on Drupal's generated IDs.
+  $form['field_location']['widget'][0]['target_id']['#attributes']['data-apc-location-autocomplete'] = TRUE;
+
+  $form['field_location']['apc_add_location'] = [
+    '#type' => 'link',
+    '#title' => t('Can’t find it? Add a new location'),
+    '#url' => Url::fromRoute('apc_calendar.add_location'),
+    '#attributes' => [
+      'class' => ['use-ajax', 'apc-add-location-link'],
+      'data-dialog-type' => 'modal',
+      'data-dialog-options' => Json::encode([
+        'width' => 520,
+        'title' => t('Add a new location')->render(),
+      ]),
+    ],
+    '#attached' => [
+      'library' => [
+        'core/drupal.dialog.ajax',
+        // Adds "＋ Add a new venue…" to the autocomplete results, which is the
+        // only affordance visible in the zero-results case. The link above is
+        // the no-JavaScript fallback and stays regardless.
+        'apc_calendar/add_location_autocomplete',
+      ],
+    ],
+    '#weight' => 10,
+  ];
 }
 
 /**

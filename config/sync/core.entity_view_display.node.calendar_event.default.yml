@@ -5,6 +5,7 @@ dependencies:
   config:
     - field.field.node.calendar_event.body
     - field.field.node.calendar_event.field_event_date
+    - field.field.node.calendar_event.field_event_image
     - field.field.node.calendar_event.field_location
     - field.field.node.calendar_event.field_tags
     - node.type.calendar_event
@@ -22,7 +23,7 @@ content:
     label: hidden
     settings: {  }
     third_party_settings: {  }
-    weight: 101
+    weight: 1
     region: content
   field_event_date:
     type: smartdate_recurring
@@ -49,7 +50,16 @@ content:
       show_next: false
       current_upcoming: true
     third_party_settings: {  }
-    weight: 102
+    weight: 2
+    region: content
+  field_event_image:
+    type: entity_reference_entity_view
+    label: hidden
+    settings:
+      view_mode: default
+      link: false
+    third_party_settings: {  }
+    weight: 0
     region: content
   field_location:
     type: entity_reference_entity_view
@@ -58,19 +68,19 @@ content:
       view_mode: card
       link: false
     third_party_settings: {  }
-    weight: 103
+    weight: 3
     region: content
   field_tags:
     type: entity_reference_label
-    label: above
+    label: hidden
     settings:
       link: true
     third_party_settings: {  }
-    weight: 10
+    weight: 4
     region: content
   links:
     settings: {  }
     third_party_settings: {  }
-    weight: 100
+    weight: 5
     region: content
 hidden: {  }

@@ -10,7 +10,7 @@ dependencies:
     - taxonomy.vocabulary.locations
   module:
     - address
-    - geofield
+    - leaflet
     - media_library
     - path
     - text
@@ -27,11 +27,36 @@ content:
       wrapper_type: fieldset
     third_party_settings: {  }
   field_geofield:
-    type: geofield_latlon
-    weight: 7
+    type: leaflet_widget_default
+    weight: 2
     region: content
     settings:
-      html5_geolocation: false
+      input:
+        show: true
+        readonly: true
+      geocoder:
+        control: true
+        settings:
+          popup: false
+          position: topleft
+          input_size: 30
+          providers:
+            nominatim:
+              weight: 0
+              checked: true
+          min_terms: 4
+          delay: 800
+          zoom: 16
+          options: ''
+      leaflet_map: 'OSM Mapnik'
+      map_position:
+        force: false
+        center:
+          lat: 30.2672
+          lon: -97.7431
+        zoom: 11
+        minZoom: 1
+        maxZoom: 20
     third_party_settings: {  }
   field_location_image:
     type: media_library_widget

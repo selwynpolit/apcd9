@@ -24,7 +24,7 @@ display:
     display_plugin: default
     position: 0
     display_options:
-      title: "Selwyn's location view"
+      title: ''
       fields:
         title:
           id: title
@@ -360,6 +360,17 @@ display:
           view_mode: full
           tokenize: true
           bypass_access: false
+        area_text_custom:
+          id: area_text_custom
+          table: views
+          field: area_text_custom
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text_custom
+          empty: false
+          content: '<h2>Upcoming Events</h2>'
+          tokenize: false
       footer: {  }
       display_extenders: {  }
     cache_metadata:
