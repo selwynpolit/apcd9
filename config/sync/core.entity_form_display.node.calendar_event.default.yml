@@ -5,10 +5,12 @@ dependencies:
   config:
     - field.field.node.calendar_event.body
     - field.field.node.calendar_event.field_event_date
+    - field.field.node.calendar_event.field_event_image
     - field.field.node.calendar_event.field_location
     - field.field.node.calendar_event.field_tags
     - node.type.calendar_event
   module:
+    - media_library
     - path
     - smart_date
     - text
@@ -29,7 +31,7 @@ content:
     third_party_settings: {  }
   created:
     type: datetime_timestamp
-    weight: 5
+    weight: 7
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -53,6 +55,13 @@ content:
       duration_overlay: true
       separator: to
     third_party_settings: {  }
+  field_event_image:
+    type: media_library_widget
+    weight: 5
+    region: content
+    settings:
+      media_types: {  }
+    third_party_settings: {  }
   field_location:
     type: entity_reference_autocomplete
     weight: 2
@@ -61,11 +70,11 @@ content:
       match_operator: CONTAINS
       match_limit: 10
       size: 60
-      placeholder: ''
+      placeholder: 'Start typing a venue name…'
     third_party_settings: {  }
   field_tags:
     type: entity_reference_autocomplete_tags
-    weight: 3
+    weight: 4
     region: content
     settings:
       match_operator: CONTAINS
@@ -75,37 +84,37 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 9
+    weight: 11
     region: content
     settings: {  }
     third_party_settings: {  }
   promote:
     type: boolean_checkbox
-    weight: 7
+    weight: 9
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   simple_sitemap:
-    weight: 6
+    weight: 8
     region: content
     settings: {  }
     third_party_settings: {  }
   simple_sitemap_index_now:
-    weight: 11
+    weight: 13
     region: content
     settings: {  }
     third_party_settings: {  }
   status:
     type: boolean_checkbox
-    weight: 10
+    weight: 12
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   sticky:
     type: boolean_checkbox
-    weight: 8
+    weight: 10
     region: content
     settings:
       display_label: true
@@ -120,7 +129,7 @@ content:
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 4
+    weight: 6
     region: content
     settings:
       match_operator: CONTAINS

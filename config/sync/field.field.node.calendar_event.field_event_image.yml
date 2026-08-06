@@ -1,29 +1,29 @@
-uuid: 5b5cbf52-1dff-41d5-92fa-f6fe5400d779
+uuid: 33513135-e717-4b8a-95a1-9222a74d065d
 langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.node.field_location
+    - field.storage.node.field_event_image
+    - media.type.image
     - node.type.calendar_event
-    - taxonomy.vocabulary.locations
-id: node.calendar_event.field_location
-field_name: field_location
+id: node.calendar_event.field_event_image
+field_name: field_event_image
 entity_type: node
 bundle: calendar_event
-label: Location
+label: 'Event Image'
 description: ''
 required: false
 translatable: false
 default_value: {  }
 default_value_callback: ''
 settings:
-  handler: apc_locations
+  handler: 'default:media'
   handler_settings:
     target_bundles:
-      locations: locations
+      image: image
     sort:
-      field: name
-      direction: asc
+      field: _none
+      direction: ASC
     auto_create: false
     auto_create_bundle: ''
 field_type: entity_reference

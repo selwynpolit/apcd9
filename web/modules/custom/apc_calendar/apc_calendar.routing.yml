@@ -9,3 +9,15 @@ apc_calendar.event_submitted:
     # The response renders the visitor's own unpublished node, so it is
     # per-session and must never be stored in the anonymous page cache.
     no_cache: TRUE
+
+apc_calendar.add_location:
+  path: '/calendar/location/add'
+  defaults:
+    _title: 'Add a location'
+    _form: '\Drupal\apc_calendar\Form\AddLocationForm'
+  requirements:
+    # The same permission core checks for creating a term in this vocabulary.
+    # Anonymous already holds it; see the plan, §3d.
+    _permission: 'create terms in locations'
+  options:
+    no_cache: TRUE
