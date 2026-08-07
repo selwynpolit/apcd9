@@ -20,6 +20,7 @@
     ],
     "require": {
         "composer/installers": "^1.9",
+        "cweagans/composer-patches": "^2.0",
         "drupal/address": "^2.0",
         "drupal/addtocal": "^3.0@beta",
         "drupal/admin_toolbar": "^3.0",
@@ -85,7 +86,8 @@
             "drupal/core-composer-scaffold": true,
             "drupal/core-project-message": true,
             "php-http/discovery": true,
-            "oomphinc/composer-installers-extender": true
+            "oomphinc/composer-installers-extender": true,
+            "cweagans/composer-patches": true
         }
     },
     "extra": {
@@ -95,6 +97,11 @@
             }
         },
         "installer-types": ["npm-asset"],
+        "patches": {
+            "drupal/fullcalendar_view": {
+                "eventClick() ignores the dialogModal setting and navigates anyway": "patches/fullcalendar_view-eventclick-respect-dialogmodal.patch"
+            }
+        },
         "installer-paths": {
             "web/core": [
                 "type:drupal-core"
