@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall hooks for the APC Calendar module.
+ */
+
+declare(strict_types=1);
+
+use Drupal\field\Entity\FieldConfig;
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Hands `field_location` back to core's selection handler.
+ *
+ * Without this, uninstalling the module leaves the field pointing at the
+ * `apc_locations` plugin, which no longer exists. That is not a soft failure:
+ * SelectionPluginManager::getPluginId() does
+ *
+ * @code
+ *   uasort($selection_handler_groups[$base_plugin_id], ...);
+ * @endcode
+ *
+ * on a group that is now missing, so every page rendering the field — the event
+ * form, the autocomplete endpoint, admin content screens — dies with
+ * "uasort(): Argument #1 must be of type array, null given" and no indication of
+ * the cause.
+ *
+ * `auto_create` deliberately stays FALSE. Turning it back on would restore the
+ * old behaviour where typing an unmatched name silently creates a bare term with
+ * no address, which is what the modal exists to replace. A site without this
+ * module should simply require an existing location.
+ */
+function apc_calendar_uninstall(): void {
+  $field = FieldConfig::loadByName('node', 'calendar_event', 'field_location');
+  if (!$field) {
+    return;
+  }
+
+  $settings = $field->getSetting('handler_settings') ?: [];
+  unset($settings['auto_create_bundle']);
+  $settings['auto_create'] = FALSE;
+
+  $field->setSetting('handler', 'default:taxonomy_term');
+  $field->setSetting('handler_settings', $settings);
+  $field->save();
+
+  \Drupal::messenger()->addStatus(t('The Location field has been reset to the default taxonomy term selection handler. Locations created by visitors but not yet approved will no longer be selectable by the person who added them.'));
+}

@@ -1,0 +1,11 @@
+uuid: 722eb9c5-7bd8-4741-a43a-1460f8819e34
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+id: node.calendar_item
+label: 'Calendar Item'
+description: 'For popup calendar item'
+targetEntityType: node
+cache: true

@@ -10,6 +10,22 @@ apc_calendar.event_submitted:
     # per-session and must never be stored in the anonymous page cache.
     no_cache: TRUE
 
+apc_calendar.event_popup:
+  path: '/calendar/event/{node}/{delta}'
+  defaults:
+    _title: 'Event'
+    _controller: '\Drupal\apc_calendar\Controller\EventPopupController::popup'
+  requirements:
+    # Node access is what stops this route becoming a way to read unpublished
+    # pending submissions. Do not relax it.
+    _entity_access: 'node.view'
+    node: \d+
+    delta: \d+
+  options:
+    parameters:
+      node:
+        type: 'entity:node'
+
 apc_calendar.add_location:
   path: '/calendar/location/add'
   defaults:

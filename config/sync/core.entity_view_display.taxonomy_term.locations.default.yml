@@ -19,7 +19,7 @@ mode: default
 content:
   field_address:
     type: address_default
-    label: above
+    label: hidden
     settings: {  }
     third_party_settings: {  }
     weight: 1
@@ -124,7 +124,7 @@ content:
     region: content
   field_location_image:
     type: entity_reference_entity_view
-    label: above
+    label: hidden
     settings:
       view_mode: default
       link: false

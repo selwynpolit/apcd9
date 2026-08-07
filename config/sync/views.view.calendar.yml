@@ -264,7 +264,7 @@ display:
           defaultLanguage: en
           languageSelector: 0
           dialogWindow: 0
-          openEntityInNewTab: 1
+          openEntityInNewTab: 0
           createEventLink: 0
           eventLimit: '2'
           tax_field: ''
@@ -272,7 +272,7 @@ display:
           color_bundle:
             calendar_event: '#3a87ad'
           rrule: ''
-          dialogModal: false
+          dialogModal: true
           dialogCanvas: false
           duration: ''
           slotDuration: '00:30:00'

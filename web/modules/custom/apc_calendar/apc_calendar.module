@@ -7,6 +7,7 @@
 
 use Drupal\apc_calendar\Controller\EventSubmittedController;
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Url;
@@ -206,6 +207,144 @@ function apc_calendar_mail(string $key, array &$message, array $params): void {
 
   $message['body'][] = t('Review and publish: @url', ['@url' => $params['edit_url']]);
   $message['body'][] = t('Full pending queue: @url', ['@url' => $params['queue_url']]);
+}
+
+/**
+ * Implements hook_entity_extra_field_info().
+ *
+ * Exposes "Directions" as a pseudo-field on locations so its placement is
+ * config, not code: it can be positioned, reordered or switched off per view
+ * mode from Manage Display, independently on default, card and compact_card.
+ *
+ * A Twig override would have needed a custom theme, and a Views field rewrite
+ * would only have covered the location page — not the card embedded in event
+ * pages and the calendar popup.
+ */
+function apc_calendar_entity_extra_field_info(): array {
+  $fields = [];
+
+  $fields['taxonomy_term']['locations']['display']['directions'] = [
+    'label' => t('Directions'),
+    'description' => t('Links to OpenStreetMap and Google Maps directions for this location.'),
+    'weight' => 10,
+    'visible' => FALSE,
+  ];
+
+  return $fields;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for taxonomy_term entities.
+ */
+function apc_calendar_taxonomy_term_view(array &$build, TermInterface $term, EntityViewDisplayInterface $display, $view_mode): void {
+  if ($term->bundle() !== 'locations' || !$display->getComponent('directions')) {
+    return;
+  }
+
+  $build['directions'] = apc_calendar_build_directions($term);
+}
+
+/**
+ * Builds the directions links for a location term.
+ *
+ * Coordinates are preferred over the address: they are unambiguous, and they
+ * route correctly even where the address itself cannot be geocoded — which is
+ * common enough here that it is the reason the map is best-effort. The address
+ * is the fallback, and both services will geocode it themselves.
+ *
+ * Renders "No directions available" rather than nothing when a location has
+ * neither, so an editor reviewing the queue can see the location is incomplete
+ * instead of wondering whether the feature is broken.
+ */
+function apc_calendar_build_directions(TermInterface $term): array {
+  $destination = NULL;
+
+  if ($term->hasField('field_geofield') && !$term->get('field_geofield')->isEmpty()) {
+    $geo = $term->get('field_geofield')->first();
+    $lat = $geo->get('lat')->getValue();
+    $lon = $geo->get('lon')->getValue();
+    if ($lat !== NULL && $lon !== NULL) {
+      $destination = $lat . ',' . $lon;
+    }
+  }
+
+  if ($destination === NULL) {
+    $destination = apc_calendar_format_address($term);
+  }
+
+  if ($destination === NULL) {
+    return [
+      '#type' => 'html_tag',
+      '#tag' => 'p',
+      '#attributes' => ['class' => ['apc-directions', 'apc-directions--none']],
+      '#value' => t('No directions available'),
+    ];
+  }
+
+  $encoded = rawurlencode($destination);
+
+  $services = [
+    'osm' => [
+      'title' => t('OpenStreetMap'),
+      'url' => 'https://www.openstreetmap.org/directions?to=' . $encoded,
+    ],
+    'google' => [
+      'title' => t('Google Maps'),
+      'url' => 'https://www.google.com/maps/dir/?api=1&destination=' . $encoded,
+    ],
+  ];
+
+  $build = [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['apc-directions']],
+    'label' => [
+      '#type' => 'html_tag',
+      '#tag' => 'span',
+      '#attributes' => ['class' => ['apc-directions__label']],
+      '#value' => t('Directions:'),
+    ],
+  ];
+
+  foreach ($services as $key => $service) {
+    $build[$key] = [
+      '#type' => 'link',
+      '#title' => $service['title'],
+      '#url' => Url::fromUri($service['url']),
+      '#attributes' => [
+        'class' => ['apc-directions__link', 'apc-directions__link--' . $key],
+        'target' => '_blank',
+        // Without noopener the opened page gets a handle on this window.
+        'rel' => 'noopener noreferrer',
+      ],
+    ];
+  }
+
+  return $build;
+}
+
+/**
+ * Formats a location's address as a single line for a map service query.
+ *
+ * Returns NULL when there is nothing usable, so callers can distinguish "no
+ * address" from an address that happens to be sparse.
+ */
+function apc_calendar_format_address(TermInterface $term): ?string {
+  if (!$term->hasField('field_address') || $term->get('field_address')->isEmpty()) {
+    return NULL;
+  }
+
+  $address = $term->get('field_address')->first();
+  $parts = array_filter([
+    $address->get('address_line1')->getValue(),
+    $address->get('address_line2')->getValue(),
+    $address->get('locality')->getValue(),
+    trim(implode(' ', array_filter([
+      $address->get('administrative_area')->getValue(),
+      $address->get('postal_code')->getValue(),
+    ]))),
+  ], static fn ($part) => is_string($part) && trim($part) !== '');
+
+  return $parts ? implode(', ', $parts) : NULL;
 }
 
 /**

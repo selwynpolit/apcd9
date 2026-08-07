@@ -36,7 +36,7 @@ content:
     settings:
       multiple_map: false
       leaflet_map: openstreetmap
-      height: 400
+      height: 300
       height_unit: px
       hide_empty_map: false
       disable_wheel: true
@@ -126,7 +126,7 @@ content:
       map_lazy_load:
         lazy_load: false
     third_party_settings: {  }
-    weight: 1
+    weight: 0
     region: content
   field_location_image:
     type: entity_reference_entity_view
@@ -135,7 +135,7 @@ content:
       view_mode: default
       link: false
     third_party_settings: {  }
-    weight: 0
+    weight: 1
     region: content
   field_notes:
     type: text_default
