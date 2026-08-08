@@ -1,0 +1,22 @@
+uuid: 9b3da831-661b-4532-83f4-f1e6a5d602af
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - apc_brown
+_core:
+  default_config_hash: VhBzWb7lMRtIOg9G7VSw_0uopi-7zXeHq4vXqqV1HFE
+id: apc_brown_breadcrumbs
+theme: apc_brown
+region: breadcrumb
+weight: 0
+provider: null
+plugin: system_breadcrumb_block
+settings:
+  id: system_breadcrumb_block
+  label: Breadcrumbs
+  label_display: '0'
+  provider: system
+visibility: {  }

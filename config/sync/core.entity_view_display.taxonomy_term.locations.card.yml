@@ -23,12 +23,17 @@ targetEntityType: taxonomy_term
 bundle: locations
 mode: card
 content:
+  directions:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
   field_address:
     type: address_default
     label: hidden
     settings: {  }
     third_party_settings: {  }
-    weight: 2
+    weight: 3
     region: content
   field_geofield:
     type: leaflet_formatter_default
@@ -135,14 +140,14 @@ content:
       view_mode: default
       link: false
     third_party_settings: {  }
-    weight: 1
+    weight: 2
     region: content
   field_notes:
     type: text_default
     label: hidden
     settings: {  }
     third_party_settings: {  }
-    weight: 3
+    weight: 4
     region: content
 hidden:
   description: true

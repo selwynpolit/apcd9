@@ -1,0 +1,357 @@
+/**
+ * @file
+ * APC additions on top of the forked Olivero base.
+ *
+ * The palette itself is not here — it lives in css/base/variables.css, edited
+ * at source. This file carries the Organic design tokens that Olivero has no
+ * equivalent for (accent ramps, radii, shadows) plus the rules for features
+ * this site adds: the FullCalendar view, Smart Date output, location cards and
+ * the directions links.
+ *
+ * Loaded last in the `theme` group so it can rely on everything above it.
+ */
+
+:root {
+  /* ── Ground (mirrors the values set in css/base/variables.css) ───────── */
+  --color-bg: #f5ead8;
+  --color-surface: #ebddc5;
+  --color-text: #201e1d;
+  --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+
+  /* ── Accent: shell brown. Matches --color--primary-50. ───────────────── */
+  --color-accent: #8a5a34;
+  --color-accent-100: #efe4d8;
+  --color-accent-200: #ddcbba;
+  --color-accent-300: #c9b09a;
+  --color-accent-400: #aa8668;
+  --color-accent-500: #8a5a34;
+  --color-accent-600: #774e2f;
+  --color-accent-700: #634329;
+  --color-accent-800: #503724;
+  --color-accent-900: #3e2d1f;
+
+  /* ── Accent 2: collar red. A pop colour for a small number of
+     high-emphasis moments — "Submit an event", featured badges. Not a second
+     UI voice; if it starts appearing on ordinary controls, something is
+     wrong. ─────────────────────────────────────────────────────────────── */
+  --color-accent-2: #b83f2e;
+  --color-accent-2-100: #f5e1d7;
+  --color-accent-2-600: #9c382a;
+  --color-accent-2-700: #813225;
+  --color-accent-2-800: #652b21;
+
+  /* ── Neutrals (Organic ramp; Olivero's greys are a separate scale) ───── */
+  --color-neutral-100: #f9f4ed;
+  --color-neutral-200: #eee7db;
+  --color-neutral-300: #dcd3c4;
+  --color-neutral-700: #645c50;
+  --color-neutral-800: #474238;
+  --color-neutral-900: #2e2b25;
+
+  --font-heading: var(--font-serif);
+  --font-body: var(--font-sans);
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2e2b25 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2e2b25 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2e2b25 22%, transparent);
+}
+
+/* ══ Site banner ════════════════════════════════════════════════════════
+   Matches the style guide's masthead: a flat dark-brown ground with the logo
+   as a rounded, shadowed mark beside the site name.
+
+   Olivero paints .site-branding with a two-stop gradient from --color--primary-50
+   to -40. With the brand colour set to the shell brown that is already in the
+   right family, but the design calls for the darkest step flat, so the gradient
+   is replaced rather than inherited. */
+
+/* The band is painted on .site-header__inner, not .site-branding.
+ *
+ * Olivero puts the gradient on the branding block, which is sized to its own
+ * content — hence a band that stops partway across. Moving the colour up to the
+ * header's inner wrapper makes it span the full header width while the logo and
+ * site name stay left-aligned inside it, which is what the design shows.
+ *
+ * A negative margin-inline-end on .site-branding (its default is a positive
+ * var(--sp)) would only extend the band by one container-padding, not to the
+ * edge, so it is not enough on its own. */
+.site-header__inner {
+  background: var(--color-accent-900);
+}
+
+.site-branding {
+  background-image: none;
+  background-color: transparent;
+}
+
+/* The nav panel sits on the band and must match it.
+ *
+ * .header-nav is both the wide-screen nav strip and the mobile slide-in panel —
+ * at >=75rem Olivero switches it to position:static and lays it out in the
+ * header grid. Olivero paints it --color--white, which now resolves to the cream
+ * ground, so it read as a pale cut-out sitting on the brown band.
+ *
+ * The border-block-start is not decorative: Olivero uses a thick border rather
+ * than padding to reserve room for the mobile close button, so it has to be
+ * recoloured with the background or it shows as a cream bar above the panel. */
+.header-nav {
+  border-block-start-color: var(--color-accent-900);
+  background-color: var(--color-accent-900);
+}
+
+.primary-nav__menu-link,
+.primary-nav__menu-link-inner,
+.secondary-nav__menu-link,
+.header-nav a {
+  color: var(--color-accent-100);
+}
+
+.primary-nav__menu-link:hover,
+.secondary-nav__menu-link:hover,
+.header-nav a:hover {
+  color: #fff;
+}
+
+/* Olivero's wide search toggle already uses a white magnifying glass, but its
+   active/underline states are drawn in --color--primary-50, which disappears
+   against the band. */
+.header-nav .search-button__icon,
+.header-nav svg {
+  color: var(--color-accent-100);
+  fill: currentColor;
+}
+
+/* The hamburger and its label sit on the band now. Olivero draws the icon bars
+   with border-top in --color--primary-50, which on the dark brown ground would
+   be brown-on-brown and effectively invisible. */
+.mobile-nav-button__label {
+  color: var(--color-accent-100);
+}
+
+.mobile-nav-button__icon,
+.mobile-nav-button__icon::before,
+.mobile-nav-button__icon::after {
+  border-top-color: var(--color-accent-100);
+}
+
+/* When the menu is open the middle bar is hidden to form the X; keep that. */
+.mobile-nav-button[aria-expanded="true"] .mobile-nav-button__icon {
+  border-top-color: transparent;
+}
+
+.site-branding__inner {
+  gap: var(--sp);
+}
+
+/* The logo is a square mark in the design. The source image is 127×100, so
+   object-fit crops rather than distorts until a square asset replaces it. */
+.site-branding__logo img,
+.site-branding img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (min-width: 43.75rem) {
+  .site-branding__logo img,
+  .site-branding img {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-lg);
+  }
+}
+
+.site-branding__name,
+.site-branding__name a,
+.site-branding__text {
+  color: #fff;
+}
+
+.site-branding__slogan {
+  color: var(--color-accent-100);
+}
+
+/* ══ Footer ═════════════════════════════════════════════════════════════
+   The style guide puts the footer on neutral-100 — a light band closing the
+   page, not the near-black slab Olivero ships.
+
+   Olivero uses a `background` shorthand with a two-stop gradient, so a flat
+   colour has to replace the whole shorthand; background-color alone leaves the
+   gradient painted over it. It also draws a black gutter down the inline-start
+   edge at wide viewports, which has to be recoloured or it reads as a stray
+   black bar against the light footer. */
+
+.site-footer {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-800);
+  border-top: 1px solid var(--color-divider);
+}
+
+.site-footer a {
+  color: var(--color-accent-700);
+}
+
+.site-footer a:hover {
+  color: var(--color-accent-900);
+  text-decoration: underline;
+}
+
+.site-footer__top,
+.site-footer__bottom {
+  background: transparent;
+}
+
+@media (min-width: 75rem) {
+  body:not(.is-always-mobile-nav) .site-footer {
+    border-inline-start-color: var(--color-neutral-100);
+  }
+}
+
+/* ══ Tags ═══════════════════════════════════════════════════════════════ */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+.tag-accent { background: var(--color-accent-100); color: var(--color-accent-800); }
+.tag-accent-2 { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+
+/* Taxonomy tag links rendered by the field formatter. */
+.field--name-field-tags .field__item a {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--color-accent-100);
+  color: var(--color-accent-800);
+  font-size: 11px;
+  text-decoration: none;
+}
+.field--name-field-tags .field__item a:hover {
+  background: var(--color-accent-200);
+  color: var(--color-accent-900);
+}
+
+/* ══ Calendar Event ═════════════════════════════════════════════════════ */
+
+/* Smart Date output. The recurring formatter emits a rule summary plus
+   instances; keep the summary prominent and the instances quiet. */
+.field--name-field-event-date time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--color-accent-700);
+}
+
+/* The location Card view mode, embedded on event pages. Core's taxonomy-term
+   template renders a linked term name above it — that heading is the event
+   page's route through to the location page. */
+.field--name-field-location .taxonomy-term {
+  padding: var(--sp);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+.field--name-field-location .taxonomy-term h2 {
+  margin: 0 0 var(--sp0-5);
+  font-size: 20px;
+}
+
+/* ══ Directions links ═══════════════════════════════════════════════════
+   Rendered by apc_calendar's "Directions" extra field. */
+
+.apc-directions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp0-5) var(--sp);
+  margin-block: var(--sp0-5);
+}
+.apc-directions__label {
+  font-size: 13px;
+  color: var(--color--gray-45);
+}
+.apc-directions--none {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--color--gray-45);
+}
+
+/* ══ FullCalendar (/calendar) ═══════════════════════════════════════════
+   FullCalendar v4 ships its own greys and blues; bring them onto the palette.
+   Event fill colour itself comes from the view's color_bundle setting. */
+
+.fc-toolbar h2 {
+  font-family: var(--font-heading);
+  font-size: 26px;
+}
+.fc-button-primary {
+  padding: 6px 14px;
+  border-color: var(--color--primary-50);
+  border-radius: 999px;
+  background: var(--color--primary-50);
+  color: var(--color-bg);
+  font-family: var(--font-heading);
+  font-size: 13px;
+  text-transform: none;
+}
+.fc-button-primary:not(:disabled):hover {
+  border-color: var(--color--primary-40);
+  background: var(--color--primary-40);
+}
+.fc-button-primary:not(:disabled).fc-button-active,
+.fc-button-primary:not(:disabled):active {
+  border-color: var(--color--primary-30);
+  background: var(--color--primary-30);
+}
+.fc-button-primary:disabled { opacity: 0.45; }
+
+.fc-unthemed td,
+.fc-unthemed th,
+.fc-unthemed thead,
+.fc-unthemed tbody,
+.fc-unthemed .fc-row,
+.fc-unthemed .fc-content,
+.fc-unthemed .fc-divider,
+.fc-unthemed .fc-popover,
+.fc-unthemed .fc-list-heading td {
+  border-color: var(--color-divider);
+}
+.fc-unthemed td.fc-today { background: var(--color-accent-100); }
+
+.fc-day-header {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.fc-event {
+  padding: 2px 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+/* ══ Location page (/locations/%) ═══════════════════════════════════════ */
+
+.view-location-page .view-header { margin-bottom: var(--sp2); }
+.view-location-page .views-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp0-5) var(--sp);
+  align-items: baseline;
+  padding: var(--sp0-75) 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.view-location-page .views-field-title {
+  font-family: var(--font-heading);
+  font-size: 18px;
+}

@@ -1,0 +1,25 @@
+uuid: 02923248-65c5-4d6c-b97d-754139df3793
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - apc_brown
+_core:
+  default_config_hash: n_nlgjggHVfQt2H__zvLOKB2YtjPDbQ5tHijF9LE1aM
+id: apc_brown_site_branding
+theme: apc_brown
+region: header
+weight: 0
+provider: null
+plugin: system_branding_block
+settings:
+  id: system_branding_block
+  label: 'Site branding'
+  label_display: '0'
+  provider: system
+  use_site_logo: true
+  use_site_name: true
+  use_site_slogan: false
+visibility: {  }

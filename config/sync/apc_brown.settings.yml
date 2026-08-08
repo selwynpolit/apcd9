@@ -1,0 +1,18 @@
+_core:
+  default_config_hash: LdsRgYddPoeww0HWiA5AKnQGZCtQvlkCzJ9Jw9TalTg
+logo:
+  use_default: false
+  path: themes/custom/apc_brown/images/apc_logo.jpg
+favicon:
+  use_default: true
+  path: ''
+features:
+  comment_user_picture: true
+  comment_user_verification: true
+  favicon: true
+  logo: true
+  name: true
+  node_user_picture: true
+  slogan: true
+base_primary_color: '#8a5a34'
+site_branding_bg_color: default

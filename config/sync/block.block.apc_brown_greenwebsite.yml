@@ -1,0 +1,25 @@
+uuid: 55ef428b-688f-4321-9552-fd35195f7157
+langcode: en
+status: true
+dependencies:
+  content:
+    - 'block_content:basic:63c57167-713f-4b45-a24b-dc8518271559'
+  module:
+    - block_content
+  theme:
+    - apc_brown
+id: apc_brown_greenwebsite
+theme: apc_brown
+region: footer_bottom
+weight: 0
+provider: null
+plugin: 'block_content:63c57167-713f-4b45-a24b-dc8518271559'
+settings:
+  id: 'block_content:63c57167-713f-4b45-a24b-dc8518271559'
+  label: 'Green Website'
+  label_display: visible
+  provider: block_content
+  status: true
+  info: ''
+  view_mode: full
+visibility: {  }

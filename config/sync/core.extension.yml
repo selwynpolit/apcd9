@@ -85,7 +85,11 @@ module:
   system: 0
   tamper: 0
   taxonomy: 0
+  taxonomy_manager: 0
+  taxonomy_manager_merge: 0
   telephone: 0
+  term_merge: 0
+  term_reference_change: 0
   text: 0
   token: 0
   toolbar: 0
@@ -100,4 +104,5 @@ module:
 theme:
   claro: 0
   olivero: 0
+  apc_brown: 0
 profile: standard

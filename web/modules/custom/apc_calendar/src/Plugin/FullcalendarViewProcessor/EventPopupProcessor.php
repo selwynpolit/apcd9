@@ -70,8 +70,26 @@ class EventPopupProcessor extends FullcalendarViewProcessorBase {
     }
     unset($entry);
 
-    $calendar_options['events'] = $calendar_options['events'];
+    // Let day cells grow to fit their events instead of scrolling.
+    //
+    // Fullcalendar View sets no height, so FullCalendar falls back to
+    // aspectRatio 1.35 — a fixed, width-derived height. On a busy day that
+    // pushes events behind the "+N more" popover, which is DOM created after
+    // datesRender() has run, so Drupal's AJAX never binds to the links inside
+    // it. Growing the grid keeps events in the cell where the bindings work.
+    //
+    // Set here rather than in the view because the module offers no height
+    // option, and its eventLimit setting is passed through intval(), so the
+    // limit can be raised but never switched off from config.
+    $calendar_options['height'] = 'auto';
+
     $settings[$view_index]['calendar_options'] = json_encode($calendar_options);
+
+    // Handles clicks inside the "+N more" popover, which Fullcalendar View
+    // builds after datesRender() and therefore never binds Drupal's AJAX to.
+    // Attached here rather than in the view so it always travels with the URL
+    // rewriting above — the two are only useful together.
+    $variables['#attached']['library'][] = 'apc_calendar/more_popover_dialog';
   }
 
   /**
