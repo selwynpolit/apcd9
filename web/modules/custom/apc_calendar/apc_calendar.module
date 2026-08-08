@@ -51,6 +51,16 @@ function apc_calendar_form_node_calendar_event_form_alter(array &$form, FormStat
   if ($account->isAnonymous()) {
     // Append after ::save so this redirect wins over the one NodeForm sets.
     $form['actions']['submit']['#submit'][] = 'apc_calendar_event_submit_confirmation';
+
+    // Hide the revision controls. ContentEntityForm::addRevisionableFormFields()
+    // adds these programmatically rather than through the form display, which is
+    // why they cannot simply be dragged to Disabled in Manage Form Display —
+    // and why they show to a visitor who has no idea what a revision is.
+    foreach (['revision', 'revision_log', 'revision_information'] as $element) {
+      if (isset($form[$element])) {
+        $form[$element]['#access'] = FALSE;
+      }
+    }
   }
 
   // The add-location affordance is for everyone who may create a location,
