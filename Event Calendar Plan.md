@@ -6,7 +6,14 @@ The site needs a public calendar where anonymous visitors can submit events (whi
 
 Confirmed clean slate: no existing `calendar_event` content type, `locations` vocabulary, or related fields/views in `config/sync`. This is the `apc3` project (local DDEV instance at `apc3.ddev.site`, used for development/testing of austinprogressivecalendar.com — "APC"). Per this repo's CLAUDE.md, `web/modules/custom` doesn't exist here at all — there is no custom module to protect, and no custom theme either. Already enabled today (relevant to this plan): `smart_date` + `smart_date_recur` (v4.2.8), `honeypot`, `captcha` — see §1 for how this changes the composer/enable steps. Also installed: admin_toolbar, devel, module_filter, jquery_ui family.
 
-Nearly everything below is achievable through Composer + Drupal configuration (content types, fields, Views, permissions). **Two requirements could not be met by configuration alone** and are handled by a small custom module, `web/modules/custom/apc_calendar` — see §3 and §5b. Everything else remains pure config.
+> **This section described the intended shape at planning time. It is no longer accurate — kept for the record.** The plan expected "no custom module or PHP code required." The build ended with a custom module, a custom theme, and a contrib patch. Each is justified in place; the honest summary is that the config-only ambition did not survive contact with anonymous submission, recurrence and theming.
+
+The build now comprises:
+
+- **Config** — content type, vocabulary, fields, views, displays, permissions (most of this plan).
+- **`web/modules/custom/apc_calendar`** — the approval gate (§3c), a selection plugin (§3f), the confirmation page (§5b), the add-location modal (§5c), the calendar popup (§6c), and the directions field (§4c-quater). None of these are achievable in config; each section explains why.
+- **`web/themes/custom/apc_brown`** — a fork of Olivero (§7c).
+- **`patches/`** — one contrib patch (§6c).
 
 Key architectural decision already made: **Locations are a taxonomy vocabulary, not a content type.** Reasoning: taxonomy terms can hold arbitrary fields exactly like nodes (address, geofield, approval flag), but core's entity-reference "autocomplete + create referenced entities if they don't exist" widget only supports auto-create natively for taxonomy-term targets. Replicating that inline "type a new one and it gets created" behavior for a node target would require Inline Entity Form for no functional gain.
 
@@ -115,12 +122,16 @@ Core already does almost all of this, which is why the custom `field_approved` w
 - `TermSelection::validateReferenceableNewEntities()` mirrors that check → an unpublished term can't be smuggled in by typing its exact name.
 - `TermAccessControlHandler::checkAccess()` requires `$entity->isPublished()` for `view` → an unapproved location's term page is 403 for the public.
 
-### 3b. Field configuration
-On `field_location` (edit field settings):
-- Reference type → **Default** (`default:taxonomy_term`), target bundle `locations`.
-- Check **"Create referenced entities if they don't exist"**.
+### 3b. Field configuration — SUPERSEDED, see §3f
 
-The `location_reference` view from the original 3a is **not used** and should be deleted.
+The build originally used the **Default** handler with "Create referenced entities if they don't exist" checked, so an unmatched name silently auto-created a term. That produced locations with a name and nothing else — no address, no way for the submitter to supply one.
+
+Current configuration on `field_location`:
+
+- Reference type → **`apc_locations`** (custom selection plugin, §3f)
+- **`auto_create: false`** — the modal in §5c is now the only creation path, which is what makes its required fields enforceable
+
+The `location_reference` view from the original 3a was never used and has been deleted.
 
 ### 3c. The one piece core gets wrong, and the module that fixes it
 
@@ -140,7 +151,7 @@ function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
 
 **Restricted to `locations`, also by design — see §3e.** `field_tags` was added after the initial build and is deliberately *not* gated. Any other future reference field with `auto_create` that anonymous users can reach will publish terms immediately unless its bundle is added to this condition.
 
-**Known limitation:** because unapproved locations are invisible, a second submitter typing the same location name creates a *duplicate* term rather than matching the pending one. Duplicates accumulate until an admin approves or merges them. This is inherent to the gate — the alternative (showing unapproved terms in the autocomplete) is what the gate exists to prevent. Watch the pending queue (§7b) for near-duplicate names.
+**Known limitation:** because unapproved locations are invisible, a second submitter typing the same location name creates a *duplicate* term rather than matching the pending one. Duplicates accumulate until an admin approves or merges them. This is inherent to the gate — the alternative (showing unapproved terms in the autocomplete) is what the gate exists to prevent. Watch the pending queue (§7b) for near-duplicate names. The modal in §5c mitigates it with a name-collision check that deliberately matches unpublished terms too.
 
 ### 3d. Anonymous permissions (`/admin/people/permissions`, Anonymous row)
 - Check **"Create Calendar Event content"**.
@@ -161,6 +172,21 @@ Tags are therefore reviewed **after** the fact rather than before, at `/admin/co
 **Worth doing before launch:** seed the 15–30 tags the calendar actually wants to filter by. Submitters then find a match in the autocomplete instead of inventing one, which cuts duplicates at the source far more effectively than any review queue.
 
 ---
+
+### 3f. `apc_locations` selection plugin — ADDED DURING BUILD
+
+`SessionLocationSelection` (`src/Plugin/EntityReferenceSelection/`) exists to solve one problem created by the gate above.
+
+Anonymously-created locations are unpublished, and core's `TermSelection` filters `status = 1` for non-admins in **both** directions — listing *and* validation. So a submitter who had just added a location through the modal would have their own brand-new location rejected when they submitted the event.
+
+The plugin relaxes that one term at a time: unpublished terms whose IDs were recorded in the current session's private tempstore are also referenceable. Scoping is per-session — core generates a random owner token for anonymous users and prefixes tempstore keys with it — so one submitter's pending location never becomes selectable by anyone else.
+
+Two implementation notes worth preserving:
+
+- **It extends `DefaultSelection`, not `TermSelection`.** `TermSelection` adds its `status = 1` condition unconditionally, and an entity query condition cannot be removed once added. The status logic is therefore reimplemented as an OR group rather than inherited and patched.
+- **`getReferenceableEntities()` is overridden** to append " - pending" to unpublished labels. Display only: `EntityAutocomplete::validateEntityAutocomplete()` stores the extracted integer ID, and on re-edit the widget rebuilds the label from `$entity->label()`, so the suffix is never persisted and publishing clears it everywhere at once.
+
+**Failure mode to recognise:** if the plugin is ever missing while the field still points at it, `SelectionPluginManager::getPluginId()` does `uasort($groups[$id], …)` on a group that no longer exists and every page rendering the field dies with *"uasort(): Argument #1 must be of type array, null given"*. `apc_calendar_uninstall()` resets the handler to `default:taxonomy_term` to prevent exactly this.
 
 ## 4. Geocoding & maps
 
@@ -231,6 +257,16 @@ Any future view mode built for this bundle (e.g. the calendar popup) should use 
 
 **Debugging note.** Rabbit Hole is bypassed for any user with `rabbit hole bypass taxonomy_term` — which **uid 1 has implicitly**. An admin will see the un-redirected term page while anonymous users redirect correctly. Set `bypass_message: true` on the behavior settings while working, or `no_bypass: true` to force the redirect for everyone. Verify with `curl -sI` (anonymous) rather than a logged-in browser.
 
+### 4c-quater. Directions links — ADDED DURING BUILD
+
+Locations carry a **Directions** pseudo-field offering OpenStreetMap and Google Maps, both opening in a new tab with `rel="noopener noreferrer"`.
+
+Implemented as an **extra field** (`hook_entity_extra_field_info()` + `hook_taxonomy_term_view()`) rather than a Twig override or Views rewrite, so placement stays config: it appears in Manage Display for `default`, `card` and `compact_card` independently and is off by default. A Twig override would have needed a custom theme; a Views rewrite would only have covered the location page, not the card embedded in event pages and the popup.
+
+**Coordinates are preferred over the address** — they are unambiguous and route correctly even where the address itself cannot be geocoded, which §4a shows is common. The formatted address is the fallback; both services geocode it themselves. A location with neither renders "No directions available" rather than nothing, so an editor can see the location is incomplete rather than wondering whether the feature is broken.
+
+Both services are offered because the trade is real: OSM is what this site already uses for tiles and geocoding, but its US house-number coverage is patchy; Google resolves ordinary addresses reliably. A visitor tapping "Get directions" is standing somewhere trying to reach a venue, which is a bad moment to meet the limits of volunteer mapping.
+
 ### 4d. Map on the Event page
 Calendar Event → Manage Display: set `field_location` formatter to **Rendered entity**, view mode **Card** (built in 4c) — reuses the same map+address block.
 
@@ -264,6 +300,25 @@ Side effect to be aware of: writing to the tempstore starts a session for that v
 
 **Admin notification.** `hook_node_insert()` mails the site address (override with `drush state:set apc_calendar.notify_email <address>`) whenever an anonymous visitor creates an unpublished `calendar_event`, with a direct edit link and a link to the pending queue. Without it, nothing signals that the queue at §7a has items in it, and submissions sit unreviewed. Mail sends synchronously inside the form submit — if a slow production SMTP hop makes that visible to submitters, move it to a queue worker.
 
+### 5c. Adding a location during submission — ADDED DURING BUILD
+
+**Two approaches were tried and abandoned before this one.** Both are recorded because each looked reasonable:
+
+1. **Inline Entity Form.** Its Complex widget renders the *term's whole form display* inline — map widget, notes, image, publishing controls — because `create_bundles_count == 1 && allow_new && !allow_existing` makes it skip the button stage entirely and auto-open the add form. A volunteer adding one event met the admin location form. Uninstalled.
+2. **Making `field_geofield` required so a map pin was mandatory.** Abandoned when Nominatim failed to geocode `12903 Humphrey Dr, Austin, TX 78729` — an ordinary suburban address that OSM simply lacks at house-number level. **A free geocoder cannot be a gate**: that submitter would have been hard-blocked from posting a legitimate event.
+
+**What was built instead.** The plain `entity_reference_autocomplete` widget does the searching; a modal covers the case where nothing matches.
+
+- `hook_form_alter` adds a *"Can't find it? Add a new location"* link below the field, with core's `use-ajax` / `data-dialog-type="modal"` attributes. Gated on `create terms in locations`, the same permission the route requires, so it can never lead to a 403.
+- `AddLocationForm` (route `/calendar/location/add`) collects **name, street, city, state, ZIP and optional access notes**. No map, no coordinates, no publishing controls. State is validated against a list of US abbreviations; ZIP against `^\d{5}(-\d{4})?$`.
+- On submit it creates the term (unpublished via §3c), records the ID in the private tempstore for §3f, and returns an `AjaxResponse` that closes the dialog and writes `Label (id)` into the autocomplete. The event form behind it is untouched, so nothing typed is lost.
+- A **name-collision check deliberately matches unpublished terms**. Without it a submitter who cannot find a pending location adds a second one, and the vocabulary fragments exactly where it matters.
+- `js/add-location-autocomplete.js` appends a *"＋ Add a new venue…"* row to the autocomplete results, including on **zero results** — which is the whole point, since jQuery UI hides the menu when nothing matches. Selecting it triggers a click on the existing link rather than duplicating the dialog wiring. The visible link remains the no-JavaScript path.
+
+**Implementation note:** the JS must set the widget's `source` and `select` through `$input.autocomplete('option', …)`. jQuery UI resolves the source once in `_initSource()`, so assigning `options.source` after initialisation is silently ignored. It is also scoped to this one element — overriding the shared `Drupal.autocomplete.options` would alter every autocomplete on the site.
+
+Everything else about a location — coordinates, image, approval — remains an admin's job at review time.
+
 ---
 
 ## 6. Public display
@@ -289,8 +344,8 @@ Content view, type = Calendar Event, Published = Yes, display type **FullCalenda
 **No sort.** Deliberately empty. FullCalendar orders events client-side, so a Views sort buys nothing, and sorting on the multi-delta `field_event_date_value` alongside `DISTINCT` invites "ORDER BY expression not in select list" errors under MySQL's `ONLY_FULL_GROUP_BY`. The original `created DESC` sort was also actively harmful in combination with the pager, since it made the truncation cutoff arbitrary with respect to event dates.
 
 **Still at defaults, revisit if they bite:**
-- `eventLimit: '2'` — only two events per day cell before a "+more" link. Low for a calendar whose busy days are the point.
 - `updateAllowed: 1` — drag-to-reschedule. Correctly gated (`if (!$current_entity->access('update')) $entry['editable'] = FALSE;`), so not a security issue, but dragging a Smart Date *recurring instance* is a good way to mangle its rule.
+- `bundle_type: calendar_event` — set during the build. This enables double-click-on-a-day to create an event, a second entry point that bypasses the §5b confirmation redirect and the §5c modal. Anonymous users hold `create calendar_event content`, so it works for them too.
 
 ### 6b. "Upcoming events at this location" view (feeds 4c)
 Content view, type = Calendar Event, machine name `location_upcoming_events`.
@@ -309,6 +364,29 @@ Because the pager is `some / 5`, getting this wrong is very visible: before the 
 
 ---
 
+### 6c. Event popup — ADDED DURING BUILD
+
+Clicking an event opens a modal showing **the occurrence that was clicked**, with a "View full event" link.
+
+**The contrib bug that had to be patched.** `eventClick()` in `fullcalendar_view` navigates unconditionally whenever the event has a URL — `window.open()` or `location.href` — with no `dialogModal` guard. `preventDefault()` does not help, because it stops the anchor's default navigation, not those explicit calls. So the module's own modal option raced the navigation and could not be used at all.
+
+`patches/fullcalendar_view-eventclick-respect-dialogmodal.patch` adds an early return. This is the repo's **first patch**, so it also introduced `cweagans/composer-patches` and the `extra.patches` block. Verify with `git apply --check`, not `patch` — composer-patches tries `git apply` first and rejects fuzz, and the hunk applied "with fuzz 2" until the blank context line carried its leading space.
+
+**The pieces:**
+
+- **`EventPopupProcessor`** (`@FullcalendarViewProcessor`, the documented extension point Smart Date also uses) rewrites each entry's `url` to `/calendar/event/{nid}/{delta}`. Fullcalendar View computes one URL per *row* and reuses it for every date on that row, so without this every occurrence of a recurring event links to the same place.
+  - The delta comes from `$entry['id']`, which the preprocessor builds as `"{row index}-{delta}"` before any processor runs. That is more reliable than parsing `eid`: processors run in **discovery order with no weight control**, so there is no guarantee of running after `SmartDateProcessor` rewrites `eid` to `nid-D-delta`. Both forms are handled anyway.
+  - It also sets `height: 'auto'` — the module sets no height, so FullCalendar falls back to a fixed `aspectRatio: 1.35`.
+- **`EventPopupController`** renders a `calendar_item` view mode. Route carries `_entity_access: 'node.view'` — that requirement is what stops the popup becoming a way to read unpublished pending submissions.
+  - It renders a **clone** with `field_event_date` reduced to the single delta, rather than post-processing the render array: Smart Date formatters decide their output from the values they are given.
+  - It appends the delta to `#cache['keys']`. `EntityViewBuilder` keys only on entity ID and view mode, so without this every occurrence would serve the first one's markup.
+- **No custom JS is needed for the main path.** With `url` set, FullCalendar renders events as anchors and the module's own `eventDidMount()` adds Drupal's `use-ajax` attributes. Core's dialog does the rest.
+- **`js/more-popover-dialog.js`** covers the one gap. Fullcalendar View binds Drupal's AJAX in `datesRender()`, which fires for the date grid only — the "+N more" popover is built later on click, so `attachBehaviors` never runs over it and its links are inert. A delegated handler scoped to `.fc-more-popover` reads the `href` already on the anchor and opens it. Delegation is what makes this work on DOM that did not exist at attach time; the popover is created with `parentEl: view.el`, so it is inside `.js-drupal-fullcalendar` and within reach.
+
+**`eventLimit` is `4`.** It can be raised but never disabled from config — `FullcalendarViewPreprocess` passes it through `intval()`, so `false` becomes `0`. Removing the cap entirely would need the processor to set `eventLimit: FALSE`.
+
+**Event pill colour is view config, not CSS.** `style.options.color_bundle` writes straight into each entry's `backgroundColor`; no stylesheet can reach it. Currently `#3e2d1f` for `calendar_event`. The `article`/`blog_entry`/`my_work`/`page` entries are leftovers Views repopulates on every save.
+
 ## 7. Admin review queues
 
 ### 7a. Unpublished events
@@ -324,6 +402,58 @@ This queue covers **locations only**. Tags are published on creation and reviewe
 - Because unapproved locations are invisible to submitters, near-duplicates will show up here (§3c). Scan for them before approving.
 
 ---
+
+## 7c. Front-end theme — APC Brown
+
+`web/themes/custom/apc_brown`, a **wholesale fork of Olivero** (`base theme: false`). Source design: `assets/Drupal theme with apc_logo/`.
+
+### Why a fork, and the bug that forced it
+
+It was first built as an Olivero **subtheme** overriding `--color--primary-*` from its own stylesheet. Fonts and backgrounds applied; the colours never did. Several rounds of diagnosis — load order, CSS groups, specificity, ID selectors, `!important`, aggregation, browser caching, file serving — all came back clean, because the cause was not in any stylesheet:
+
+```php
+// apc_brown_preprocess_html()
+$brand_color_hex = theme_get_setting('base_primary_color') ?? '#1b9ae4';
+$variables['html_attributes']->setAttribute('style',
+  "--color--primary-hue:$h;--color--primary-saturation:$s%;--color--primary-lightness:$l");
+```
+
+Olivero writes its brand colour as an **inline style on `<html>`**. Inline styles beat every stylesheet regardless of load order or specificity, so the primary palette was pinned to blue no matter what any CSS file said.
+
+**The lesson worth keeping:** when a Drupal theme's colours won't budge, check for a theme *setting* writing inline custom properties before investigating the cascade. It is a setting, not CSS — `base_primary_color: '#8a5a34'` in `config/install/apc_brown.settings.yml`, and `drush config:set` for an already-installed theme, since `config/install` only runs at install time.
+
+The fork was chosen independently of that discovery and remains the right call: the palette is now edited at source, so there is nothing left to override.
+
+### What the fork changed
+
+**Palette, edited directly in `css/base/variables.css`:**
+
+| | Olivero | APC Brown |
+|---|---|---|
+| `--color--white` | `#fff` | `#f5ead8` |
+| `--color--gray-100` | `hsl(…97%)` | `#f5ead8` |
+| `--color--gray-95` | `hsl(…93%)` | `#ebddc5` |
+| `--color--primary-*` | `202 / 79% / 50` | `27 / 45% / 37` |
+| `--color--gray-hue` | `201` | `32` |
+
+Overriding `--color--white` would have been too blunt in a subtheme — it is used 40× as a background but also 38× as a text colour. In a fork it is exactly right: `.page-wrapper`, `.site-header__inner` and `.header-nav` all read from it, so "white" simply becomes the cream ground.
+
+**Namespace rename** covered 35 `.theme` functions, the `Drupal\olivero` PHP namespace, 8 library references, Twig's `@olivero` namespace, `attach_library()` calls and `Drupal.olivero` in JS. Two were genuine breakages rather than cosmetics: `olivero_path` in the templates stopped matching the variable `.theme` sets, and `const { olivero } = Drupal` destructured a renamed property.
+
+**`css/theme/apc.css`** carries everything Olivero has no equivalent for: the accent ramps, the Organic neutrals, and rules for the header band, footer, tags, Smart Date output, the location card, the directions links, FullCalendar and `/locations/%`.
+
+**Header band.** The design's masthead spans the header with content left-aligned. Olivero paints the gradient on `.site-branding`, which is sized to its own content — hence a band stopping partway across. Moving the colour to `.site-header__inner` spans it properly. `.header-nav` matches the band (it is both the wide nav strip and the mobile drawer), and the hamburger bars had to be recoloured because Olivero draws them in `--color--primary-50`, which would be brown-on-brown.
+
+**Footer** is `--color-neutral-100` per the style guide. Olivero uses a `background` shorthand with a gradient, so a flat colour must replace the whole shorthand; it also draws a black gutter via `border-inline-start` at ≥75rem which needs recolouring or it reads as a stray bar.
+
+### Known gaps
+
+1. **Fonts load from Google Fonts CDN** (`css/base/fonts.css`). Contradicts §1b, where the JS libraries were deliberately pulled local for supply-chain and visitor-privacy reasons. Needs the Caprasimo/Figtree WOFF2 files, which the design export doesn't include. **Resolve before launch.** `templates/includes/preload.twig` was emptied and is where preload links belong once self-hosted.
+2. **`apc_logo.jpg` is 127×100, not square.** `object-fit: cover` crops rather than distorts, but a square asset would be better.
+3. **`screenshot.png` is Olivero's** — replace, or the Appearance page misrepresents the theme.
+4. **Olivero's `config/` was deliberately not copied.** It contained `olivero.settings.yml` and ten `block.block.olivero_*` configs that would have fought the real Olivero. Blocks must be placed into APC Brown's regions manually; region names are identical.
+5. **`*.pcss.css` files came along** with the copy. They are PostCSS sources, loaded by nothing, and still reference Metropolis. Harmless but misleading.
+6. `support.js` and `_ds_bundle.js` from the design export are **not used** — the former is the preview harness, the latter declares zero components.
 
 ## 8. Config export (final step, only after full manual verification)
 
@@ -349,14 +479,21 @@ Note that the `apc_calendar` module itself is **code, not config** — it is com
 
 ## Critical files
 
-- `/Users/selwyn/Sites/apc3/composer.json` — module requires
-- `/Users/selwyn/Sites/apc3/config/sync/` — destination for all exported config listed above (188 files pre-existing; see §8 for the expected new/changed set)
-- `/Users/selwyn/Sites/apc3/web/modules/custom/apc_calendar/` — the only custom code in this build:
-  - `apc_calendar.module` — location approval presave (§3c), submit redirect (§5b), admin notification + `hook_mail()` (§5b)
-  - `apc_calendar.routing.yml` — the `/event-submitted` route
-  - `src/Controller/EventSubmittedController.php` — session-scoped confirmation page
+- `composer.json` — module requires, the `npm-asset` installer paths (§1b), and `extra.patches` (§6c)
+- `config/sync/` — destination for all exported config listed above
+- `patches/` — the repo's first patch; see §6c
+- `web/modules/custom/apc_calendar/`:
+  - `apc_calendar.module` — location approval presave (§3c), add-location link + submit redirect (§5b, §5c), admin notification + `hook_mail()` (§5b), directions extra field (§4c-quater), library alter for Moment/RRule paths (§1b)
+  - `apc_calendar.install` — `hook_uninstall()` resetting `field_location`'s handler; see the failure mode in §3f
+  - `src/Form/AddLocationForm.php` — the modal (§5c)
+  - `src/Plugin/EntityReferenceSelection/SessionLocationSelection.php` — session-aware selection (§3f)
+  - `src/Plugin/FullcalendarViewProcessor/EventPopupProcessor.php` — per-occurrence popup URLs (§6c)
+  - `src/Controller/EventSubmittedController.php` — session-scoped confirmation page (§5b)
+  - `src/Controller/EventPopupController.php` — single-occurrence popup (§6c)
+  - `js/` — autocomplete "add a venue" row, "+N more" popover handler
+- `web/themes/custom/apc_brown/` — forked Olivero (§7c)
 
-  This is the first custom module in the repo. Per CLAUDE.md the site was a vanilla, config-only build; that is no longer strictly true, and deployments must now account for code as well as config.
+This was the first custom module in the repo. Per CLAUDE.md the site was a vanilla, config-only build with no custom module or theme; **neither is true any more**, and deployments must account for code, a patch, and asset-packagist availability as well as config.
 
 ---
 
@@ -365,8 +502,10 @@ Note that the `apc_calendar` module itself is **code, not config** — it is com
 Work through in order, anonymous/incognito session alongside an authenticated admin session:
 
 **(a) Anonymous submission with a brand-new location**
-1. As anonymous, `/node/add/calendar_event`: fill Title/Body/Date, type a brand-new Location name, let it autocreate.
-2. Submit (pause a few seconds before submitting — Honeypot's time check can reject too-fast submissions). Confirm no errors, and you land on **`/event-submitted`** showing your own submitted values and a "pending review" message — *not* the front page, and *not* a "has been created" message.
+1. As anonymous, `/node/add/calendar_event`: fill Title/Body/Date, then type a venue name that does not exist. Confirm the autocomplete shows **"＋ Add a new venue…"** even though there are zero matches — that row is the whole point of the JS and is the case most likely to break.
+2. Select it (or use the "Can't find it?" link). The modal opens **over** the event form with everything you typed still there. Add name/street/city/state/ZIP, submit; the dialog closes and the Location field fills in with `Name - pending (id)`.
+3. Submit the event (pause a few seconds — Honeypot's time check can reject too-fast submissions). Confirm no errors, and you land on **`/event-submitted`** showing your own submitted values and a "pending review" message — *not* the front page, and *not* a "has been created" message.
+   - **This step is the one that exercises §3f.** The location you just created is unpublished, so without the session-aware selection plugin the event form would reject it. A validation error naming the Location field means the tempstore scoping or the OR condition has broken.
 3. Confirm the admin notification email arrived (`ddev launch -m` for Mailpit locally) with a working edit link.
 4. As admin: `/admin/content?type=calendar_event&status=2` shows the node, unpublished.
 5. `/admin/content/locations-pending` shows the new term, unpublished.
@@ -383,9 +522,16 @@ Work through in order, anonymous/incognito session alongside an authenticated ad
 4. Publish the pending event from `/admin/content`.
 5. `/calendar` shows the published event on its correct date.
 
-**(c) Maps**
-1. Visit the term page — Leaflet map renders with correct pin, address shown, upcoming-events block lists the published event.
-2. Visit the event node page — Location field renders the Card view mode (map + address).
+**(c) Maps, locations and directions**
+1. Visit a location via the venue heading on an event page — it should redirect to `/locations/{tid}` and show the map, address and upcoming events. **Test anonymously**: Rabbit Hole is bypassed for anyone with `rabbit hole bypass taxonomy_term`, which uid 1 holds implicitly, so an admin sees the un-redirected term page while everyone else redirects correctly.
+2. Visit the event node page — Location field renders the Card view mode.
+3. **Directions:** one location with coordinates and one with only an address — both links should land correctly, via different code paths. A location with neither must render "No directions available".
+
+**(c2) Calendar popup**
+1. Click an event on `/calendar` — a modal opens showing **that occurrence**, not the whole series, with a working "View full event" link.
+2. Click a *different* occurrence of the same recurring event. If it shows the first one's date, the delta is missing from `#cache['keys']` (§6c).
+3. Find a day with more than four events, click **"+N more"**, then click an event inside that popover. This is the path Drupal never binds AJAX to; it exercises `more-popover-dialog.js`.
+4. Confirm clicking an event does **not** also navigate away — that is the patch working. If both happen, `composer install` did not apply it.
 
 **(d) Recurrence**
 1. Create/edit an event with a recurring rule (e.g. weekly for several weeks).
