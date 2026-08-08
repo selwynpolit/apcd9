@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - filter.format.restricted_html
+    - media.type.image
     - node.type.calendar_event
     - taxonomy.vocabulary.locations
   module:
@@ -26,6 +27,7 @@ permissions:
   - 'access content'
   - 'access site-wide contact form'
   - 'create calendar_event content'
+  - 'create image media'
   - 'create terms in locations'
   - 'search content'
   - 'use text format restricted_html'
