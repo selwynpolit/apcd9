@@ -1,0 +1,17 @@
+{
+    "_hash": "e246dfbf94280ad3d9294da280294d7edf99f5ad713700117abdc9873335a35e",
+    "patches": {
+        "drupal/fullcalendar_view": [
+            {
+                "package": "drupal/fullcalendar_view",
+                "description": "eventClick() ignores the dialogModal setting and navigates anyway",
+                "url": "patches/fullcalendar_view-eventclick-respect-dialogmodal.patch",
+                "sha256": "68b3c47da5e0ba65d1ee33b7d7bb72e8ea5af18ba4adf99aa231cf40ea4222f6",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ]
+    }
+}
