@@ -1,0 +1,14 @@
+/**
+ * @file
+ * APC Brown fonts.
+ *
+ * Replaces Olivero's local Metropolis and Lora @font-face declarations with the
+ * typefaces the design specifies: Caprasimo for headings, Figtree for body.
+ *
+ * NOTE: loaded from Google Fonts, which is a third-party request on every page
+ * view. This project deliberately pulled its JavaScript libraries local for
+ * supply-chain and visitor-privacy reasons; the font files should follow before
+ * launch. Self-hosting means downloading the woff2 files into fonts/ and
+ * replacing this @import with @font-face rules.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;600;700&display=swap");

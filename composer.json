@@ -57,6 +57,8 @@
         "drupal/shield": "^1.4",
         "drupal/simple_sitemap": "^4.1",
         "drupal/smart_date": "^4.2",
+        "drupal/taxonomy_manager": "^2.0",
+        "drupal/term_merge": "^2.0",
         "drupal/token": "^1.7",
         "drupal/upgrade_status": "^4.0",
         "drupal/views_bulk_operations": "^4.0",

@@ -886,7 +886,7 @@ display:
       path: admin/content/locations-pending
       menu:
         type: normal
-        title: Locations
+        title: 'Pending Locations'
         description: ''
         weight: 0
         expanded: false

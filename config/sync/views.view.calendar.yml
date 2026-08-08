@@ -266,11 +266,15 @@ display:
           dialogWindow: 0
           openEntityInNewTab: 0
           createEventLink: 0
-          eventLimit: '2'
+          eventLimit: '4'
           tax_field: ''
           vocabularies: ''
           color_bundle:
-            calendar_event: '#3a87ad'
+            article: '#3a87ad'
+            blog_entry: '#3a87ad'
+            calendar_event: '#3e2d1f'
+            my_work: '#3a87ad'
+            page: '#3a87ad'
           rrule: ''
           dialogModal: true
           dialogCanvas: false
@@ -278,7 +282,7 @@ display:
           slotDuration: '00:30:00'
           minTime: '00:00:00'
           maxTime: '23:59:59'
-          bundle_type: ''
+          bundle_type: calendar_event
           classes: ''
           fetchGoogleHolidays: false
           googleHolidaysSettings:

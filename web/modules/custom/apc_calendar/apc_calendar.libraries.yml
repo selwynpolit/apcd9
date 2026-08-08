@@ -1,3 +1,14 @@
+more_popover_dialog:
+  version: 1.x
+  js:
+    js/more-popover-dialog.js: {}
+  dependencies:
+    - core/jquery
+    - core/once
+    - core/drupal
+    - core/drupal.ajax
+    - core/drupal.dialog.ajax
+
 add_location_autocomplete:
   version: 1.x
   js:
