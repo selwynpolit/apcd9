@@ -104,3 +104,141 @@ move per recent commit history).
 
 `find-broken-links.sh` parses a `wget` recursive-crawl log (e.g. `wget.log`) to extract
 source/broken-URL pairs for dead-link auditing; run as `./find-broken-links.sh wget.log`.
+
+---
+
+## TODO — next phase
+
+Background for anyone picking this up: `Event Calendar Plan.md` is the authoritative record of what
+has been built and, importantly, *why several planned approaches were abandoned*. Read it before
+starting — three of the items below re-enter territory where an obvious-looking approach has already
+been tried and rejected.
+
+**Two standing rules for this codebase, both learned the hard way:**
+
+1. Run `ddev drush cst` **before** `ddev drush cex`. An unguarded `cex` has already silently
+   discarded hand-edited config that had not yet been imported.
+2. Verify against the running site, not against exported YAML. A theming bug in this repo took
+   several rounds to find because it was diagnosed from `config/sync` and from a `grep` run while
+   CSS aggregation was on. Neither reflected reality.
+
+Items are ordered by dependency, not by importance. **A, B, C are independent and can be done in any
+order; D depends on A; F depends on E.**
+
+### Group 1 — Anonymous form polish (one hook, three items)
+
+`core.entity_form_display.node.calendar_event.default.yml` is the *only* form display for this
+bundle, and Drupal form displays are per-bundle, not per-role. So none of these can be done in the
+UI. All three belong in the existing `if ($account->isAnonymous())` branch of
+`apc_calendar_form_node_calendar_event_form_alter()`, alongside the revision-hiding code already
+there. Do them as one change, not three.
+
+- [ ] **Hide the body summary from anonymous submitters.** Widget is
+      `text_textarea_with_summary` with `display_summary: true`. Set
+      `$form['body']['widget'][0]['summary']['#access'] = FALSE`. Do **not** flip `display_summary`
+      to `false` in field config — that would remove it for admins too.
+- [ ] **Block recurring events for anonymous submitters.** `field_event_date` has
+      `allow_recurring: true` and `month_limit: 12`; both are field-level, so again `#access`, not
+      config. The recurrence UI is injected by `smart_date_recur`'s widget — *inspect the actual
+      render array before guessing the element key*, it is not stable across Smart Date versions.
+      Verify a recurrence cannot be smuggled back in by POSTing the hidden values; `#access = FALSE`
+      is the right tool for that (it discards input), `#type = hidden` is not.
+- [ ] **Force an initial capital on taxonomy terms.** Extend the existing
+      `apc_calendar_taxonomy_term_presave()`. Use `\Drupal\Component\Utility\Unicode::ucfirst()`,
+      not `ucfirst()`, or accented venue names will corrupt. Decide explicitly which vocabularies
+      this applies to (`locations`, `tags`, or both) and guard on bundle. Consider whether
+      deliberately-lowercase names ("eBay", "danceAustin") are worth an exception — probably not
+      worth the complexity, but make it a decision rather than an accident.
+
+### Group 2 — Content and display
+
+- [ ] **A. Past events block on the location detail page.** `views.view.location_page` filters on
+      `field_event_date_end_value >= now` (offset). Add a second display with the inverse filter,
+      DESC sort, and a small item limit. **First resolve an ambiguity:** there are two views here —
+      `location_page` (the `/locations/%` page) and `location_upcoming_events` (a block display).
+      Determine which is actually placed and whether the second is now orphaned, as
+      `views.view.location_reference` was. Do not add a third view before answering that.
+      Remember the `distinct` setting — multi-delta Smart Date joins duplicate rows without it.
+- [ ] **B. Improve `/event-submitted`.** `EventSubmittedController::buildSummary()` hand-rolls a
+      render array covering only `field_event_date`, `body`, and `field_location` — which is why
+      uploaded images do not appear. Recommended: replace the hand-rolled loop with a dedicated
+      `submission_confirmation` view mode on `calendar_event`, so future fields appear without code
+      changes. Note the controller renders a node the visitor cannot otherwise view; the session and
+      freshness guards at the top of the class are what make that safe. **Preserve them**, and keep
+      `no_cache: TRUE` on the route.
+- [ ] **C. Templates for event detail and location detail.** `apc_brown/templates/content/` has only
+      `node.html.twig` and `node--teaser.html.twig`. Needs `node--calendar-event--full.html.twig`
+      and a location equivalent. **Non-obvious:** location term pages are redirected by Rabbit Hole
+      to `/locations/[term:tid]`, a Views page — so a `taxonomy-term--locations.html.twig` may never
+      render. Confirm what the Claude Design comps actually target (Views row/page templates vs. the
+      term template) before writing either.
+- [ ] **D. Responsive images.** `responsive_image` is **not enabled**; `breakpoint` is, and the
+      Olivero fork did carry `apc_brown.breakpoints.yml` (sm/md/lg/xl, 1x only). Work: enable the
+      module, define responsive image styles, switch the formatters on `field_event_image` and
+      `field_media_image`. Existing image styles are only core's defaults plus `wide`. Interacts
+      with the `2000x2000` upload cap on `field.field.media.image.field_media_image` — do not define
+      styles wider than the largest image that can be uploaded. Add `1x`/`2x` multipliers if the
+      design calls for retina.
+
+### Group 3 — Editorial workflow and access
+
+- [ ] **E. Contributor and manager roles.** Only `administrator`, `anonymous`, `authenticated`
+      exist. Two new roles: *event contributor* (create own events and locations, published
+      immediately) and *event manager* (edit/delete any event or location, plus taxonomy management
+      — `taxonomy_manager` and `term_merge` are both already enabled).
+      **Two traps.** First, `calendar_event` defaults to unpublished, so "contributor posts go live
+      immediately" needs an explicit decision: grant the publish permission, or add a presave
+      exception. Second, `apc_calendar_taxonomy_term_presave()` currently gates on
+      `isAnonymous()` — which means *any* authenticated user's locations publish instantly. That is
+      correct today (registered users are a known set) but becomes wrong the moment open
+      registration or a low-trust role exists. Revisit the condition as part of this work; the plan
+      suggests keying on a permission instead. Build a permission matrix and **test by logging in as
+      each role**, not by reading YAML.
+- [ ] **F. One-click publish of event + its location.** `views.view.pending_events` already has a
+      `views_bulk_operations_bulk_form`, so the infrastructure exists. Add a custom VBO action
+      plugin in `apc_calendar` that publishes the node and, if its referenced location term is
+      unpublished, publishes that too. Log or report when it publishes a location, so an admin is
+      never surprised by a venue going live. Depends on E only if the action should be
+      permission-gated to managers.
+
+### Group 4 — Designed, written up separately
+
+- [ ] **H. Import events from external iCal calendars.** Full design in `event-import-task.md`.
+      First source is the Forward TX Google Calendar, but the design is multi-source from the start:
+      one `ical_event_import` feed type, one feed per calendar, an `event_sources` vocabulary. Import
+      into `calendar_event` unpublished and curate — *not* a staging content type. **The one thing to
+      know before touching it:** deleting a rejected import causes it to be re-imported forever,
+      because the dedupe state lives in `feeds_item` on the node. Rejection is a flag, never a
+      delete. Depends on F for the publish action.
+
+### Group 5 — Needs a decision before any implementation
+
+- [x] **G. Virtual / online-only events.** Done. `field_virtual` (boolean, default off) plus an
+      optional `field_event_url` (link, external URLs only) were added to `calendar_event`. Checking
+      the box hides `field_location` client-side via `#states`, but the actual enforcement is
+      server-side: `apc_calendar_node_presave()` clears `field_location` whenever `field_virtual` is
+      TRUE, and a validate handler added in
+      `apc_calendar_form_node_calendar_event_form_alter()` requires `field_location` when it is
+      FALSE. **That validation is a form validate handler, not an entity-level constraint** — it only
+      runs for submissions through the node-add/edit form. Anything that creates or saves a
+      `calendar_event` another way bypasses it entirely; see `event-import-task.md`, where Feeds does
+      exactly that. Item H's importer will need its own answer for this (e.g. default imported events
+      to non-virtual, or add an equivalent check in the import pipeline) rather than assuming this
+      validation covers it.
+      The ripple effects this bullet originally worried about **do not apply, and no guards were
+      added for them.** Both the geocoder and `apc_calendar_build_directions()` are reached only from
+      `apc_calendar_taxonomy_term_view()` on the location *term* — never from the node — so a virtual
+      event, which has no location term, never touches either path. Don't re-add guards there later
+      on the assumption they're needed.
+
+### Pre-launch (carried over from `Event Calendar Plan.md`)
+
+- [ ] Swap the Nominatim User-Agent/Referer off `apc3.ddev.site` to the production domain.
+- [ ] Self-host the Caprasimo/Figtree fonts.
+- [ ] Replace Olivero's inherited `screenshot.png`; crop `apc_logo.jpg` square.
+- [ ] Seed 15–30 starter tags.
+- [ ] Confirm asset-packagist is reachable from GreenGeeks before the first production
+      `composer install`.
+- [ ] Delete smoke-test content (node 125, term 97).
+- [ ] Place blocks into the APC Brown regions — Olivero's `config/` was deliberately not copied
+      during the fork, so region assignments do not carry over.
