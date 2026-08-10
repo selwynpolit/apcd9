@@ -8,6 +8,7 @@ dependencies:
   module:
     - apc_calendar
     - node
+    - smart_date_recur
     - taxonomy
 id: event_contributor
 label: 'Event Contributor'
@@ -17,4 +18,5 @@ permissions:
   - 'bypass location approval'
   - 'create calendar_event content'
   - 'create terms in locations'
+  - 'make smart dates recur'
   - 'publish calendar_event content immediately'

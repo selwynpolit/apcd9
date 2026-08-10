@@ -78,6 +78,15 @@ function apc_calendar_form_node_calendar_event_form_alter(array &$form, FormStat
         $form[$element]['#access'] = FALSE;
       }
     }
+
+    // Hide the body summary. The "Edit summary" toggle and its textarea are a
+    // teaser-preview authoring affordance that means nothing to a visitor
+    // filling out a public submission form. #access rather than turning off
+    // display_summary in the field config, which would remove it for admins
+    // too.
+    if (isset($form['body']['widget'][0]['summary'])) {
+      $form['body']['widget'][0]['summary']['#access'] = FALSE;
+    }
   }
 
   // The add-location affordance is for everyone who may create a location,
