@@ -6,10 +6,13 @@ dependencies:
     - field.field.node.calendar_event.body
     - field.field.node.calendar_event.field_event_date
     - field.field.node.calendar_event.field_event_image
+    - field.field.node.calendar_event.field_event_url
     - field.field.node.calendar_event.field_location
     - field.field.node.calendar_event.field_tags
+    - field.field.node.calendar_event.field_virtual
     - node.type.calendar_event
   module:
+    - link
     - smart_date_recur
     - text
     - user
@@ -61,6 +64,18 @@ content:
     third_party_settings: {  }
     weight: 0
     region: content
+  field_event_url:
+    type: link
+    label: hidden
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: _blank
+    third_party_settings: {  }
+    weight: 4
+    region: content
   field_location:
     type: entity_reference_entity_view
     label: hidden
@@ -76,11 +91,12 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 4
+    weight: 5
     region: content
   links:
     settings: {  }
     third_party_settings: {  }
-    weight: 5
+    weight: 6
     region: content
-hidden: {  }
+hidden:
+  field_virtual: true

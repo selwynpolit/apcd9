@@ -1,0 +1,20 @@
+uuid: f87ed6de-6994-4bfc-bd52-890f78d94f1b
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.calendar_event
+    - taxonomy.vocabulary.locations
+  module:
+    - apc_calendar
+    - node
+    - taxonomy
+id: event_contributor
+label: 'Event Contributor'
+weight: 3
+is_admin: null
+permissions:
+  - 'bypass location approval'
+  - 'create calendar_event content'
+  - 'create terms in locations'
+  - 'publish calendar_event content immediately'

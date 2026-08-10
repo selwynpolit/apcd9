@@ -11,7 +11,7 @@ third_party_settings:
     parent: 'main:'
 name: 'Calendar Event'
 type: calendar_event
-description: null
+description: 'Events for display on the Calendar'
 help: null
 new_revision: true
 preview_mode: 1

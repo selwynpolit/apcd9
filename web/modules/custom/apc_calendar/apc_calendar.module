@@ -22,13 +22,30 @@ use Drupal\taxonomy\TermInterface;
  * TermSelection::buildEntityQuery() filters on status for non-admins) and off
  * the public term page until an admin publishes them.
  *
+ * Gated on the 'bypass location approval' permission rather than
+ * !isAnonymous(). Until the event_contributor/event_manager roles existed,
+ * every authenticated user was a known, accountable person, so gating on
+ * anonymity alone was equivalent and simpler. That stopped being true the
+ * moment a role meant to be handed out more freely (event_contributor)
+ * existed — a permission check is what keeps a future low-trust or
+ * self-registered role from silently inheriting instant-publish. Currently
+ * granted to event_contributor and event_manager (administrator has every
+ * permission implicitly via is_admin).
  */
 function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
-  if ($term->isNew() && $term->bundle() === 'locations') {
-    if (\Drupal::currentUser()->isAnonymous()) {
-      $term->setUnpublished();
+  // Fill in author name.
+  if ($term->bundle() === 'locations') {
+    if ($term->get('field_term_author')->isEmpty()) {
+      $term->set('field_term_author', \Drupal::currentUser()->id());
     }
   }
+
+  // Set unpublished for anonymous users.
+  if ($term->isNew() && $term->bundle() === 'locations') {
+    if (!\Drupal::currentUser()->hasPermission('bypass location approval')) {
+      $term->setUnpublished();
+    }
+   }
 }
 
 /**
@@ -69,6 +86,51 @@ function apc_calendar_form_node_calendar_event_form_alter(array &$form, FormStat
   // library attachment for the autocomplete enhancement as well as the link.
   if ($account->hasPermission('create terms in locations')) {
     apc_calendar_attach_add_location_link($form);
+  }
+
+  // The online-only checkbox is available to everyone, anonymous included —
+  // no #access gating. #states below only ever hides these elements in the
+  // browser; it does not stop a POST that includes both a checked box and a
+  // location value. The two things that actually enforce the rule are
+  // apc_calendar_node_presave() (clears field_location when virtual) and the
+  // validate handler added here (requires field_location when not virtual).
+  if (isset($form['field_location']) && isset($form['field_event_url'])) {
+    $form['field_location']['#states'] = [
+      'invisible' => [
+        ':input[name="field_virtual[value]"]' => ['checked' => TRUE],
+      ],
+    ];
+    $form['field_event_url']['#states'] = [
+      'invisible' => [
+        ':input[name="field_virtual[value]"]' => ['checked' => FALSE],
+      ],
+    ];
+    $form['#validate'][] = 'apc_calendar_form_node_calendar_event_form_validate_location';
+  }
+}
+
+/**
+ * Form validation handler: require a location for non-virtual events.
+ *
+ * Form-level only — it does not cover programmatic or REST node creation,
+ * which would need an entity-level constraint instead. That gap is accepted
+ * here: this form is the only path anonymous and typical authenticated
+ * submitters have to create a calendar_event.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see apc_calendar_node_presave()
+ */
+function apc_calendar_form_node_calendar_event_form_validate_location(array &$form, FormStateInterface $form_state): void {
+  // boolean_checkbox is a 'multiple_values' widget (it builds its own element
+  // structure rather than one per delta), so the submitted value sits at
+  // field_virtual[value], not field_virtual[0][value].
+  if ($form_state->getValue(['field_virtual', 'value'])) {
+    return;
+  }
+
+  $location = $form_state->getValue('field_location');
+  if (empty($location[0]['target_id'])) {
+    $form_state->setError($form['field_location'], t('Location is required unless this is an online-only event.'));
   }
 }
 
@@ -144,6 +206,46 @@ function apc_calendar_event_submit_confirmation(array $form, FormStateInterface 
     ]);
 
   $form_state->setRedirect('apc_calendar.event_submitted');
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for node entities.
+ *
+ * Two unrelated concerns live here because both are calendar_event-only
+ * presave rules and Drupal only calls one hook_ENTITY_TYPE_presave() per
+ * module per entity type:
+ *
+ * - #states hides field_location client-side when field_virtual is checked,
+ *   but that is cosmetic only — it does not stop a POST carrying a location
+ *   value (devtools, a stale cached form, a bot). Clearing it here is what
+ *   actually makes a virtual event location-less, and it is also why the
+ *   display side needs no conditional logic anywhere: an empty field renders
+ *   nothing in any view mode, template, or view.
+ * - calendar_event defaults to unpublished (core.base_field_override.node.
+ *   calendar_event.status.yml), which is the entire moderation mechanic for
+ *   anonymous and ordinary authenticated submitters. A submitter with the
+ *   'publish calendar_event content immediately' permission is trusted to
+ *   skip that queue, so their new nodes are published here instead of
+ *   waiting for review. Presave rather than granting 'administer nodes' (the
+ *   permission that would otherwise be needed to expose the Published
+ *   checkbox on the form) — that permission is much broader than "publish my
+ *   own submissions" and would also let the role edit other administrative
+ *   fields (authoring info, sticky, promote) on *any* content type.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ */
+function apc_calendar_node_presave(NodeInterface $node): void {
+  if ($node->bundle() !== 'calendar_event') {
+    return;
+  }
+
+  if ($node->hasField('field_virtual') && $node->hasField('field_location') && (bool) $node->get('field_virtual')->value) {
+    $node->set('field_location', []);
+  }
+
+  if ($node->isNew() && \Drupal::currentUser()->hasPermission('publish calendar_event content immediately')) {
+    $node->setPublished();
+  }
 }
 
 /**
@@ -384,3 +486,5 @@ function apc_calendar_library_info_alter(array &$libraries, string $module): voi
     }
   }
 }
+
+

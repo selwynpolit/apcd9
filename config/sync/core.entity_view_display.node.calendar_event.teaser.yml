@@ -7,8 +7,10 @@ dependencies:
     - field.field.node.calendar_event.body
     - field.field.node.calendar_event.field_event_date
     - field.field.node.calendar_event.field_event_image
+    - field.field.node.calendar_event.field_event_url
     - field.field.node.calendar_event.field_location
     - field.field.node.calendar_event.field_tags
+    - field.field.node.calendar_event.field_virtual
     - node.type.calendar_event
   module:
     - smart_date_recur
@@ -69,4 +71,6 @@ content:
     region: content
 hidden:
   field_event_image: true
+  field_event_url: true
   field_location: true
+  field_virtual: true

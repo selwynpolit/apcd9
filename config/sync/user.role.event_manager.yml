@@ -1,0 +1,30 @@
+uuid: 0ca946eb-689c-43e3-901c-f69427551a3b
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.calendar_event
+  module:
+    - apc_calendar
+    - node
+    - system
+    - taxonomy
+    - taxonomy_manager
+    - term_merge
+    - toolbar
+id: event_manager
+label: 'Event Manager'
+weight: 4
+is_admin: null
+permissions:
+  - 'access administration pages'
+  - 'access content overview'
+  - 'access taxonomy manager list'
+  - 'access toolbar'
+  - 'administer taxonomy'
+  - 'bypass location approval'
+  - 'create calendar_event content'
+  - 'delete any calendar_event content'
+  - 'edit any calendar_event content'
+  - 'merge taxonomy terms'
+  - 'publish calendar_event content immediately'

@@ -166,10 +166,13 @@ final class EventSubmittedController extends ControllerBase {
       }
     }
 
-    // The location is rendered as plain text, not via the entity reference
-    // formatter: a newly auto-created location term is unpublished too, so its
-    // term link would 403 for the very person who just typed it.
+    // A virtual event has no location by the time this renders —
+    // apc_calendar_node_presave() already cleared it — so this simply does not
+    // print, rather than needing a special case for the virtual branch.
     if ($node->hasField('field_location') && !$node->get('field_location')->isEmpty()) {
+      // Rendered as plain text, not via the entity reference formatter: a
+      // newly auto-created location term is unpublished too, so its term link
+      // would 403 for the very person who just typed it.
       $term = $node->get('field_location')->entity;
       if ($term !== NULL) {
         $summary['location'] = [
@@ -178,6 +181,17 @@ final class EventSubmittedController extends ControllerBase {
           '#value' => $this->t('Location: @name', ['@name' => $term->label()]),
         ];
       }
+    }
+    elseif ($node->hasField('field_virtual') && (bool) $node->get('field_virtual')->value) {
+      $summary['location'] = [
+        '#type' => 'html_tag',
+        '#tag' => 'p',
+        '#value' => $this->t('This is an online-only event.'),
+      ];
+    }
+
+    if ($node->hasField('field_event_url') && !$node->get('field_event_url')->isEmpty()) {
+      $summary['field_event_url'] = $node->get('field_event_url')->view(['label' => 'inline']);
     }
 
     return $summary;
