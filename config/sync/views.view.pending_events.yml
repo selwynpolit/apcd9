@@ -86,6 +86,13 @@ display:
           show_select_all: default
           selected_actions:
             -
+              action_id: apc_calendar_publish_event_and_location
+              preconfiguration:
+                add_confirmation: false
+                confirm_help_text: ''
+                label_override: ''
+                message_override: ''
+            -
               action_id: views_bulk_operations_delete_entity
               preconfiguration:
                 add_confirmation: false
@@ -273,9 +280,9 @@ display:
           click_sort_column: value
           type: boolean
           settings:
-            format: true-false
-            format_custom_false: ''
-            format_custom_true: ''
+            format: custom
+            format_custom_false: Unpublished
+            format_custom_true: Published
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -437,7 +444,7 @@ display:
           admin_label: ''
           entity_type: node
           plugin_id: entity_link
-          label: 'Link to Content'
+          label: 'Nice URL'
           exclude: false
           alter:
             alter_text: false

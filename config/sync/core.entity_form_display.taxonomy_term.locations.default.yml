@@ -7,6 +7,7 @@ dependencies:
     - field.field.taxonomy_term.locations.field_geofield
     - field.field.taxonomy_term.locations.field_location_image
     - field.field.taxonomy_term.locations.field_notes
+    - field.field.taxonomy_term.locations.field_term_author
     - taxonomy.vocabulary.locations
   module:
     - address
@@ -71,6 +72,16 @@ content:
     region: content
     settings:
       rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_term_author:
+    type: entity_reference_autocomplete
+    weight: 27
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
       placeholder: ''
     third_party_settings: {  }
   name:

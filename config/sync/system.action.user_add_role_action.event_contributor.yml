@@ -1,0 +1,14 @@
+uuid: 930658d1-9b6a-4951-ba2d-dd1be59c1e78
+langcode: en
+status: true
+dependencies:
+  config:
+    - user.role.event_contributor
+  module:
+    - user
+id: user_add_role_action.event_contributor
+label: 'Add the Event Contributor role to the selected user(s)'
+type: user
+plugin: user_add_role_action
+configuration:
+  rid: event_contributor
