@@ -133,16 +133,21 @@ UI. All three belong in the existing `if ($account->isAnonymous())` branch of
 `apc_calendar_form_node_calendar_event_form_alter()`, alongside the revision-hiding code already
 there. Do them as one change, not three.
 
-- [ ] **Hide the body summary from anonymous submitters.** Widget is
-      `text_textarea_with_summary` with `display_summary: true`. Set
-      `$form['body']['widget'][0]['summary']['#access'] = FALSE`. Do **not** flip `display_summary`
-      to `false` in field config — that would remove it for admins too.
-- [ ] **Block recurring events for anonymous submitters.** `field_event_date` has
-      `allow_recurring: true` and `month_limit: 12`; both are field-level, so again `#access`, not
-      config. The recurrence UI is injected by `smart_date_recur`'s widget — *inspect the actual
-      render array before guessing the element key*, it is not stable across Smart Date versions.
-      Verify a recurrence cannot be smuggled back in by POSTing the hidden values; `#access = FALSE`
-      is the right tool for that (it discards input), `#type = hidden` is not.
+- [x] **Hide the body summary from anonymous submitters.** Done. Widget is
+      `text_textarea_with_summary` with `display_summary: true`; set
+      `$form['body']['widget'][0]['summary']['#access'] = FALSE` in the anonymous branch of
+      `apc_calendar_form_node_calendar_event_form_alter()`. `display_summary` in field config was
+      left untouched, so admins still see it.
+- [x] **Allow recurring events for anonymous submitters.** Decision reversed from the original plan
+      (which called for blocking this) — anonymous submitters should be able to create recurring
+      events. Turned out to need no `#access` code at all: the recurrence UI
+      (`repeat`/`interval`/`repeat-end`/advanced weekday controls) is only added to the widget's
+      render array in the first place when the current user has the `make smart dates recur`
+      permission — see `smart_date_recur_widget_extra_fields()` in `smart_date_recur.module`. Granted
+      that permission to both the `anonymous` and `event_contributor` roles. `field_event_date` is
+      the only field of type `smartdate` on the site, so the permission is effectively scoped to
+      this one form. Still to verify on the running site: the add-event form actually shows the
+      repeat controls for both roles, and a submitted recurring event saves its `rrule` correctly.
 - [ ] **Force an initial capital on taxonomy terms.** Extend the existing
       `apc_calendar_taxonomy_term_presave()`. Use `\Drupal\Component\Utility\Unicode::ucfirst()`,
       not `ucfirst()`, or accented venue names will corrupt. Decide explicitly which vocabularies
@@ -182,24 +187,22 @@ there. Do them as one change, not three.
 
 ### Group 3 — Editorial workflow and access
 
-- [ ] **E. Contributor and manager roles.** Only `administrator`, `anonymous`, `authenticated`
-      exist. Two new roles: *event contributor* (create own events and locations, published
-      immediately) and *event manager* (edit/delete any event or location, plus taxonomy management
-      — `taxonomy_manager` and `term_merge` are both already enabled).
-      **Two traps.** First, `calendar_event` defaults to unpublished, so "contributor posts go live
-      immediately" needs an explicit decision: grant the publish permission, or add a presave
-      exception. Second, `apc_calendar_taxonomy_term_presave()` currently gates on
-      `isAnonymous()` — which means *any* authenticated user's locations publish instantly. That is
-      correct today (registered users are a known set) but becomes wrong the moment open
-      registration or a low-trust role exists. Revisit the condition as part of this work; the plan
-      suggests keying on a permission instead. Build a permission matrix and **test by logging in as
-      each role**, not by reading YAML.
-- [ ] **F. One-click publish of event + its location.** `views.view.pending_events` already has a
-      `views_bulk_operations_bulk_form`, so the infrastructure exists. Add a custom VBO action
-      plugin in `apc_calendar` that publishes the node and, if its referenced location term is
-      unpublished, publishes that too. Log or report when it publishes a location, so an admin is
-      never surprised by a venue going live. Depends on E only if the action should be
-      permission-gated to managers.
+- [x] **E. Contributor and manager roles.** Done. `event_contributor` (create own events/locations,
+      `publish calendar_event content immediately` + `bypass location approval`) and `event_manager`
+      (edit/delete any event, taxonomy administration via `taxonomy_manager`/`term_merge`) both exist
+      with a real permission matrix — see `apc_calendar.permissions.yml`.
+      `apc_calendar_taxonomy_term_presave()` was revisited as planned: it now gates on the
+      `bypass location approval` permission rather than `!isAnonymous()`, so a future low-trust
+      authenticated role doesn't silently inherit instant-publish. `field_term_author` (on the
+      `locations` vocabulary) was added alongside this so pending locations show who submitted them
+      without needing full revisions.
+- [x] **F. One-click publish of event + its location.** Done.
+      `Plugin/Action/PublishEventAndLocation.php` publishes the node and, if its referenced location
+      term is still unpublished, publishes that too — with a status message and a log entry so an
+      admin is never surprised by a venue going live. Wired into `pending_events`'s
+      `selected_actions`. Access is checked via ordinary entity update access rather than core's
+      publish action (which requires `administer nodes` for the `status` field) so `event_manager`
+      can use it without that broader permission.
 
 ### Group 4 — Designed, written up separately
 

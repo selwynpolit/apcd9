@@ -14,6 +14,7 @@ dependencies:
     - media
     - node
     - search
+    - smart_date_recur
     - system
     - taxonomy
 _core:
@@ -29,6 +30,7 @@ permissions:
   - 'create calendar_event content'
   - 'create image media'
   - 'create terms in locations'
+  - 'make smart dates recur'
   - 'search content'
   - 'use text format restricted_html'
   - 'view media'
