@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Drupal\apc_calendar\Controller;
 
 use Drupal\Component\Datetime\TimeInterface;
+use Drupal\Component\Utility\SortArray;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\Core\Url;
 use Drupal\node\NodeInterface;
@@ -142,13 +144,20 @@ final class EventSubmittedController extends ControllerBase {
   }
 
   /**
-   * Renders the submitted values using each field's configured formatter.
+   * Renders the submitted values via the submission_confirmation view mode.
    *
    * Deliberately not the node view builder: that would render node links
-   * ("Read more", contextual/edit links) pointing at a URL the submitter gets a
-   * 403 on, and would pick up whatever else the default view mode grows later.
-   * Rendering field items individually keeps the Smart Date formatter while
-   * letting nothing else leak onto the page.
+   * ("Read more", contextual/edit links) pointing at a URL the submitter gets
+   * a 403 on. Instead this walks the fields configured on the
+   * `submission_confirmation` view mode
+   * (core.entity_view_display.node.calendar_event.submission_confirmation)
+   * and renders each one individually with its own formatter, so a field
+   * added to that view mode later shows up here without a code change.
+   *
+   * `field_location` on that view mode uses a plain, non-linking label
+   * formatter rather than the "card" formatter used on the public view
+   * modes — a newly auto-created location term is unpublished too, so a link
+   * to it would 403 the very person who just typed it.
    */
   private function buildSummary(NodeInterface $node): array {
     $summary = [
@@ -160,38 +169,31 @@ final class EventSubmittedController extends ControllerBase {
       ],
     ];
 
-    foreach (['field_event_date', 'body'] as $field_name) {
-      if ($node->hasField($field_name) && !$node->get($field_name)->isEmpty()) {
-        $summary[$field_name] = $node->get($field_name)->view(['label' => 'inline']);
-      }
-    }
+    $display = EntityViewDisplay::collectRenderDisplay($node, 'submission_confirmation');
+    $components = $display->getComponents();
+    uasort($components, [SortArray::class, 'sortByWeightElement']);
 
-    // A virtual event has no location by the time this renders —
-    // apc_calendar_node_presave() already cleared it — so this simply does not
-    // print, rather than needing a special case for the virtual branch.
-    if ($node->hasField('field_location') && !$node->get('field_location')->isEmpty()) {
-      // Rendered as plain text, not via the entity reference formatter: a
-      // newly auto-created location term is unpublished too, so its term link
-      // would 403 for the very person who just typed it.
-      $term = $node->get('field_location')->entity;
-      if ($term !== NULL) {
-        $summary['location'] = [
-          '#type' => 'html_tag',
-          '#tag' => 'p',
-          '#value' => $this->t('Location: @name', ['@name' => $term->label()]),
-        ];
+    foreach ($components as $field_name => $component) {
+      // EntityDisplayBase::init() always re-adds 'title', 'uid', 'created'
+      // (and other base fields) as visible components on every fresh load,
+      // regardless of what is actually persisted in this view mode's config
+      // — they are not truly display-configurable for nodes. Restrict to
+      // this module's own field naming convention so only fields explicitly
+      // added to the submission_confirmation view mode render here.
+      if ($field_name !== 'body' && !str_starts_with($field_name, 'field_')) {
+        continue;
       }
-    }
-    elseif ($node->hasField('field_virtual') && (bool) $node->get('field_virtual')->value) {
-      $summary['location'] = [
-        '#type' => 'html_tag',
-        '#tag' => 'p',
-        '#value' => $this->t('This is an online-only event.'),
-      ];
-    }
-
-    if ($node->hasField('field_event_url') && !$node->get('field_event_url')->isEmpty()) {
-      $summary['field_event_url'] = $node->get('field_event_url')->view(['label' => 'inline']);
+      if (!$node->hasField($field_name) || $node->get($field_name)->isEmpty()) {
+        continue;
+      }
+      // format_custom_false on field_virtual's formatter is deliberately
+      // empty (see the view mode config) so a non-virtual event has nothing
+      // to say here; skip it outright rather than rendering an empty field
+      // wrapper.
+      if ($field_name === 'field_virtual' && !(bool) $node->get('field_virtual')->value) {
+        continue;
+      }
+      $summary[$field_name] = $node->get($field_name)->view($component);
     }
 
     return $summary;

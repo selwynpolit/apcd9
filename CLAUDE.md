@@ -160,18 +160,38 @@ there. Do them as one change, not three.
 
 - [ ] **A. Past events block on the location detail page.** `views.view.location_page` filters on
       `field_event_date_end_value >= now` (offset). Add a second display with the inverse filter,
-      DESC sort, and a small item limit. **First resolve an ambiguity:** there are two views here —
-      `location_page` (the `/locations/%` page) and `location_upcoming_events` (a block display).
-      Determine which is actually placed and whether the second is now orphaned, as
-      `views.view.location_reference` was. Do not add a third view before answering that.
-      Remember the `distinct` setting — multi-delta Smart Date joins duplicate rows without it.
-- [ ] **B. Improve `/event-submitted`.** `EventSubmittedController::buildSummary()` hand-rolls a
-      render array covering only `field_event_date`, `body`, and `field_location` — which is why
-      uploaded images do not appear. Recommended: replace the hand-rolled loop with a dedicated
-      `submission_confirmation` view mode on `calendar_event`, so future fields appear without code
-      changes. Note the controller renders a node the visitor cannot otherwise view; the session and
-      freshness guards at the top of the class are what make that safe. **Preserve them**, and keep
-      `no_cache: TRUE` on the route.
+      DESC sort, and a small item limit. **The ambiguity is resolved — `location_upcoming_events`
+      (the separate block-display view) is orphaned, not just possibly redundant.** Its block
+      placements (in both `apc_brown` and `olivero`) have a visibility rule targeting
+      `/taxonomy/term/*`, but `rabbit_hole.behavior_settings.taxonomy_term.locations.yml` 302-redirects
+      that path to `/locations/[term:tid]` before any block region renders — so that block can never
+      actually be seen, the same way `views.view.location_reference` couldn't. `location_page`'s own
+      `page_1` display at `/locations/%` is the one that's actually live; add the past-events display
+      there, not to `location_upcoming_events`. Removing the orphaned view + its two block placements
+      is a separate deliberate decision (a delete), not bundled into this item.
+      **Also found in the process:** both views currently have `distinct: false` — a live risk of
+      duplicate rows today for any location with a multi-delta Smart Date event. Fix on `location_page`
+      while touching it, and set `distinct: true` on the new past-events display from the start.
+- [x] **B. Improve `/event-submitted`.** Done. Replaced the hand-rolled `buildSummary()` loop with a
+      dedicated `submission_confirmation` node view mode
+      (`core.entity_view_display.node.calendar_event.submission_confirmation.yml`) — `field_event_image`
+      now appears (the original gap), plus `field_tags`. The controller still does **not** call the
+      full node view builder (that would bring back node/contextual links pointing at a URL the
+      submitter gets a 403 on) — it renders each of the view mode's configured field components
+      individually, in weight order. Two non-obvious things baked into this:
+      - `field_location` on this view mode uses `entity_reference_label` with `link: false`, not the
+        `entity_reference_entity_view` "card" formatter used on the public view modes — a newly
+        auto-created location term is unpublished too, so a linked card would 403 the person who just
+        typed it.
+      - `EntityDisplayBase::init()` always re-adds node base fields (`title`, `uid`, `created`) as
+        visible components on every fresh `getComponents()` call, regardless of what's actually
+        persisted in this view mode's config — discovered by testing against the running site, not by
+        reading the YAML. The controller filters to `field_*` names plus `body` to exclude them.
+      - `field_virtual`'s formatter setting `format_custom_false: ''` means a non-virtual event has
+        nothing to print; the controller skips it outright when false rather than rendering an empty
+        field wrapper.
+      Session/freshness guards in `loadSubmittedNode()` and `no_cache: TRUE` on the route were left
+      untouched, as required.
 - [ ] **C. Templates for event detail and location detail.** `apc_brown/templates/content/` has only
       `node.html.twig` and `node--teaser.html.twig`. Needs `node--calendar-event--full.html.twig`
       and a location equivalent. **Non-obvious:** location term pages are redirected by Rabbit Hole
