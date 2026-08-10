@@ -7,6 +7,7 @@
 
 use Drupal\apc_calendar\Controller\EventSubmittedController;
 use Drupal\Component\Serialization\Json;
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
@@ -31,6 +32,16 @@ use Drupal\taxonomy\TermInterface;
  * self-registered role from silently inheriting instant-publish. Currently
  * granted to event_contributor and event_manager (administrator has every
  * permission implicitly via is_admin).
+ *
+ * Also forces an initial capital on term names in the locations and tags
+ * vocabularies, so "burger king" and "Burger King" don't end up as two
+ * different terms depending on who typed which one first. Runs on every
+ * save, not just new terms, so a later edit gets normalized too.
+ * Unicode::ucfirst() rather than PHP's ucfirst(), which is byte-oriented and
+ * would corrupt a multibyte leading character (e.g. an accented venue name).
+ * No exception is carved out for deliberately-lowercase names ("eBay",
+ * "danceAustin") — not worth the added complexity for how rarely it comes
+ * up here.
  */
 function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
   // Fill in author name.
@@ -46,6 +57,14 @@ function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
       $term->setUnpublished();
     }
    }
+
+  // Force an initial capital on the term name.
+  if (in_array($term->bundle(), ['locations', 'tags'], TRUE)) {
+    $name = $term->getName();
+    if ($name !== '' && $name !== NULL) {
+      $term->setName(Unicode::ucfirst($name));
+    }
+  }
 }
 
 /**

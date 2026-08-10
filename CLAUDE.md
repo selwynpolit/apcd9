@@ -146,14 +146,15 @@ there. Do them as one change, not three.
       permission — see `smart_date_recur_widget_extra_fields()` in `smart_date_recur.module`. Granted
       that permission to both the `anonymous` and `event_contributor` roles. `field_event_date` is
       the only field of type `smartdate` on the site, so the permission is effectively scoped to
-      this one form. Still to verify on the running site: the add-event form actually shows the
-      repeat controls for both roles, and a submitted recurring event saves its `rrule` correctly.
-- [ ] **Force an initial capital on taxonomy terms.** Extend the existing
-      `apc_calendar_taxonomy_term_presave()`. Use `\Drupal\Component\Utility\Unicode::ucfirst()`,
-      not `ucfirst()`, or accented venue names will corrupt. Decide explicitly which vocabularies
-      this applies to (`locations`, `tags`, or both) and guard on bundle. Consider whether
-      deliberately-lowercase names ("eBay", "danceAustin") are worth an exception — probably not
-      worth the complexity, but make it a decision rather than an accident.
+      this one form. Verified on the running site: the add-event form shows the repeat controls for
+      both `anonymous` and `event_contributor`, and body summary/revision fields stay hidden for
+      anonymous only, as designed.
+- [x] **Force an initial capital on taxonomy terms.** Done. Extended
+      `apc_calendar_taxonomy_term_presave()` to run on every save (not just new terms) for both the
+      `locations` and `tags` vocabularies, using `\Drupal\Component\Utility\Unicode::ucfirst()` so
+      multibyte leading characters aren't corrupted — verified against the running site with an
+      accented name (`étoile lounge` → `Étoile lounge`). No exception carved out for deliberately-
+      lowercase names; decided not worth the complexity.
 
 ### Group 2 — Content and display
 
