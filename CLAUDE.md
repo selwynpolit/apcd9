@@ -158,20 +158,35 @@ there. Do them as one change, not three.
 
 ### Group 2 — Content and display
 
-- [ ] **A. Past events block on the location detail page.** `views.view.location_page` filters on
-      `field_event_date_end_value >= now` (offset). Add a second display with the inverse filter,
-      DESC sort, and a small item limit. **The ambiguity is resolved — `location_upcoming_events`
-      (the separate block-display view) is orphaned, not just possibly redundant.** Its block
-      placements (in both `apc_brown` and `olivero`) have a visibility rule targeting
-      `/taxonomy/term/*`, but `rabbit_hole.behavior_settings.taxonomy_term.locations.yml` 302-redirects
-      that path to `/locations/[term:tid]` before any block region renders — so that block can never
-      actually be seen, the same way `views.view.location_reference` couldn't. `location_page`'s own
-      `page_1` display at `/locations/%` is the one that's actually live; add the past-events display
-      there, not to `location_upcoming_events`. Removing the orphaned view + its two block placements
-      is a separate deliberate decision (a delete), not bundled into this item.
-      **Also found in the process:** both views currently have `distinct: false` — a live risk of
-      duplicate rows today for any location with a multi-delta Smart Date event. Fix on `location_page`
-      while touching it, and set `distinct: true` on the new past-events display from the start.
+- [x] **A. Past events block on the location detail page.** Done. Added an `attachment_1` display
+      ("Past Events") attached after `page_1` on `views.view.location_page`, with the inverse filter
+      (`field_event_date_end_value < now`), `DESC` sort, and a `some` pager capped at 5 items.
+      `location_upcoming_events` (the separate block-display view) was confirmed orphaned, not just
+      possibly redundant: its block placements (both `apc_brown` and `olivero`) had a visibility rule
+      targeting `/taxonomy/term/*`, but `rabbit_hole.behavior_settings.taxonomy_term.locations.yml`
+      302-redirects that path to `/locations/[term:tid]` before any block region renders — the same
+      fate as `views.view.location_reference`. Deleted the view; both block placements cascade-deleted
+      automatically as dependents.
+      **The `distinct` concern turned out to be a red herring — tested and confirmed, not assumed.**
+      A 5-instance recurring event was verified to produce 5 separate rows on this page (each a real,
+      individually-matching Smart Date delta). Neither `distinct: true` nor Views aggregation
+      (`group_by` + `MIN()`/`MAX()`) fixes this cleanly: aggregating a composite field like Smart Date
+      (`value`/`end_value`/`duration`/`rrule` stored together) per-column independently breaks the
+      formatter (it rendered raw unformatted numbers instead of a date). **Deliberately not fixed** —
+      decided a recurring series showing each instance separately is acceptable, normal calendar UX;
+      no dedup code was added. `distinct` was left at its existing `false` on both the `default` and
+      new `attachment_1` displays.
+      **Also hit and worth remembering:** building a new Views display programmatically (not through
+      Views UI) requires calling the display handler's `setOverride($section, FALSE)` for each
+      section you intend to customize (`header`, `footer`, `filters`, `sorts`, `title`, `empty`) —
+      Views' "same as Default" behavior is governed by a `display_options.defaults` flag per option,
+      not by merely writing a value into the display's own `display_options` array. Hand-writing that
+      `defaults` array directly and saving via the plain entity API silently failed to persist it;
+      only the official `setOverride()` API worked. Also: Views' `title` option does **not** render as
+      a visible on-page heading for attachment/block displays in this theme (`apc_brown`'s
+      `views-view.html.twig` only prints `title` for the admin preview) — the existing "Upcoming
+      Events" heading on this same view is a `header` text area (`<h2>Upcoming Events</h2>`), not the
+      `title` option; the new "Past Events" heading was built the same way.
 - [x] **B. Improve `/event-submitted`.** Done. Replaced the hand-rolled `buildSummary()` loop with a
       dedicated `submission_confirmation` node view mode
       (`core.entity_view_display.node.calendar_event.submission_confirmation.yml`) — `field_event_image`
