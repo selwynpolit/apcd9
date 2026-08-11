@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\apc_calendar\Form;
 
 use Drupal\apc_calendar\Plugin\EntityReferenceSelection\SessionLocationSelection;
+use Drupal\apc_calendar\UsStates;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Ajax\InvokeCommand;
@@ -31,21 +32,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * the submitter can carry on without losing anything they had typed.
  */
 final class AddLocationForm extends FormBase {
-
-  /**
-   * Valid US state and territory abbreviations.
-   *
-   * A two-letter field validated against this list rather than a 50-option
-   * select: the same data quality, far less markup, and for an Austin calendar
-   * the default is right almost every time.
-   */
-  private const STATES = [
-    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA', 'HI',
-    'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN',
-    'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH',
-    'OK', 'OR', 'PA', 'PR', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA',
-    'VI', 'WA', 'WV', 'WI', 'WY',
-  ];
 
   public function __construct(
     protected readonly EntityTypeManagerInterface $entityTypeManager,
@@ -168,7 +154,7 @@ final class AddLocationForm extends FormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state): void {
     $state = strtoupper(trim((string) $form_state->getValue('administrative_area')));
-    if ($state !== '' && !in_array($state, self::STATES, TRUE)) {
+    if ($state !== '' && !in_array($state, UsStates::STATES, TRUE)) {
       $form_state->setErrorByName('administrative_area', $this->t('Please use a two-letter state abbreviation, for example TX.'));
     }
 
