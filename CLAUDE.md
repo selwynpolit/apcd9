@@ -274,6 +274,28 @@ there. Do them as one change, not three.
           same access check formatter rendering is), gated on `\Drupal::currentUser()->isAnonymous()`
           so a manager or admin still sees the real venue name and link. Deliberately shows the literal
           word "Pending review", not the unapproved venue's actual name.
+      - **A second round of fixes, from a closer look at the live pages:**
+        - Both detail pages showed the title twice — the theme's generic "Page title" block
+          (`apc_brown_page_title`, placed in `content_above` site-wide) stacked on top of each
+          template's own styled `<h1>`. That block already excluded the `/calendar` listing page;
+          added `/calendar/*` and `/locations/*` to its `request_path` visibility so it's hidden on
+          every individual event/location page too, site-wide, with no template code needed.
+        - Location page amenity badges (`field_tags`) moved from just under the title to after "About
+          this location" — matches where the design comp actually places them.
+        - **The map settings restored earlier for the location page were wrong** — an abbreviated
+          hand-typed settings array, missing `disable_wheel` among others, so scroll-wheel zoom was
+          silently enabled when it shouldn't have been. Re-fixed by copying `card`'s `field_geofield`
+          component **verbatim** (`$card->getComponent('field_geofield')`, not retyped) onto both
+          `taxonomy_term.locations.default` and the event page's `location_reference` view mode, so
+          both pages now match `card`'s exact settings, including `disable_wheel: true` and
+          `map_position.zoom: 15`.
+        - **The event page's map was gone too**, and for the same root cause as the "Get directions"
+          regression: `field_location` used to render via `entity_reference_entity_view` +
+          `card` (which includes the Leaflet map), and swapping it to the slimmer `location_reference`
+          view mode for the sidebar dropped the map along with the embedded photo/full address it was
+          also trying to shed. Fix was config-only — add `field_geofield` (with `card`'s exact
+          settings) as a component of `location_reference` — no template change needed, since
+          `content.field_location` already renders the whole embedded view mode.
 - [x] **D. Responsive images.** Done, folded into item C rather than done separately, since both
       needed the same hero image markup. Enabled `responsive_image`; new `gallery_hero_mobile` /
       `gallery_hero_desktop` / `gallery_thumb` image styles (scale-and-crop, well under the `2000x2000`

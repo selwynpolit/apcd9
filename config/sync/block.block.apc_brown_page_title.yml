@@ -23,4 +23,7 @@ visibility:
   request_path:
     id: request_path
     negate: true
-    pages: /calendar
+    pages: |-
+      /calendar
+      /calendar/*
+      /locations/*
