@@ -21,12 +21,6 @@
     <div class="apc-detail__meta">{{ content.field_address }}</div>
   {% endif %}
 
-  {% if content.field_tags %}
-    <div class="apc-detail__badges">
-      {{ content.field_tags }}
-    </div>
-  {% endif %}
-
   <div class="apc-detail__actions">
     {% if content.directions %}
       {{ content.directions }}
@@ -69,6 +63,12 @@
         <div class="apc-detail__body">
           <h2 class="apc-detail__section-title">{{ 'About this location'|t }}</h2>
           {{ content.description }}
+        </div>
+      {% endif %}
+
+      {% if content.field_tags %}
+        <div class="apc-detail__badges">
+          {{ content.field_tags }}
         </div>
       {% endif %}
 
