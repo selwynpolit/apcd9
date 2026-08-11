@@ -7,10 +7,7 @@ dependencies:
 id: taxonomy_term.locations
 targetEntityType: taxonomy_term
 bundle: locations
-action: page_redirect
+action: display_page
 no_bypass: true
 bypass_message: false
-configuration:
-  redirect: '/locations/[term:tid]'
-  redirect_code: 302
-  redirect_fallback_action: access_denied
+configuration: {  }

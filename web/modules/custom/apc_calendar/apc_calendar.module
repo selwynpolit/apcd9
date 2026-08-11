@@ -397,20 +397,7 @@ function apc_calendar_taxonomy_term_view(array &$build, TermInterface $term, Ent
  * instead of wondering whether the feature is broken.
  */
 function apc_calendar_build_directions(TermInterface $term): array {
-  $destination = NULL;
-
-  if ($term->hasField('field_geofield') && !$term->get('field_geofield')->isEmpty()) {
-    $geo = $term->get('field_geofield')->first();
-    $lat = $geo->get('lat')->getValue();
-    $lon = $geo->get('lon')->getValue();
-    if ($lat !== NULL && $lon !== NULL) {
-      $destination = $lat . ',' . $lon;
-    }
-  }
-
-  if ($destination === NULL) {
-    $destination = apc_calendar_format_address($term);
-  }
+  $destination = apc_calendar_get_directions_destination($term);
 
   if ($destination === NULL) {
     return [
@@ -460,6 +447,45 @@ function apc_calendar_build_directions(TermInterface $term): array {
   }
 
   return $build;
+}
+
+/**
+ * Resolves the best available directions destination for a location term.
+ *
+ * Split out of apc_calendar_build_directions() so a single-link, single-
+ * service consumer (the event detail page's "Get directions" button) can
+ * reuse the same coordinates-preferred-over-address resolution without
+ * duplicating it.
+ *
+ * @see apc_calendar_build_directions()
+ */
+function apc_calendar_get_directions_destination(TermInterface $term): ?string {
+  if ($term->hasField('field_geofield') && !$term->get('field_geofield')->isEmpty()) {
+    $geo = $term->get('field_geofield')->first();
+    $lat = $geo->get('lat')->getValue();
+    $lon = $geo->get('lon')->getValue();
+    if ($lat !== NULL && $lon !== NULL) {
+      return $lat . ',' . $lon;
+    }
+  }
+
+  return apc_calendar_format_address($term);
+}
+
+/**
+ * Builds a single Google Maps directions URL for a location term.
+ *
+ * For contexts that want one "Get directions" action (the event detail
+ * page) rather than the full OSM+Google choice apc_calendar_build_directions()
+ * renders on the location page itself.
+ */
+function apc_calendar_get_directions_url(TermInterface $term): ?string {
+  $destination = apc_calendar_get_directions_destination($term);
+  if ($destination === NULL) {
+    return NULL;
+  }
+
+  return 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($destination);
 }
 
 /**

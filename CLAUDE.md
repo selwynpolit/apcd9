@@ -207,19 +207,60 @@ there. Do them as one change, not three.
         field wrapper.
       Session/freshness guards in `loadSubmittedNode()` and `no_cache: TRUE` on the route were left
       untouched, as required.
-- [ ] **C. Templates for event detail and location detail.** `apc_brown/templates/content/` has only
-      `node.html.twig` and `node--teaser.html.twig`. Needs `node--calendar-event--full.html.twig`
-      and a location equivalent. **Non-obvious:** location term pages are redirected by Rabbit Hole
-      to `/locations/[term:tid]`, a Views page — so a `taxonomy-term--locations.html.twig` may never
-      render. Confirm what the Claude Design comps actually target (Views row/page templates vs. the
-      term template) before writing either.
-- [ ] **D. Responsive images.** `responsive_image` is **not enabled**; `breakpoint` is, and the
-      Olivero fork did carry `apc_brown.breakpoints.yml` (sm/md/lg/xl, 1x only). Work: enable the
-      module, define responsive image styles, switch the formatters on `field_event_image` and
-      `field_media_image`. Existing image styles are only core's defaults plus `wide`. Interacts
-      with the `2000x2000` upload cap on `field.field.media.image.field_media_image` — do not define
-      styles wider than the largest image that can be uploaded. Add `1x`/`2x` multipliers if the
-      design calls for retina.
+- [x] **C. Templates for event detail and location detail.** Done, built against the Claude Design
+      comps in `assets/*.pdf`. One template each, not separate mobile/desktop templates — the comps
+      are the same layout reflowing at a breakpoint, handled entirely in `css/components/detail-page.css`
+      (stacks below `62.5rem`, sidebar grid above).
+      - `node--calendar-event--full.html.twig` — badges (`field_tags`), title, date/time, an "Add to
+        calendar" Google Calendar link (`_apc_brown_google_calendar_url()` — no ICS service exists in
+        this codebase, so this is a plain prefilled URL, no new dependency), a single "Get directions"
+        Google Maps link, an image gallery, and sidebar cards.
+      - **The location page's whole architecture changed**, not just a template add. It used to be a
+        Views page (`location_page`) that Rabbit Hole redirected `/taxonomy/term/%` to. That's gone —
+        `rabbit_hole.behavior_settings.taxonomy_term.locations.yml` now uses `display_page` (normal
+        entity render) instead of `page_redirect`, and a new `pathauto.pattern.locations` pattern
+        (`/locations/[term:name]`) gives terms their own alias so the URL keeps working. `location_page`
+        lost its `page_1`/`attachment_1` displays (the path they lived at is now the term's own alias —
+        keeping them would have meant two routes competing for the same path) and gained two **block**
+        displays instead, `block_upcoming` and `block_past`, embedded directly in
+        `taxonomy-term--locations--full.html.twig` via
+        `Views::getView('location_page')->buildRenderable(...)` in `apc_brown_preprocess_taxonomy_term()`.
+      - **Non-obvious, found by testing against the running site, not by reading the YAML:** disabling
+        the redirect didn't hand rendering to the plain entity view builder — it revealed
+        `views.view.taxonomy_term`, Drupal's optional default "Taxonomy term" view. It was `status: true`
+        this whole time, silently masked because it registers its own route at the literal path
+        `taxonomy/term/%`, which Views intentionally lets take priority over the plain entity route —
+        Rabbit Hole's redirect ran first and nobody ever saw it. It was never an intentional part of this
+        site (would apply to every vocabulary, `tags` included) and is now disabled.
+      - **Also non-obvious:** `taxonomy_theme_suggestions_taxonomy_term()` in core only adds
+        `taxonomy_term__BUNDLE` and `taxonomy_term__ID` suggestions — unlike nodes, there is no free
+        `taxonomy_term__BUNDLE__VIEWMODE` suggestion, so a `taxonomy-term--locations--full.html.twig`
+        file is silently never picked up on its own. Added
+        `apc_brown_theme_suggestions_taxonomy_term_alter()` to add it.
+      - New `field_tags` field added to the `locations` vocabulary (targeting the same `tags`
+        vocabulary events use) for the amenity pills ("Wheelchair accessible", "Free parking") the
+        comps show — there was no backing field for these before.
+      - New `taxonomy_term.location_reference` view mode (name + address only) for the event page's
+        compact "Location" sidebar card — reusing the existing `card` formatter there rendered a full
+        embedded card (map, image, full address) that was never right for a sidebar.
+      - **Known gap, not built:** the comp's "Organizer" sidebar card on the event page has no backing
+        field (no `field_organizer` exists) and was left out rather than guessed at — needs a real
+        decision (plain text vs. a reference) before it's added.
+      - **Known simplification:** the embedded upcoming/past events lists on the location page render
+        with the `location_page` view's own default field-row markup, not bespoke `.apc-event-card`
+        styling — functionally correct and reasonably readable, just not pixel-matched to the comp's
+        card treatment.
+      - Gallery click-to-swap (event and location pages both): `apc_brown/js/gallery.js`, plain JS using
+        `<button>` thumbnails (free keyboard support) that swap the hero `<img>`/`<source>` via data
+        attributes — no framework, no Views/render-array involvement for the interactive part.
+- [x] **D. Responsive images.** Done, folded into item C rather than done separately, since both
+      needed the same hero image markup. Enabled `responsive_image`; new `gallery_hero_mobile` /
+      `gallery_hero_desktop` / `gallery_thumb` image styles (scale-and-crop, well under the `2000x2000`
+      upload cap) and a `gallery_hero` responsive image style mapped to the `apc_brown.lg` breakpoint.
+      Used directly in `_apc_brown_build_gallery()` (in `apc_brown.theme`) rather than through the
+      Field UI formatter system — the interactive gallery needs precomputed mobile+desktop URLs on
+      every thumbnail for the swap JS, which a standard responsive-image field formatter has no way to
+      expose.
 
 ### Group 3 — Editorial workflow and access
 

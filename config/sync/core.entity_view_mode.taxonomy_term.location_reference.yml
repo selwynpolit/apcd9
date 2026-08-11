@@ -1,0 +1,11 @@
+uuid: 277c862a-9131-414e-991c-057970a8ccee
+langcode: en
+status: true
+dependencies:
+  module:
+    - taxonomy
+id: taxonomy_term.location_reference
+label: 'Location reference (compact)'
+description: ''
+targetEntityType: taxonomy_term
+cache: true

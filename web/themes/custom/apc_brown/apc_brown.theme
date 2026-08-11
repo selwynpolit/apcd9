@@ -7,9 +7,11 @@
 
 use Drupal\apc_brown\OliveroPreRender;
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Render\Element;
+use Drupal\image\Entity\ImageStyle;
 use Drupal\user\UserInterface;
 
 /**
@@ -112,6 +114,139 @@ function apc_brown_preprocess_node(&$variables) {
   if ($variables['node']->bundle() === 'article' && $variables['view_mode'] === 'full') {
     $variables['layout'] = 'content-narrow';
   }
+
+  // Build the click-to-swap gallery for the event detail page. Not done via
+  // field formatter settings: the interactive hero/thumbnail markup needs
+  // precomputed mobile+desktop URLs on each thumbnail (see
+  // apc_brown/gallery), which a standard field template has no clean way to
+  // expose.
+  if ($variables['node']->bundle() === 'calendar_event' && $variables['view_mode'] === 'full') {
+    $variables['gallery'] = _apc_brown_build_gallery($variables['node'], 'field_event_image');
+    $variables['add_to_calendar_url'] = _apc_brown_google_calendar_url($variables['node']);
+
+    // Single Google Maps link for the event page's one "Get directions"
+    // button -- apc_calendar_get_directions_url() reuses the same
+    // coordinates-preferred-over-address resolution as the two-link
+    // OSM+Google block on the location page itself, without duplicating it.
+    if ($variables['node']->hasField('field_location') && !$variables['node']->get('field_location')->isEmpty()) {
+      $term = $variables['node']->get('field_location')->entity;
+      if ($term !== NULL && function_exists('apc_calendar_get_directions_url')) {
+        $variables['directions_url'] = apc_calendar_get_directions_url($term);
+      }
+    }
+  }
+}
+
+/**
+ * Builds a "Add to calendar" Google Calendar link for an event node.
+ *
+ * No ICS generation service exists in this codebase or its dependencies, and
+ * adding one is out of scope here. Google Calendar's "render" endpoint
+ * accepts a fully pre-filled event as a plain URL, so this needs no new
+ * module and no backend route -- it degrades gracefully to NULL (button
+ * omitted) if the event has no date.
+ */
+function _apc_brown_google_calendar_url(\Drupal\node\NodeInterface $node): ?string {
+  if (!$node->hasField('field_event_date') || $node->get('field_event_date')->isEmpty()) {
+    return NULL;
+  }
+
+  $item = $node->get('field_event_date')->first();
+  $start = $item->get('value')->getValue();
+  $end = $item->get('end_value')->getValue();
+  if (empty($start) || empty($end)) {
+    return NULL;
+  }
+
+  $params = [
+    'action' => 'TEMPLATE',
+    'text' => $node->label(),
+    'dates' => gmdate('Ymd\THis\Z', $start) . '/' . gmdate('Ymd\THis\Z', $end),
+  ];
+
+  if ($node->hasField('field_location') && !$node->get('field_location')->isEmpty()) {
+    $term = $node->get('field_location')->entity;
+    if ($term !== NULL) {
+      $params['location'] = $term->label();
+    }
+  }
+
+  return 'https://calendar.google.com/calendar/render?' . http_build_query($params);
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK_alter() for taxonomy_term.html.twig.
+ *
+ * Unlike node_theme_suggestions_node(), core's
+ * taxonomy_theme_suggestions_taxonomy_term() only adds
+ * 'taxonomy_term__BUNDLE' and 'taxonomy_term__ID' — no bundle+view-mode
+ * combined suggestion, so a 'taxonomy-term--locations--full.html.twig' file
+ * is silently never picked up without this.
+ */
+function apc_brown_theme_suggestions_taxonomy_term_alter(array &$suggestions, array $variables): void {
+  /** @var \Drupal\taxonomy\TermInterface $term */
+  $term = $variables['elements']['#taxonomy_term'];
+  $view_mode = $variables['elements']['#view_mode'];
+  $suggestions[] = 'taxonomy_term__' . $term->bundle() . '__' . $view_mode;
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for taxonomy-term.html.twig.
+ */
+function apc_brown_preprocess_taxonomy_term(&$variables) {
+  /** @var \Drupal\taxonomy\TermInterface $term */
+  $term = $variables['term'];
+
+  if ($term->bundle() === 'locations' && $variables['view_mode'] === 'full') {
+    $variables['gallery'] = _apc_brown_build_gallery($term, 'field_location_image');
+
+    // The upcoming/past events lists were split out of location_page's old
+    // page/attachment displays into standalone block displays (block_upcoming,
+    // block_past) specifically so they could be embedded here.
+    $variables['upcoming_events'] = \Drupal\views\Views::getView('location_page')?->buildRenderable('block_upcoming', [$term->id()]);
+    $variables['past_events'] = \Drupal\views\Views::getView('location_page')?->buildRenderable('block_past', [$term->id()]);
+  }
+}
+
+/**
+ * Builds the click-to-swap gallery variable for a node or term template.
+ *
+ * @see apc_brown_preprocess_node()
+ * @see apc_brown_preprocess_taxonomy_term()
+ */
+function _apc_brown_build_gallery(FieldableEntityInterface $entity, string $field_name): array {
+  $items = [];
+
+  if (!$entity->hasField($field_name) || $entity->get($field_name)->isEmpty()) {
+    return $items;
+  }
+
+  $hero_mobile_style = ImageStyle::load('gallery_hero_mobile');
+  $hero_desktop_style = ImageStyle::load('gallery_hero_desktop');
+  $thumb_style = ImageStyle::load('gallery_thumb');
+
+  foreach ($entity->get($field_name) as $item) {
+    $media = $item->entity;
+    if ($media === NULL || !$media->hasField('field_media_image') || $media->get('field_media_image')->isEmpty()) {
+      continue;
+    }
+
+    $image_item = $media->get('field_media_image')->first();
+    $file = $image_item->entity;
+    if ($file === NULL) {
+      continue;
+    }
+
+    $uri = $file->getFileUri();
+    $items[] = [
+      'hero_mobile' => $hero_mobile_style->buildUrl($uri),
+      'hero_desktop' => $hero_desktop_style->buildUrl($uri),
+      'thumb' => $thumb_style->buildUrl($uri),
+      'alt' => $image_item->get('alt')->getString() ?: $media->label(),
+    ];
+  }
+
+  return $items;
 }
 
 /**
