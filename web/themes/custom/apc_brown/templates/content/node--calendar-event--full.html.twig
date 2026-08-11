@@ -1,0 +1,87 @@
+{#
+/**
+ * @file
+ * Event detail page (full view mode of a calendar_event node).
+ *
+ * gallery and add_to_calendar_url are built in apc_brown_preprocess_node().
+ *
+ * @see apc_brown_preprocess_node()
+ */
+#}
+{{ attach_library('apc_brown/detail-page') }}
+<article{{ attributes.addClass('apc-detail') }}>
+  <div class="apc-detail__breadcrumb">
+    <a href="/calendar">{{ 'Calendar'|t }}</a> / {{ label }}
+  </div>
+
+  {% if content.field_tags %}
+    <div class="apc-detail__badges">
+      {{ content.field_tags }}
+    </div>
+  {% endif %}
+
+  <h1 class="apc-detail__title">{{ label }}</h1>
+
+  <div class="apc-detail__meta">
+    {{ content.field_event_date }}
+  </div>
+
+  <div class="apc-detail__actions">
+    {% if add_to_calendar_url %}
+      <a class="apc-pill-button" href="{{ add_to_calendar_url }}" target="_blank" rel="noopener noreferrer">{{ 'Add to calendar'|t }}</a>
+    {% endif %}
+    {% if node.field_virtual.value and content.field_event_url %}
+      <span class="apc-pill-button apc-pill-button--primary">{{ content.field_event_url }}</span>
+    {% elseif directions_url %}
+      <a class="apc-pill-button apc-pill-button--primary" href="{{ directions_url }}" target="_blank" rel="noopener noreferrer">{{ 'Get directions'|t }}</a>
+    {% endif %}
+  </div>
+
+  <div class="apc-detail__grid">
+    <div class="apc-detail__main">
+      {% if gallery %}
+        <div class="apc-gallery" data-apc-gallery>
+          <picture class="apc-gallery__hero" data-apc-gallery-hero>
+            {% if gallery|length > 1 %}
+              <source media="(min-width: 62.5rem)" srcset="{{ gallery.0.hero_desktop }}" data-apc-gallery-source-desktop>
+            {% endif %}
+            <img src="{{ gallery.0.hero_mobile }}" alt="{{ gallery.0.alt }}" data-apc-gallery-img>
+          </picture>
+          {% if gallery|length > 1 %}
+            <div class="apc-gallery__thumbs" data-apc-gallery-thumbs>
+              {% for item in gallery %}
+                <button type="button" class="apc-gallery__thumb{{ loop.first ? ' is-active' }}" data-apc-gallery-thumb data-hero-mobile="{{ item.hero_mobile }}" data-hero-desktop="{{ item.hero_desktop }}" data-alt="{{ item.alt }}">
+                  <img src="{{ item.thumb }}" alt="">
+                </button>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <div class="apc-detail__body">
+        <h2 class="apc-detail__section-title">{{ 'About this event'|t }}</h2>
+        {{ content.body }}
+      </div>
+    </div>
+
+    <aside class="apc-detail__sidebar">
+      <div class="apc-info-card">
+        <p class="apc-info-card__label">{{ 'Date & time'|t }}</p>
+        {{ content.field_event_date }}
+      </div>
+
+      {% if content.field_location %}
+        <div class="apc-info-card">
+          <p class="apc-info-card__label">{{ 'Location'|t }}</p>
+          {{ content.field_location }}
+        </div>
+      {% elseif node.field_virtual.value %}
+        <div class="apc-info-card">
+          <p class="apc-info-card__label">{{ 'Location'|t }}</p>
+          <p class="apc-info-card__body">{{ 'This is an online-only event.'|t }}</p>
+        </div>
+      {% endif %}
+    </aside>
+  </div>
+</article>

@@ -304,3 +304,14 @@ tags:
   css:
     theme:
       css/components/tags.css: {}
+
+detail-page:
+  version: VERSION
+  css:
+    theme:
+      css/components/detail-page.css: {}
+  js:
+    js/gallery.js: {}
+  dependencies:
+    - core/drupal
+    - core/once

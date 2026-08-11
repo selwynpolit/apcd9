@@ -1,0 +1,311 @@
+/**
+ * @file
+ * Shared layout for the event and location detail pages: two-column
+ * content/sidebar grid, pill buttons, badges, gallery, and info cards.
+ */
+
+.apc-detail {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--container-padding);
+}
+
+.apc-detail__breadcrumb {
+  margin-block-end: var(--sp1);
+  font-size: var(--font-size-s);
+  color: var(--color-text-neutral-soft);
+}
+
+.apc-detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp0-5, 0.5625rem);
+  margin-block-end: var(--sp1);
+}
+
+.apc-detail__title {
+  margin-block-end: var(--sp0-5, 0.5625rem);
+  font-family: var(--font-serif);
+}
+
+.apc-detail__meta {
+  margin-block-end: var(--sp2);
+  color: var(--color-text-neutral-medium);
+}
+
+.apc-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp1);
+  margin-block-end: var(--sp2);
+}
+
+.apc-detail__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp3);
+}
+
+@media (min-width: 62.5rem) {
+  .apc-detail__grid {
+    grid-template-columns: 2fr 1fr;
+    align-items: start;
+  }
+}
+
+.apc-detail__main > * + * {
+  margin-block-start: var(--sp2);
+}
+
+.apc-detail__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp1-5, 0.84375rem);
+}
+
+/* Pill buttons: rounder and more prominent than Olivero's core .button. */
+.apc-pill-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp0-5, 0.5625rem) var(--sp1-5, 1.6875rem);
+  border: 2px solid var(--color--primary-50);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-primary-medium);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.apc-pill-button:hover,
+.apc-pill-button:focus {
+  color: var(--color-text-primary-loud);
+  border-color: currentColor;
+  text-decoration: none;
+}
+
+.apc-pill-button--primary {
+  border-color: var(--color--primary-50);
+  background: var(--color--primary-50);
+  color: var(--color--white);
+}
+
+.apc-pill-button--primary:hover,
+.apc-pill-button--primary:focus {
+  background: var(--color--primary-40);
+  border-color: var(--color--primary-40);
+  color: var(--color--white);
+}
+
+/* Small pill badges for tags/amenities. */
+.apc-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.apc-badge {
+  display: inline-block;
+  padding: 0.1875rem 0.75rem;
+  border: 1px solid var(--color--primary-50);
+  border-radius: 999px;
+  color: var(--color-text-primary-medium);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Style the default field markup for field_tags (event and location pages)
+   as pill badges without needing a bespoke field template. */
+.apc-detail__badges .field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.apc-detail__badges .field__item,
+.apc-detail__badges .field__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.apc-detail__badges .field__item {
+  padding: 0.1875rem 0.75rem;
+  border: 1px solid var(--color--primary-50);
+  border-radius: 999px;
+  color: var(--color-text-primary-medium);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Gallery: hero image with a scrollable thumbnail rail. */
+.apc-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp0-5, 0.5625rem);
+}
+
+@media (min-width: 62.5rem) {
+  .apc-gallery {
+    flex-direction: row;
+  }
+}
+
+.apc-gallery__hero {
+  display: block;
+  order: -1;
+  overflow: hidden;
+  border-radius: var(--border-radius);
+  aspect-ratio: 4 / 3;
+}
+
+@media (min-width: 62.5rem) {
+  .apc-gallery__hero {
+    order: 0;
+    flex: 1 1 auto;
+    aspect-ratio: 3 / 2;
+  }
+}
+
+.apc-gallery__hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.apc-gallery__thumbs {
+  display: flex;
+  gap: var(--sp0-5, 0.5625rem);
+  overflow-x: auto;
+  padding-block-end: 0.25rem;
+}
+
+@media (min-width: 62.5rem) {
+  .apc-gallery__thumbs {
+    flex-direction: column;
+    flex: 0 0 5.5rem;
+    overflow-x: visible;
+    overflow-y: auto;
+    max-height: 22.5rem;
+  }
+}
+
+.apc-gallery__thumb {
+  flex: 0 0 auto;
+  width: 5.5rem;
+  height: 5.5rem;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--border-radius);
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.apc-gallery__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.apc-gallery__thumb.is-active,
+.apc-gallery__thumb:hover,
+.apc-gallery__thumb:focus {
+  border-color: var(--color--primary-50);
+}
+
+/* Info cards in the sidebar. */
+.apc-info-card {
+  padding: var(--sp1);
+  border-radius: var(--border-radius);
+  background: var(--color--gray-95);
+}
+
+.apc-info-card__label {
+  margin: 0 0 0.25rem;
+  color: var(--color-text-neutral-soft);
+  font-size: var(--font-size-xxs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.apc-info-card__title {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-l);
+}
+
+.apc-info-card__body {
+  margin: 0;
+  color: var(--color-text-neutral-medium);
+  font-size: var(--font-size-s);
+}
+
+.apc-info-card__link {
+  display: inline-block;
+  margin-block-start: 0.25rem;
+  font-weight: 700;
+}
+
+/* Related events lists (upcoming / past), embedded views on location page. */
+.apc-detail__section-title {
+  font-family: var(--font-serif);
+}
+
+.apc-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp1);
+}
+
+.apc-event-list--past {
+  gap: 0;
+}
+
+.apc-event-card {
+  padding: var(--sp1);
+  border-radius: var(--border-radius);
+  background: var(--color--gray-95);
+}
+
+.apc-event-card__title {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-l);
+}
+
+.apc-event-card__date {
+  margin: 0;
+  color: var(--color-text-neutral-medium);
+  font-size: var(--font-size-s);
+}
+
+.apc-past-event-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp1);
+  padding-block: 0.75rem;
+  border-block-end: 1px solid var(--color--gray-90);
+}
+
+.apc-past-event-row:last-child {
+  border-block-end: none;
+}
+
+.apc-past-event-row__date {
+  color: var(--color-text-neutral-soft);
+  font-size: var(--font-size-s);
+  white-space: nowrap;
+}

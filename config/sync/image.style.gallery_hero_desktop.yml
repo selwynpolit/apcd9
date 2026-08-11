@@ -1,0 +1,15 @@
+uuid: 00e3ce1d-615f-4ca5-8984-71e1e87c1ca7
+langcode: en
+status: true
+dependencies: {  }
+name: gallery_hero_desktop
+label: 'Gallery Hero Desktop'
+effects:
+  3c50df31-b9c4-4616-ba48-b4cecdf1e007:
+    uuid: 3c50df31-b9c4-4616-ba48-b4cecdf1e007
+    id: image_scale_and_crop
+    weight: null
+    data:
+      width: 900
+      height: 600
+      anchor: center-center

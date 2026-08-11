@@ -1,0 +1,15 @@
+uuid: ab947acb-0601-4d37-a232-a17f74fa36a5
+langcode: en
+status: true
+dependencies: {  }
+name: gallery_hero_mobile
+label: 'Gallery Hero Mobile'
+effects:
+  f9f55d8c-df31-4553-ba98-289c1c90db13:
+    uuid: f9f55d8c-df31-4553-ba98-289c1c90db13
+    id: image_scale_and_crop
+    weight: null
+    data:
+      width: 700
+      height: 500
+      anchor: center-center

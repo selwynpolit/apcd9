@@ -8,6 +8,7 @@ dependencies:
     - field.field.taxonomy_term.locations.field_geofield
     - field.field.taxonomy_term.locations.field_location_image
     - field.field.taxonomy_term.locations.field_notes
+    - field.field.taxonomy_term.locations.field_tags
     - field.field.taxonomy_term.locations.field_term_author
     - image.style.thumbnail
     - taxonomy.vocabulary.locations
@@ -54,4 +55,5 @@ hidden:
   description: true
   directions: true
   field_geofield: true
+  field_tags: true
   field_term_author: true
