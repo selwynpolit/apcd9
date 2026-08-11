@@ -253,6 +253,27 @@ there. Do them as one change, not three.
       - Gallery click-to-swap (event and location pages both): `apc_brown/js/gallery.js`, plain JS using
         `<button>` thumbnails (free keyboard support) that swap the hero `<img>`/`<source>` via data
         attributes — no framework, no Views/render-array involvement for the interactive part.
+      - **Fixed after initial build, from user feedback:**
+        - The event page's "Get directions" was a single Google-only link
+          (`apc_calendar_get_directions_url()`); changed to the same two-link OSM+Google block
+          (`apc_calendar_build_directions()`) the location page uses, for consistency.
+        - The location page's map was missing entirely — `field_geofield` had been removed from
+          `taxonomy_term.locations.default`'s components on the assumption it was "only used
+          internally" for geocoding/directions. It wasn't; `card`'s own `leaflet_formatter_default`
+          formatter was the map the comp's "Map" placeholder was standing in for. Restored with the
+          same formatter settings as `card`, placed side by side with the gallery
+          (`.apc-detail__media`, a two-column grid above `62.5rem`).
+        - An anonymous visitor viewing a **published** event whose referenced location term is still
+          **unpublished** (a real case — an event can be approved before its newly-typed location is)
+          saw a "Location" sidebar card with a visible label but a blank value: `entity_reference_label`
+          correctly access-checks the referenced term per-item and silently renders nothing, but
+          `{% if content.field_location %}` in the template still evaluated truthy (the render array
+          exists, it's just empty), so the broken-looking blank card wasn't caught by that guard. Now
+          shows "Pending review" instead — computed by checking `$term->isPublished()` directly in
+          `apc_brown_preprocess_node()` (reading a loaded entity's own property isn't subject to the
+          same access check formatter rendering is), gated on `\Drupal::currentUser()->isAnonymous()`
+          so a manager or admin still sees the real venue name and link. Deliberately shows the literal
+          word "Pending review", not the unapproved venue's actual name.
 - [x] **D. Responsive images.** Done, folded into item C rather than done separately, since both
       needed the same hero image markup. Enabled `responsive_image`; new `gallery_hero_mobile` /
       `gallery_hero_desktop` / `gallery_thumb` image styles (scale-and-crop, well under the `2000x2000`

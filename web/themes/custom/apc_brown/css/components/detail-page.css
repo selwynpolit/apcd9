@@ -148,6 +148,24 @@
   white-space: nowrap;
 }
 
+/* Location page only: gallery and map side by side on desktop. */
+.apc-detail__media {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp1);
+}
+
+@media (min-width: 62.5rem) {
+  .apc-detail__media {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.apc-detail__map .leaflet-container {
+  border-radius: var(--border-radius);
+}
+
 /* Gallery: hero image with a scrollable thumbnail rail. */
 .apc-gallery {
   display: flex;

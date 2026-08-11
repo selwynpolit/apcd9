@@ -124,14 +124,28 @@ function apc_brown_preprocess_node(&$variables) {
     $variables['gallery'] = _apc_brown_build_gallery($variables['node'], 'field_event_image');
     $variables['add_to_calendar_url'] = _apc_brown_google_calendar_url($variables['node']);
 
-    // Single Google Maps link for the event page's one "Get directions"
-    // button -- apc_calendar_get_directions_url() reuses the same
-    // coordinates-preferred-over-address resolution as the two-link
-    // OSM+Google block on the location page itself, without duplicating it.
+    // Same two-link OSM+Google directions block as the location page,
+    // rather than a single Google-only link -- matches the location page
+    // exactly rather than being its own simplified variant.
     if ($variables['node']->hasField('field_location') && !$variables['node']->get('field_location')->isEmpty()) {
       $term = $variables['node']->get('field_location')->entity;
-      if ($term !== NULL && function_exists('apc_calendar_get_directions_url')) {
-        $variables['directions_url'] = apc_calendar_get_directions_url($term);
+      if ($term !== NULL && function_exists('apc_calendar_build_directions')) {
+        $variables['directions'] = apc_calendar_build_directions($term);
+      }
+
+      // A location term auto-created by an anonymous submitter stays
+      // unpublished until an admin approves it (apc_calendar_taxonomy_term_
+      // presave()). The event itself can already be published -- e.g. a
+      // manager approved the event but hasn't gotten to the location yet --
+      // so an anonymous visitor can land here with a real term reference
+      // that entity_reference_label's own access check then silently
+      // renders as nothing (content.field_location evaluates to an empty
+      // but still-truthy render array, leaving a "Location" card with a
+      // blank value). Show "Pending" instead of leaving that card looking
+      // broken, without revealing the actual unapproved venue name to a
+      // visitor who has no access to it.
+      if ($term !== NULL && !$term->isPublished() && \Drupal::currentUser()->isAnonymous()) {
+        $variables['location_pending'] = TRUE;
       }
     }
   }

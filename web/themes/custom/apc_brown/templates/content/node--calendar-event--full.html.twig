@@ -3,7 +3,8 @@
  * @file
  * Event detail page (full view mode of a calendar_event node).
  *
- * gallery and add_to_calendar_url are built in apc_brown_preprocess_node().
+ * gallery, add_to_calendar_url, directions and location_pending are built in
+ * apc_brown_preprocess_node().
  *
  * @see apc_brown_preprocess_node()
  */
@@ -32,8 +33,8 @@
     {% endif %}
     {% if node.field_virtual.value and content.field_event_url %}
       <span class="apc-pill-button apc-pill-button--primary">{{ content.field_event_url }}</span>
-    {% elseif directions_url %}
-      <a class="apc-pill-button apc-pill-button--primary" href="{{ directions_url }}" target="_blank" rel="noopener noreferrer">{{ 'Get directions'|t }}</a>
+    {% elseif directions %}
+      {{ directions }}
     {% endif %}
   </div>
 
@@ -71,7 +72,12 @@
         {{ content.field_event_date }}
       </div>
 
-      {% if content.field_location %}
+      {% if location_pending %}
+        <div class="apc-info-card">
+          <p class="apc-info-card__label">{{ 'Location'|t }}</p>
+          <p class="apc-info-card__body">{{ 'Pending review'|t }}</p>
+        </div>
+      {% elseif content.field_location %}
         <div class="apc-info-card">
           <p class="apc-info-card__label">{{ 'Location'|t }}</p>
           {{ content.field_location }}
