@@ -12,5 +12,5 @@ configuration:
   geocoder:
     locale: ''
   rootUrl: 'https://nominatim.openstreetmap.org'
-  userAgent: apc3.ddev.site
-  referer: apc3.ddev.site
+  userAgent: d9.austinprogressivecalendar.com
+  referer: d9.austinprogressivecalendar.com

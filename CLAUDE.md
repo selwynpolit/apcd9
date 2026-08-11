@@ -313,7 +313,7 @@ there. Do them as one change, not three.
 
 ### Pre-launch (carried over from `Event Calendar Plan.md`)
 
-- [ ] Swap the Nominatim User-Agent/Referer off `apc3.ddev.site` to the production domain.
+- [x] Swap the Nominatim User-Agent/Referer off `apc3.ddev.site` to the production domain.
 - [ ] Self-host the Caprasimo/Figtree fonts.
 - [ ] Replace Olivero's inherited `screenshot.png`; crop `apc_logo.jpg` square.
 - [ ] Seed 15–30 starter tags.
@@ -322,3 +322,38 @@ there. Do them as one change, not three.
 - [ ] Delete smoke-test content (node 125, term 97).
 - [ ] Place blocks into the APC Brown regions — Olivero's `config/` was deliberately not copied
       during the fork, so region assignments do not carry over.
+
+### Address lookup helpers on the `locations` term form
+
+Done — full design was in `location-address-lookup-task.md` (now removed; superseded by this note).
+`apc_calendar_form_taxonomy_term_locations_form_alter()` adds two independent tools:
+
+- **Find on Google Maps / OpenStreetMap** — static links (no AJAX, no geocoder call) built from the
+  term's current name + city/state, defaulting to "Austin TX" when no address is saved yet.
+- **Paste-box geocoder** — a textfield that accepts either a `lat,lon` pair or an address string,
+  dispatches to `\Drupal::service('geocoder')` (`reverse()`/`geocode()`, `nominatim` provider),
+  shows the candidate(s) (radios if more than one), and an "Apply" button that saves
+  `field_address`/`field_geofield` and reloads the page.
+- **`UsStates`** (`src/UsStates.php`) — the state-abbreviation list moved out of `AddLocationForm`
+  here so both consumers share it, plus a new `NAME_TO_CODE` map for normalizing Nominatim's
+  spelled-out state names ("Texas") to the two-letter code the Address field wants — confirmed live
+  against real Nominatim responses that `getAdminLevels()` really does come back with an empty
+  `code` and only a `name` some of the time, exactly as the design doc warned.
+- **`apc_calendar_get_directions_destination()` / `apc_calendar_get_directions_url()`** — the
+  destination-resolution half of `apc_calendar_build_directions()` was split out so a single-link
+  consumer doesn't need to duplicate the coordinates-preferred-over-address logic. (Ended up used by
+  the event detail page's "Get directions" button as well as this feature.)
+- **Non-obvious, found only by testing in the browser, not by reasoning about the API:**
+  `$form_state->setValueForElement()` on the Apply button changes what a *submit handler* reads, not
+  what a *rebuilt widget displays* — field widgets rebuild their shown value from the form's entity,
+  not from `$form_state`'s values. Setting the values directly on the (still-unsaved) entity before
+  `$form_state->setRebuild(TRUE)` was tried next and still didn't reliably redisplay — Address
+  (composite element) and Geofield (GeoJSON textarea + its own map widget) both have enough internal
+  state that an in-memory rebuild wasn't trustworthy. **Apply saves immediately and redirects back to
+  the same edit page** instead — simpler, and a fresh page load is the one path every field widget is
+  guaranteed to render correctly. Trade-off: other fields the admin was mid-editing (name, notes,
+  image, tags) are not part of this intermediate save; they stay in the form to submit normally
+  afterward, not lost, just not saved by this button.
+- Also non-obvious: the `apc_geocode` fieldset needs `'#tree' => TRUE` for its children's form
+  values to nest under `['apc_geocode', ...]` — without it Drupal flattens them to top-level keys,
+  silently breaking every `$form_state->getValue(['apc_geocode', ...])` call in the form.

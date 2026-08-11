@@ -6,6 +6,7 @@
  */
 
 use Drupal\apc_calendar\Controller\EventSubmittedController;
+use Drupal\apc_calendar\UsStates;
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
@@ -65,6 +66,298 @@ function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
       $term->setName(Unicode::ucfirst($name));
     }
   }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for taxonomy_term_locations_form.
+ *
+ * Adds "Find on Google Maps" / "Find on OpenStreetMap" links so an admin
+ * repairing a location with no address can locate the venue without leaving
+ * the form. Deliberately static links computed from the term's current
+ * saved values, not the in-progress form input — no AJAX, no geocoder call,
+ * nothing that can fail or hit the geocoder's rate limit just from opening
+ * this form.
+ *
+ * @see apc_calendar_build_directions()
+ */
+function apc_calendar_form_taxonomy_term_locations_form_alter(array &$form, FormStateInterface $form_state): void {
+  /** @var \Drupal\taxonomy\TermInterface $term */
+  $term = $form_state->getFormObject()->getEntity();
+
+  $query = $term->label();
+  $locality = NULL;
+  $administrative_area = NULL;
+  if ($term->hasField('field_address') && !$term->get('field_address')->isEmpty()) {
+    $address = $term->get('field_address')->first();
+    $locality = $address->get('locality')->getValue();
+    $administrative_area = $address->get('administrative_area')->getValue();
+  }
+  // Bare venue names are ambiguous worldwide -- put a city in the query even
+  // when the term has no address yet, same reasoning as
+  // apc_calendar_build_directions() preferring an unambiguous destination.
+  $query .= ' ' . (($locality || $administrative_area) ? trim($locality . ' ' . $administrative_area) : 'Austin TX');
+  $encoded = rawurlencode($query);
+
+  $form['apc_map_search'] = [
+    '#type' => 'container',
+    '#weight' => -1,
+    '#attributes' => ['class' => ['apc-map-search']],
+    'label' => [
+      '#type' => 'html_tag',
+      '#tag' => 'span',
+      '#value' => t('Find this venue:'),
+    ],
+    'google' => [
+      '#type' => 'link',
+      '#title' => t('Google Maps'),
+      '#url' => Url::fromUri('https://www.google.com/maps/search/?api=1&query=' . $encoded),
+      '#attributes' => ['target' => '_blank', 'rel' => 'noopener noreferrer'],
+    ],
+    'osm' => [
+      '#type' => 'link',
+      '#title' => t('OpenStreetMap'),
+      '#url' => Url::fromUri('https://www.openstreetmap.org/search?query=' . $encoded),
+      '#attributes' => ['target' => '_blank', 'rel' => 'noopener noreferrer'],
+    ],
+  ];
+
+  // Paste-box geocoder: accepts either coordinates (copied from the Maps
+  // link above) or an address string, looks it up via Nominatim, and shows
+  // a read-only preview. "Apply" is a genuine form submit rather than an
+  // AJAX widget update -- the Address field and Geofield widgets each have
+  // their own internal format (a composite element and a GeoJSON textarea
+  // respectively), and injecting values past those correctly is fragile.
+  // Routing through $form_state->setValueForElement() and letting
+  // TermForm's own save cycle run afterward is simpler and also means
+  // whatever else the admin has already typed elsewhere on the form is
+  // saved together with the geocoded address, not discarded.
+  $form['apc_geocode'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Look up an address or coordinates'),
+    '#weight' => 0,
+    '#tree' => TRUE,
+    '#prefix' => '<div id="apc-geocode-wrapper">',
+    '#suffix' => '</div>',
+  ];
+  $form['apc_geocode']['input'] = [
+    '#type' => 'textfield',
+    '#title' => t('Paste coordinates or an address'),
+    '#description' => t('Paste a lat,lon pair copied from Google Maps (e.g. 30.2903, -97.7000), or an address string.'),
+  ];
+  $form['apc_geocode']['lookup'] = [
+    '#type' => 'submit',
+    '#value' => t('Look up'),
+    '#name' => 'apc_geocode_lookup',
+    '#submit' => ['apc_calendar_geocode_lookup_submit'],
+    '#ajax' => [
+      'callback' => 'apc_calendar_geocode_lookup_ajax',
+      'wrapper' => 'apc-geocode-wrapper',
+    ],
+    '#limit_validation_errors' => [['apc_geocode', 'input']],
+  ];
+
+  $candidates = $form_state->get('apc_geocode_candidates');
+  if ($candidates) {
+    $form['apc_geocode']['result'] = [
+      '#type' => 'container',
+    ];
+    if (count($candidates) === 1) {
+      $form['apc_geocode']['result']['summary'] = [
+        '#type' => 'html_tag',
+        '#tag' => 'p',
+        '#value' => t('Found: @summary', ['@summary' => $candidates[0]['summary']]),
+      ];
+      $form['apc_geocode']['result']['selected'] = [
+        '#type' => 'value',
+        '#value' => 0,
+      ];
+    }
+    else {
+      $form['apc_geocode']['result']['selected'] = [
+        '#type' => 'radios',
+        '#title' => t('Multiple matches -- pick the right one'),
+        '#options' => array_map(static fn (array $c) => $c['summary'], $candidates),
+        '#default_value' => 0,
+      ];
+    }
+    $form['apc_geocode']['result']['apply'] = [
+      '#type' => 'submit',
+      '#value' => t('Apply to address fields'),
+      '#name' => 'apc_geocode_apply',
+      '#submit' => ['apc_calendar_geocode_apply_submit'],
+      '#limit_validation_errors' => [['apc_geocode', 'result', 'selected']],
+    ];
+  }
+  elseif ($form_state->get('apc_geocode_error')) {
+    $form['apc_geocode']['error'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'p',
+      '#attributes' => ['class' => ['apc-geocode-error']],
+      '#value' => $form_state->get('apc_geocode_error'),
+    ];
+  }
+}
+
+/**
+ * Submit handler for the "Look up" button.
+ *
+ * @see apc_calendar_form_taxonomy_term_locations_form_alter()
+ */
+function apc_calendar_geocode_lookup_submit(array &$form, FormStateInterface $form_state): void {
+  $form_state->set('apc_geocode_candidates', NULL);
+  $form_state->set('apc_geocode_error', NULL);
+
+  $input = trim((string) $form_state->getValue(['apc_geocode', 'input']));
+  if ($input === '') {
+    $form_state->set('apc_geocode_error', t('Paste an address or a lat,lon pair first.'));
+    $form_state->setRebuild(TRUE);
+    return;
+  }
+
+  $geocoder = \Drupal::service('geocoder');
+
+  // Coordinate pair: two floats separated by a comma, e.g. "30.29, -97.70".
+  if (preg_match('/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/', $input, $matches)) {
+    $lat = $matches[1];
+    $lon = $matches[2];
+    $collection = $geocoder->reverse($lat, $lon, ['nominatim']);
+    $pasted_coordinates = ['lat' => (float) $lat, 'lon' => (float) $lon];
+  }
+  else {
+    $collection = $geocoder->geocode($input, ['nominatim']);
+    $pasted_coordinates = NULL;
+  }
+
+  if ($collection === NULL || $collection->isEmpty()) {
+    $form_state->set('apc_geocode_error', t('No results for that. Check the spelling, or paste coordinates instead.'));
+    $form_state->setRebuild(TRUE);
+    return;
+  }
+
+  $candidates = [];
+  foreach ($collection as $address) {
+    $candidates[] = _apc_calendar_normalize_geocoder_address($address, $pasted_coordinates);
+  }
+  $form_state->set('apc_geocode_candidates', $candidates);
+  $form_state->setRebuild(TRUE);
+}
+
+/**
+ * AJAX callback for the "Look up" button.
+ *
+ * @see apc_calendar_form_taxonomy_term_locations_form_alter()
+ */
+function apc_calendar_geocode_lookup_ajax(array &$form, FormStateInterface $form_state): array {
+  return $form['apc_geocode'];
+}
+
+/**
+ * Submit handler for "Apply to address fields".
+ *
+ * Saves field_address and field_geofield immediately and redirects back to
+ * this same edit page, rather than trying to make the rebuilt form's
+ * widgets display the new values in memory before a save.
+ *
+ * That in-memory approach was tried first and did not work reliably:
+ * $form_state->setValueForElement() only changes what a later submit
+ * handler reads, not what a rebuilt widget displays (widgets rebuild their
+ * displayed value from the form's entity, not from $form_state's values),
+ * and setting the values directly on the form's (still unsaved) entity
+ * before calling $form_state->setRebuild(TRUE) also did not reliably
+ * redisplay them -- both the Address field (a composite element) and
+ * Geofield (a GeoJSON textarea widget with its own map-refresh behaviour)
+ * have enough of their own internal state that an in-memory rebuild was
+ * not trustworthy. A real save followed by a normal fresh page load always
+ * shows correct widget state, because that is the one path every field
+ * widget is guaranteed to get right.
+ *
+ * This does mean other fields the admin was mid-editing (name, notes,
+ * image, tags) are not part of this intermediate save -- they stay in the
+ * form for the admin to submit normally afterward, not lost, just not
+ * saved by this button.
+ *
+ * @see apc_calendar_form_taxonomy_term_locations_form_alter()
+ */
+function apc_calendar_geocode_apply_submit(array &$form, FormStateInterface $form_state): void {
+  $candidates = $form_state->get('apc_geocode_candidates');
+  $selected = $form_state->getValue(['apc_geocode', 'result', 'selected']);
+  $candidate = $candidates[$selected] ?? NULL;
+  if ($candidate === NULL) {
+    return;
+  }
+
+  /** @var \Drupal\taxonomy\TermInterface $term */
+  $term = $form_state->getFormObject()->getEntity();
+  $term->set('field_address', $candidate['address']);
+  $term->set('field_geofield', $candidate['geofield_value']);
+  $term->save();
+
+  \Drupal::messenger()->addStatus(t('Address and coordinates saved. Review the fields below.'));
+  $form_state->setRedirect('entity.taxonomy_term.edit_form', ['taxonomy_term' => $term->id()]);
+}
+
+/**
+ * Normalizes one geocoder-php Address result into this site's field shapes.
+ *
+ * @param \Geocoder\Model\Address $address
+ *   One result from Geocoder::geocode() or ::reverse().
+ * @param array{lat: float, lon: float}|null $pasted_coordinates
+ *   When the admin pasted coordinates (a reverse-geocode lookup), the exact
+ *   pasted pair -- written to the geofield in preference to whatever the
+ *   geocoder echoes back, since a pin the admin visually confirmed is more
+ *   accurate than anything re-derived from the address the reverse lookup
+ *   resolved to.
+ *
+ * @return array{summary: string, address: array, geofield_value: string}
+ */
+function _apc_calendar_normalize_geocoder_address(\Geocoder\Model\Address $address, ?array $pasted_coordinates): array {
+  $street_number = $address->getStreetNumber();
+  $street_name = $address->getStreetName();
+  $address_line1 = trim(($street_number ? $street_number . ' ' : '') . ($street_name ?? ''));
+
+  // Nominatim's "locality" is not always populated for small venues -- a
+  // town, village, or hamlet designation can arrive in its place. The
+  // geocoder-php Nominatim provider maps the first of these it finds into
+  // getLocality(), so this is not re-parsed here; if a venue's city still
+  // comes back empty in practice, that gap lives in the provider, not here.
+  $locality = $address->getLocality() ?? '';
+
+  $administrative_area = '';
+  foreach ($address->getAdminLevels() as $level) {
+    $code = $level->getCode();
+    if ($code && strlen($code) === 2) {
+      $administrative_area = strtoupper($code);
+      break;
+    }
+    $name = $level->getName();
+    if ($name && isset(UsStates::NAME_TO_CODE[strtolower($name)])) {
+      $administrative_area = UsStates::NAME_TO_CODE[strtolower($name)];
+      break;
+    }
+  }
+
+  $country_code = $address->getCountry()?->getCode() ?? 'US';
+  $postal_code = $address->getPostalCode() ?? '';
+
+  $coordinates = $address->getCoordinates();
+  $lat = $pasted_coordinates['lat'] ?? $coordinates?->getLatitude();
+  $lon = $pasted_coordinates['lon'] ?? $coordinates?->getLongitude();
+
+  $summary_parts = array_filter([$address_line1, $locality, $administrative_area, $postal_code]);
+
+  return [
+    'summary' => $summary_parts ? implode(', ', $summary_parts) : t('(no address, coordinates only)')->render(),
+    'address' => [
+      'country_code' => $country_code,
+      'address_line1' => $address_line1,
+      'locality' => $locality,
+      'administrative_area' => $administrative_area,
+      'postal_code' => $postal_code,
+    ],
+    'geofield_value' => ($lat !== NULL && $lon !== NULL)
+      ? Json::encode(['type' => 'Point', 'coordinates' => [$lon, $lat]])
+      : '',
+  ];
 }
 
 /**
