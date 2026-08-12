@@ -1,15 +1,17 @@
 uuid: 00e3ce1d-615f-4ca5-8984-71e1e87c1ca7
 langcode: en
 status: true
-dependencies: {  }
+dependencies:
+  module:
+    - focal_point
 name: gallery_hero_desktop
 label: 'Gallery Hero Desktop'
 effects:
-  3c50df31-b9c4-4616-ba48-b4cecdf1e007:
-    uuid: 3c50df31-b9c4-4616-ba48-b4cecdf1e007
-    id: image_scale_and_crop
+  b7b42f79-52cb-4866-a4ef-c74733a0f57e:
+    uuid: b7b42f79-52cb-4866-a4ef-c74733a0f57e
+    id: focal_point_scale_and_crop
     weight: null
     data:
       width: 900
       height: 600
-      anchor: center-center
+      crop_type: focal_point
