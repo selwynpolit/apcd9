@@ -36,6 +36,7 @@
         "drupal/extlink": "^2.0",
         "drupal/feeds": "^3.0@alpha",
         "drupal/feeds_tamper": "^2.0@beta",
+        "drupal/focal_point": "^2.1",
         "drupal/fontawesome": "^3.0",
         "drupal/fullcalendar_view": "^5.2",
         "drupal/geocoder": "^4.34",

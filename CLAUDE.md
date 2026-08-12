@@ -296,6 +296,35 @@ there. Do them as one change, not three.
           also trying to shed. Fix was config-only — add `field_geofield` (with `card`'s exact
           settings) as a component of `location_reference` — no template change needed, since
           `content.field_location` already renders the whole embedded view mode.
+      - **Added `focal_point` module** (`drupal/focal_point:^2.1`, pulls in `drupal/crop`) after a
+        portrait-orientation event photo (2268×4032, a vertical phone shot) got center-cropped into
+        the landscape hero box and lost the subject's head — `gallery_hero_mobile`/`_desktop`/`_thumb`
+        were plain `image_scale_and_crop` with a `center-center` anchor, fine for landscape/square
+        photos but not portrait ones. All three now use `focal_point_scale_and_crop` instead.
+        - `field_media_image` on the `Image` media type's form display now uses the `image_focal_point`
+          widget (was plain `image_image`) — whoever uploads a photo gets a crosshair to click the
+          actual subject. This applies to **anonymous submitters too**, since they upload through the
+          same Media Library "Add media" dialog. Decided deliberately, after weighing hiding it for
+          anonymous users the way the body summary/recurrence UI already are — the crosshair has no
+          built-in explanation of what it does, so a clear field description was added instead of
+          hiding it: "After uploading, click on the photo to mark its most important part…".
+        - **Two separate "sane default" settings, both changed from the module's stock `50,50`
+          (dead center) to `50,25` (top-center-ish)** — matters because most portrait photos frame
+          the subject in the upper portion, and because someone will inevitably skip the crosshair:
+          - The widget's own `default_focal_point` setting (`image_focal_point` on `field_media_image`)
+            — where the crosshair starts before anyone touches it.
+          - `focal_point.settings.default_value` (a **site-wide** setting, unrelated to the widget
+            setting above despite the similar name) — this is what a fresh `Crop` entity uses when one
+            doesn't exist yet, per `focal_point_entity_update()` in `focal_point.module`. It's what
+            actually governs pre-existing images that predate this module and have never been opened
+            in the widget, and — easy to miss — it's *not* automatically kept in sync with the widget
+            default, so both had to be set to avoid one silently reverting to dead-center.
+        - Existing images don't get a focal point retroactively just from installing this — a `Crop`
+          entity is only created the next time that specific media entity is saved (openly resaving in
+          the UI is enough; no need to touch the crosshair). Confirmed by resaving the media entity
+          behind the head-clipping photo: `Crop` entity created at `(1134, 1008)` on a 2268×4032
+          image — exactly 50%/25%, matching the new site-wide default — and the regenerated
+          `gallery_hero_mobile` derivative showed the full head and face.
 - [x] **D. Responsive images.** Done, folded into item C rather than done separately, since both
       needed the same hero image markup. Enabled `responsive_image`; new `gallery_hero_mobile` /
       `gallery_hero_desktop` / `gallery_thumb` image styles (scale-and-crop, well under the `2000x2000`
