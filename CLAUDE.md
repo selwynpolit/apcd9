@@ -436,8 +436,12 @@ there. Do them as one change, not three.
 - [ ] Confirm asset-packagist is reachable from GreenGeeks before the first production
       `composer install`.
 - [ ] Delete smoke-test content (node 125, term 97).
-- [ ] Place blocks into the APC Brown regions — Olivero's `config/` was deliberately not copied
-      during the fork, so region assignments do not carry over.
+- [x] Place blocks into the APC Brown regions — Olivero's `config/` was deliberately not copied
+      during the fork, so region assignments do not carry over. Already done, just uncounted:
+      every `block.block.apc_brown_*` placement exists, is enabled, and sits in a sensible region
+      matching Olivero's own layout (site branding → `header`, main menu → `primary_menu`,
+      breadcrumbs → `breadcrumb`, page title/help → `content_above`, messages/local tasks →
+      `highlighted`, etc.), plus one extra (`apc_brown_greenwebsite` in `footer_bottom`).
 
 ### Address lookup helpers on the `locations` term form
 
