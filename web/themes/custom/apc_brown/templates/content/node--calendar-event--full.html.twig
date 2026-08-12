@@ -3,23 +3,24 @@
  * @file
  * Event detail page (full view mode of a calendar_event node).
  *
- * gallery, add_to_calendar_url, directions and location_pending are built in
- * apc_brown_preprocess_node().
+ * gallery, add_to_calendar_url, location_gallery, location_url and
+ * location_pending are built in apc_brown_preprocess_node().
+ *
+ * Single column, no sidebar -- matches assets/event_detail.pdf. The
+ * Location card's address/map/directions come from content.field_location
+ * itself (the location_reference view mode embeds all three); its photo
+ * row and "View location page" link are built separately in preprocess
+ * since they're not part of that view mode.
  *
  * @see apc_brown_preprocess_node()
  */
 #}
 {{ attach_library('apc_brown/detail-page') }}
+{% if location_gallery %}{{ attach_library('apc_brown/lightbox') }}{% endif %}
 <article{{ attributes.addClass('apc-detail') }}>
   <div class="apc-detail__breadcrumb">
     <a href="/calendar">{{ 'Calendar'|t }}</a> / {{ label }}
   </div>
-
-  {% if content.field_tags %}
-    <div class="apc-detail__badges">
-      {{ content.field_tags }}
-    </div>
-  {% endif %}
 
   <h1 class="apc-detail__title">{{ label }}</h1>
 
@@ -31,63 +32,78 @@
     {% if add_to_calendar_url %}
       <a class="apc-pill-button" href="{{ add_to_calendar_url }}" target="_blank" rel="noopener noreferrer">{{ 'Add to calendar'|t }}</a>
     {% endif %}
-    {% if node.field_virtual.value and content.field_event_url %}
-      <span class="apc-pill-button apc-pill-button--primary">{{ content.field_event_url }}</span>
-    {% elseif directions %}
-      {{ directions }}
+    {% if node.field_virtual.value %}
+      <div class="apc-online-notice">
+        <span class="apc-online-notice__label">{{ 'Online only'|t }}</span>
+        {% if content.field_event_url %}
+          {{ content.field_event_url }}
+        {% endif %}
+      </div>
     {% endif %}
   </div>
 
-  <div class="apc-detail__grid">
-    <div class="apc-detail__main">
-      {% if gallery %}
-        <div class="apc-gallery" data-apc-gallery>
-          <picture class="apc-gallery__hero" data-apc-gallery-hero>
-            {% if gallery|length > 1 %}
-              <source media="(min-width: 62.5rem)" srcset="{{ gallery.0.hero_desktop }}" data-apc-gallery-source-desktop>
-            {% endif %}
-            <img src="{{ gallery.0.hero_mobile }}" alt="{{ gallery.0.alt }}" data-apc-gallery-img>
-          </picture>
-          {% if gallery|length > 1 %}
-            <div class="apc-gallery__thumbs" data-apc-gallery-thumbs>
-              {% for item in gallery %}
-                <button type="button" class="apc-gallery__thumb{{ loop.first ? ' is-active' }}" data-apc-gallery-thumb data-hero-mobile="{{ item.hero_mobile }}" data-hero-desktop="{{ item.hero_desktop }}" data-alt="{{ item.alt }}">
-                  <img src="{{ item.thumb }}" alt="">
-                </button>
-              {% endfor %}
-            </div>
-          {% endif %}
+  {% if gallery %}
+    <div class="apc-gallery" data-apc-gallery>
+      <picture class="apc-gallery__hero" data-apc-gallery-hero>
+        {% if gallery|length > 1 %}
+          <source media="(min-width: 62.5rem)" srcset="{{ gallery.0.hero_desktop }}" data-apc-gallery-source-desktop>
+        {% endif %}
+        <img src="{{ gallery.0.hero_mobile }}" alt="{{ gallery.0.alt }}" data-apc-gallery-img>
+      </picture>
+      {% if gallery|length > 1 %}
+        <div class="apc-gallery__thumbs" data-apc-gallery-thumbs>
+          {% for item in gallery %}
+            <button type="button" class="apc-gallery__thumb{{ loop.first ? ' is-active' }}" data-apc-gallery-thumb data-hero-mobile="{{ item.hero_mobile }}" data-hero-desktop="{{ item.hero_desktop }}" data-alt="{{ item.alt }}">
+              <img src="{{ item.thumb }}" alt="">
+            </button>
+          {% endfor %}
         </div>
       {% endif %}
-
-      <div class="apc-detail__body">
-        <h2 class="apc-detail__section-title">{{ 'About this event'|t }}</h2>
-        {{ content.body }}
-      </div>
     </div>
+  {% endif %}
 
-    <aside class="apc-detail__sidebar">
-      <div class="apc-info-card">
-        <p class="apc-info-card__label">{{ 'Date & time'|t }}</p>
-        {{ content.field_event_date }}
-      </div>
+  <div class="apc-detail__body">
+    <h2 class="apc-detail__section-title">{{ 'About this event'|t }}</h2>
+    {{ content.body }}
+  </div>
 
-      {% if location_pending %}
-        <div class="apc-info-card">
-          <p class="apc-info-card__label">{{ 'Location'|t }}</p>
-          <p class="apc-info-card__body">{{ 'Pending review'|t }}</p>
-        </div>
-      {% elseif content.field_location %}
-        <div class="apc-info-card">
-          <p class="apc-info-card__label">{{ 'Location'|t }}</p>
-          {{ content.field_location }}
-        </div>
-      {% elseif node.field_virtual.value %}
-        <div class="apc-info-card">
-          <p class="apc-info-card__label">{{ 'Location'|t }}</p>
-          <p class="apc-info-card__body">{{ 'This is an online-only event.'|t }}</p>
-        </div>
+  {% if location_pending %}
+    <div class="apc-location-card">
+      <p class="apc-info-card__label">{{ 'Location'|t }}</p>
+      <p class="apc-info-card__body">{{ 'Pending review'|t }}</p>
+    </div>
+  {% elseif not node.field_location.isEmpty %}
+    <div class="apc-location-card">
+      <p class="apc-info-card__label">{{ 'Location'|t }}</p>
+      {{ content.field_location }}
+
+      {% if location_gallery %}
+        <p class="apc-location-card__note">{{ 'Click a photo to view it larger.'|t }}</p>
+        <ul class="apc-location-card__photos">
+          {% for item in location_gallery %}
+            <li>
+              <button type="button" class="apc-location-card__photo" data-apc-lightbox-trigger data-full="{{ item.full }}" data-alt="{{ item.alt }}">
+                <img src="{{ item.thumb }}" alt="{{ item.alt }}">
+              </button>
+            </li>
+          {% endfor %}
+        </ul>
       {% endif %}
-    </aside>
+
+      {% if location_url %}
+        <a class="apc-info-card__link" href="{{ location_url }}">{{ 'View location page'|t }} →</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if content.field_tags %}
+    <div class="apc-detail__badges">
+      {{ content.field_tags }}
+    </div>
+  {% endif %}
+
+  <div class="apc-detail__cta">
+    <p>{{ 'Have an event of your own?'|t }}</p>
+    <a class="apc-pill-button apc-pill-button--primary" href="/node/add/calendar_event">{{ 'Submit your event'|t }}</a>
   </div>
 </article>

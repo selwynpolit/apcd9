@@ -325,6 +325,50 @@ there. Do them as one change, not three.
           behind the head-clipping photo: `Crop` entity created at `(1134, 1008)` on a 2268×4032
           image — exactly 50%/25%, matching the new site-wide default — and the regenerated
           `gallery_hero_mobile` derivative showed the full head and face.
+      - **Third round: a full redesign of `event_detail.pdf`** (desktop only — the mobile comp wasn't
+        updated alongside it; a naive responsive stack was accepted as good-enough for now, real
+        mobile polish is follow-up work once that comp exists). Single column, no sidebar, replacing
+        the two-column grid entirely:
+        - "Get directions" dropped from the top actions row; the two-link OSM+Google block moved into
+          a new **Location card** embedded in the main content flow, which also gained the location's
+          own photo gallery (`field_location_image`, reusing `_apc_brown_build_gallery()`) opening in
+          a **true modal lightbox** (`apc_brown/lightbox` — new library, `js/lightbox.js` +
+          `css/components/lightbox.css`; not the existing hero-swap `apc_brown/gallery` pattern, a
+          deliberately different interaction per this decision) and a "View location page" link.
+          `location_reference` (the view mode driving this card) gained a `directions` component
+          alongside its existing address/map, so `content.field_location` alone now renders the whole
+          card's address + map + directions — no separate `apc_calendar_build_directions()` call
+          needed in the node preprocess any more.
+        - Amenity badges (`field_tags`) moved from the top to the bottom, mirroring the same move
+          already made on the location page.
+        - Virtual events: always show "Online only" in the actions row, plus the event URL if one was
+          given — a deliberate change from the previous either/or framing.
+        - New closing CTA ("Have an event of your own? / Submit your event", linking to
+          `/node/add/calendar_event`) — kept directly in this template rather than built as a
+          reusable block, since only this one comp currently calls for it.
+        - `_apc_brown_build_gallery()` gained a `full` key (the original, uncropped image URL) for the
+          lightbox — deliberately not a cropped style, since a lightbox has no fixed box to fill.
+        - The gallery's "thumbnails beside the hero at desktop" rule was scoped from bare `.apc-gallery`
+          to `.apc-detail__media .apc-gallery`, since the two pages now disagree: the event page always
+          keeps thumbnails below the hero (matching the new comp), while the location page (whose
+          gallery sits inside `.apc-detail__media` next to the map) keeps the side-by-side desktop
+          layout unchanged.
+        - **Two bugs found only by testing in the browser, both instances of the same root cause
+          hit earlier in this file for `location_pending`:** a Twig truthiness check on a *render
+          array* (`{% if content.field_location %}`) is not the same as checking whether the
+          *field* has a value — Drupal still builds a render array for a configured, empty field
+          component. This time it showed up as an empty "LOCATION" card with no content on every
+          virtual event. Fixed by checking the field directly instead:
+          `{% elseif not node.field_location.isEmpty %}`.
+        - **A CSS specificity trap**: `field_tags` on a *node* renders through Olivero's own
+          do-not-edit `field--node--field-tags.html.twig` (different classes —
+          `.field--tags__item`, not `.field__item` — from the plain `field.html.twig` a
+          *taxonomy_term*'s `field_tags` uses), with its own comma-separated-link styling in
+          `tags.css`. A first attempt to override its auto-inserted comma
+          (`.field--tags__item::after { content: none; }`) silently didn't work: Olivero's own rule
+          targets `.field--tags__item:nth-last-child(n + 2)::after`, and the added pseudo-class
+          selector out-specifies a plain-class one regardless of stylesheet load order. Had to match
+          that same selector shape to win.
 - [x] **D. Responsive images.** Done, folded into item C rather than done separately, since both
       needed the same hero image markup. Enabled `responsive_image`; new `gallery_hero_mobile` /
       `gallery_hero_desktop` / `gallery_thumb` image styles (scale-and-crop, well under the `2000x2000`
