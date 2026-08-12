@@ -19,6 +19,12 @@ targetEntityType: taxonomy_term
 bundle: locations
 mode: location_reference
 content:
+  directions:
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
   field_address:
     type: address_default
     label: hidden
@@ -126,7 +132,6 @@ content:
     region: content
 hidden:
   description: true
-  directions: true
   field_location_image: true
   field_notes: true
   field_tags: true

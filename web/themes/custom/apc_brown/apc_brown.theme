@@ -124,14 +124,13 @@ function apc_brown_preprocess_node(&$variables) {
     $variables['gallery'] = _apc_brown_build_gallery($variables['node'], 'field_event_image');
     $variables['add_to_calendar_url'] = _apc_brown_google_calendar_url($variables['node']);
 
-    // Same two-link OSM+Google directions block as the location page,
-    // rather than a single Google-only link -- matches the location page
-    // exactly rather than being its own simplified variant.
+    // Address, map and directions all now come from content.field_location
+    // itself -- the location_reference view mode gained a 'directions'
+    // component alongside its existing address/map, so the embedded render
+    // covers the whole "Location card" without this hook needing to call
+    // apc_calendar_build_directions() separately.
     if ($variables['node']->hasField('field_location') && !$variables['node']->get('field_location')->isEmpty()) {
       $term = $variables['node']->get('field_location')->entity;
-      if ($term !== NULL && function_exists('apc_calendar_build_directions')) {
-        $variables['directions'] = apc_calendar_build_directions($term);
-      }
 
       // A location term auto-created by an anonymous submitter stays
       // unpublished until an admin approves it (apc_calendar_taxonomy_term_
@@ -146,6 +145,13 @@ function apc_brown_preprocess_node(&$variables) {
       // visitor who has no access to it.
       if ($term !== NULL && !$term->isPublished() && \Drupal::currentUser()->isAnonymous()) {
         $variables['location_pending'] = TRUE;
+      }
+      // Same access gate as the field formatter itself would apply --
+      // skip building this from a term the current viewer has no access to,
+      // rather than leaking its photos/link past the "Pending" card above.
+      elseif ($term !== NULL && $term->access('view')) {
+        $variables['location_gallery'] = _apc_brown_build_gallery($term, 'field_location_image');
+        $variables['location_url'] = $term->toUrl()->toString();
       }
     }
   }
@@ -256,6 +262,10 @@ function _apc_brown_build_gallery(FieldableEntityInterface $entity, string $fiel
       'hero_mobile' => $hero_mobile_style->buildUrl($uri),
       'hero_desktop' => $hero_desktop_style->buildUrl($uri),
       'thumb' => $thumb_style->buildUrl($uri),
+      // Original, uncropped -- what the lightbox shows. Deliberately not a
+      // cropped style: a lightbox is the one place the focal-point crop
+      // doesn't need to apply, since there's no fixed box to fill.
+      'full' => \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
       'alt' => $image_item->get('alt')->getString() ?: $media->label(),
     ];
   }

@@ -315,3 +315,14 @@ detail-page:
   dependencies:
     - core/drupal
     - core/once
+
+lightbox:
+  version: VERSION
+  css:
+    theme:
+      css/components/lightbox.css: {}
+  js:
+    js/lightbox.js: {}
+  dependencies:
+    - core/drupal
+    - core/once
