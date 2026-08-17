@@ -430,18 +430,36 @@
   border-radius: var(--border-radius);
 }
 
-/* Virtual/online-only notice in the actions row. */
-.apc-online-notice {
+/* Virtual/online-only badge in the actions row. Filled and icon-led so it
+   reads at the same visual weight as the pill buttons beside it, rather than
+   the plain small text it used to be. */
+.apc-online-badge {
   display: inline-flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  color: var(--color-text-neutral-medium);
-  font-size: var(--font-size-s);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp0-5, 0.5625rem);
+  padding: var(--sp0-5, 0.5625rem) var(--sp1-5, 1.6875rem);
+  border-radius: 999px;
+  background: var(--color--primary-50);
+  color: var(--color--white);
 }
 
-.apc-online-notice__label {
+.apc-online-badge__icon {
+  flex-shrink: 0;
+}
+
+.apc-online-badge__label {
+  font-size: var(--font-size-l);
   font-weight: 700;
-  color: var(--color-text-neutral-loud);
+}
+
+.apc-online-badge__link {
+  padding-inline-start: var(--sp0-5, 0.5625rem);
+  border-inline-start: 1px solid rgb(245 234 216 / 40%);
+}
+
+.apc-online-badge__link a {
+  color: inherit;
 }
 
 /* Closing call-to-action. */
