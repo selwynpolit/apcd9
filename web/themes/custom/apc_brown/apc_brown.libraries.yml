@@ -326,3 +326,9 @@ lightbox:
   dependencies:
     - core/drupal
     - core/once
+
+event-popup:
+  version: VERSION
+  css:
+    theme:
+      css/components/event-popup.css: {}

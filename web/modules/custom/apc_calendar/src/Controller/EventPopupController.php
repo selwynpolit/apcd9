@@ -6,6 +6,7 @@ namespace Drupal\apc_calendar\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
+use Drupal\Core\Render\Markup;
 use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -82,19 +83,45 @@ final class EventPopupController extends ControllerBase {
       $build['#cache']['keys'][] = (string) $delta;
     }
 
-    return [
-      'event' => $build,
-      'actions' => [
+    $result = [
+      '#attached' => ['library' => ['apc_brown/event-popup']],
+    ];
+
+    // Virtual/online badge, matching the one on the full event page --
+    // field_virtual is hidden on the calendar_item view mode (it's a flag,
+    // not something with its own formatter worth showing as a plain
+    // Yes/No), so this is built directly rather than through the view mode.
+    // Placed before 'event' so it's the first thing visible in the popup,
+    // not something a viewer has to notice among the other fields.
+    if ($occurrence->hasField('field_virtual') && (bool) $occurrence->get('field_virtual')->value) {
+      $result['virtual_badge'] = [
         '#type' => 'container',
-        '#attributes' => ['class' => ['apc-event-popup__actions']],
-        'full' => [
-          '#type' => 'link',
-          '#title' => $this->t('View full event'),
-          '#url' => $node->toUrl(),
-          '#attributes' => ['class' => ['button', 'button--primary']],
+        '#attributes' => ['class' => ['apc-popup-badge']],
+        'icon' => [
+          '#markup' => Markup::create('<svg class="apc-popup-badge__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle><ellipse cx="12" cy="12" rx="4" ry="9" fill="none" stroke="currentColor" stroke-width="2"></ellipse><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2"></line></svg>'),
         ],
+        'label' => [
+          '#type' => 'html_tag',
+          '#tag' => 'span',
+          '#attributes' => ['class' => ['apc-popup-badge__label']],
+          '#value' => $this->t('Online only'),
+        ],
+      ];
+    }
+
+    $result['event'] = $build;
+    $result['actions'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['apc-event-popup__actions']],
+      'full' => [
+        '#type' => 'link',
+        '#title' => $this->t('View full event'),
+        '#url' => $node->toUrl(),
+        '#attributes' => ['class' => ['button', 'button--primary']],
       ],
     ];
+
+    return $result;
   }
 
 }
