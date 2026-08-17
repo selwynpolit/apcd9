@@ -3,7 +3,7 @@
  * @file
  * Location detail page (full view mode of a locations taxonomy term).
  *
- * gallery, upcoming_events and past_events are built in
+ * gallery, upcoming_events, past_events and is_unpublished are built in
  * apc_brown_preprocess_taxonomy_term().
  *
  * @see apc_brown_preprocess_taxonomy_term()
@@ -14,6 +14,10 @@
   <div class="apc-detail__breadcrumb">
     <a href="/locations">{{ 'Locations'|t }}</a> / {{ name }}
   </div>
+
+  {% if is_unpublished %}
+    <div class="apc-unpublished-banner" role="status">{{ 'Unpublished — pending review'|t }}</div>
+  {% endif %}
 
   <h1 class="apc-detail__title">{{ name }}</h1>
 

@@ -11,6 +11,7 @@ use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Url;
 use Drupal\image\Entity\ImageStyle;
 use Drupal\user\UserInterface;
 
@@ -124,6 +125,32 @@ function apc_brown_preprocess_node(&$variables) {
     $variables['gallery'] = _apc_brown_build_gallery($variables['node'], 'field_event_image');
     $variables['add_to_calendar_url'] = _apc_brown_google_calendar_url($variables['node']);
 
+    // Visual "unpublished" banner. Shown to anyone who can reach this page at
+    // all (event_manager and administrator, per apc_calendar_node_access())
+    // -- not gated on update access like the publish button below, since a
+    // future viewer with view-only access to pending content should still
+    // see this. Depends only on the node's own status, which is already
+    // covered by the entity's own node:NID cache tag, so no extra cache
+    // context is needed here (unlike publish_event_url below).
+    $variables['is_unpublished'] = !$variables['node']->isPublished();
+
+    // One-click "publish event + location" button for reviewers. Gate
+    // mirrors the target route's own _entity_access: 'node.update'
+    // requirement exactly, so the button never appears when the link
+    // underneath it would 403 (see apc_calendar_node_access(), which is what
+    // lets a reviewer reach this page for an unpublished event at all).
+    if (!$variables['node']->isPublished() && $variables['node']->access('update')) {
+      $variables['publish_event_url'] = Url::fromRoute('apc_calendar.publish_event_and_location', [
+        'node' => $variables['node']->id(),
+      ])->toString();
+      // The URL embeds a per-session CSRF token and its own visibility
+      // depends on the viewer's permissions, so both must be added here --
+      // otherwise a cached render could show the button (or a stale token)
+      // to the wrong viewer.
+      $variables['#cache']['contexts'][] = 'user.permissions';
+      $variables['#cache']['contexts'][] = 'session';
+    }
+
     // Address, map and directions all now come from content.field_location
     // itself -- the location_reference view mode gained a 'directions'
     // component alongside its existing address/map, so the embedded render
@@ -219,6 +246,11 @@ function apc_brown_preprocess_taxonomy_term(&$variables) {
 
   if ($term->bundle() === 'locations' && $variables['view_mode'] === 'full') {
     $variables['gallery'] = _apc_brown_build_gallery($term, 'field_location_image');
+
+    // Visual "unpublished" banner -- same rationale as the node version in
+    // apc_brown_preprocess_node(). Depends only on the term's own status, so
+    // no extra cache context is needed (covered by the term's own cache tag).
+    $variables['is_unpublished'] = !$term->isPublished();
 
     // The upcoming/past events lists were split out of location_page's old
     // page/attachment displays into standalone block displays (block_upcoming,

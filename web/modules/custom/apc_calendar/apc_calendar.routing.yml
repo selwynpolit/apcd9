@@ -26,6 +26,21 @@ apc_calendar.event_popup:
       node:
         type: 'entity:node'
 
+apc_calendar.publish_event_and_location:
+  path: '/calendar/event/{node}/publish'
+  defaults:
+    _controller: '\Drupal\apc_calendar\Controller\PublishEventAndLocationController::publish'
+  requirements:
+    # Same access PublishEventAndLocation::access() already checks for the VBO
+    # action -- plain entity update access, not administer nodes.
+    _entity_access: 'node.update'
+    node: \d+
+    _csrf_token: 'TRUE'
+  options:
+    parameters:
+      node:
+        type: 'entity:node'
+
 apc_calendar.add_location:
   path: '/calendar/location/add'
   defaults:

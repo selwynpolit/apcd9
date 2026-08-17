@@ -9,9 +9,12 @@ use Drupal\apc_calendar\Controller\EventSubmittedController;
 use Drupal\apc_calendar\UsStates;
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Unicode;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\node\NodeInterface;
 use Drupal\taxonomy\TermInterface;
@@ -527,6 +530,29 @@ function apc_calendar_event_submit_confirmation(array $form, FormStateInterface 
     ]);
 
   $form_state->setRedirect('apc_calendar.event_submitted');
+}
+
+/**
+ * Implements hook_node_access().
+ *
+ * event_manager has 'edit any calendar_event content' but not 'bypass node
+ * access' or 'view own unpublished content', so without this an event_manager
+ * gets a 403 visiting a pending event's own canonical page and can only act on
+ * it from the /admin/content/pending-events bulk-operations list. Grants view
+ * access to unpublished calendar_event nodes specifically -- not a general
+ * bypass -- to whoever already holds edit access to any calendar_event, so a
+ * reviewer can see the full rendered page (photos, body, location) before
+ * publishing it. Neutral (never forbidden) for every other case, so this
+ * never overrides core's own access decisions.
+ *
+ * @see \Drupal\apc_calendar\Controller\PublishEventAndLocationController
+ */
+function apc_calendar_node_access(NodeInterface $node, string $op, AccountInterface $account): AccessResultInterface {
+  if ($op === 'view' && $node->bundle() === 'calendar_event' && !$node->isPublished()
+    && $account->hasPermission('edit any calendar_event content')) {
+    return AccessResult::allowed()->cachePerPermissions()->addCacheableDependency($node);
+  }
+  return AccessResult::neutral();
 }
 
 /**
