@@ -12,6 +12,7 @@ use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\Element\EntityAutocomplete;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -453,7 +454,18 @@ function apc_calendar_form_node_calendar_event_form_validate_location(array &$fo
   }
 
   $location = $form_state->getValue('field_location');
-  if (empty($location[0]['target_id'])) {
+  if (!empty($location[0]['target_id'])) {
+    return;
+  }
+
+  // Only show "required" when the field was left genuinely blank. If the
+  // submitter typed something that didn't resolve to an existing location,
+  // apc_calendar_validate_location_not_found() already set a more specific
+  // error on the element itself -- piling "Location is required" on top of
+  // that would just be a second, contradictory-sounding message for the
+  // same field.
+  $raw = $form_state->getUserInput()['field_location'][0]['target_id'] ?? '';
+  if (trim((string) $raw) === '') {
     $form_state->setError($form['field_location'], t('Location is required unless this is an online-only event.'));
   }
 }
@@ -475,6 +487,22 @@ function apc_calendar_attach_add_location_link(array &$form): void {
   // The modal's AJAX response writes the new location back into this element,
   // so give it a stable hook that does not depend on Drupal's generated IDs.
   $form['field_location']['widget'][0]['target_id']['#attributes']['data-apc-location-autocomplete'] = TRUE;
+
+  // Prepended (not appended) so it runs before EntityAutocomplete's own
+  // #element_validate callback. FormState::setErrorByName() only ever keeps
+  // the *first* error set for a given element (see FormState::setErrorByName()),
+  // so claiming that slot first is what replaces core's generic "There are
+  // no Taxonomy terms matching ..." message with one that actually tells the
+  // submitter what to do about it.
+  //
+  // #element_validate is not yet populated with EntityAutocomplete's own
+  // default callback at this point in the form-alter lifecycle (it is merged
+  // in later, from the element's #type defaults) -- '??' supplies it
+  // explicitly rather than assuming it is already present.
+  $form['field_location']['widget'][0]['target_id']['#element_validate'] = array_merge(
+    ['apc_calendar_validate_location_not_found'],
+    $form['field_location']['widget'][0]['target_id']['#element_validate'] ?? [[EntityAutocomplete::class, 'validateEntityAutocomplete']],
+  );
 
   $form['field_location']['apc_add_location'] = [
     '#type' => 'link',
@@ -499,6 +527,44 @@ function apc_calendar_attach_add_location_link(array &$form): void {
     ],
     '#weight' => 10,
   ];
+}
+
+/**
+ * Element validate callback: clear "location not found" feedback.
+ *
+ * Runs before EntityAutocomplete::validateEntityAutocomplete() (prepended
+ * onto the same element in apc_calendar_attach_add_location_link()) so that
+ * when the submitter's typed text doesn't resolve to an existing location,
+ * this message wins instead of core's generic "There are no Taxonomy terms
+ * matching ..." -- which never mentioned "location" and gave no hint that
+ * the "Add a new location" link right below the field is how to fix it.
+ *
+ * Does nothing (lets core's own validator run as normal) for an empty value
+ * or one that already carries a valid "(tid)" suffix -- i.e. something
+ * actually selected from the autocomplete dropdown, or handed back by
+ * AddLocationForm after adding a new location.
+ *
+ * @see apc_calendar_attach_add_location_link()
+ * @see \Drupal\apc_calendar\Form\AddLocationForm
+ */
+function apc_calendar_validate_location_not_found(array &$element, FormStateInterface $form_state, array &$complete_form): void {
+  $input = trim((string) ($element['#value'] ?? ''));
+  if ($input === '' || EntityAutocomplete::extractEntityIdFromAutocompleteInput($input) !== NULL) {
+    return;
+  }
+
+  $options = ($element['#selection_settings'] ?? []) + [
+    'target_type' => $element['#target_type'],
+    'handler' => $element['#selection_handler'],
+  ];
+  $handler = \Drupal::service('plugin.manager.entity_reference_selection')->getInstance($options);
+  $matches = $handler->getReferenceableEntities($input, '=', 1);
+
+  if (empty(reset($matches))) {
+    $form_state->setError($element, t('We couldn’t find a location called "%value". Use "Can’t find it? Add a new location" below to add it.', [
+      '%value' => $input,
+    ]));
+  }
 }
 
 /**
