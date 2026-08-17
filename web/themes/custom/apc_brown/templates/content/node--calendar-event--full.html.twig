@@ -41,10 +41,15 @@
       <a class="apc-pill-button" href="{{ add_to_calendar_url }}" target="_blank" rel="noopener noreferrer">{{ 'Add to calendar'|t }}</a>
     {% endif %}
     {% if node.field_virtual.value %}
-      <div class="apc-online-notice">
-        <span class="apc-online-notice__label">{{ 'Online only'|t }}</span>
+      <div class="apc-online-badge">
+        <svg class="apc-online-badge__icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle>
+          <ellipse cx="12" cy="12" rx="4" ry="9" fill="none" stroke="currentColor" stroke-width="2"></ellipse>
+          <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2"></line>
+        </svg>
+        <span class="apc-online-badge__label">{{ 'Online only'|t }}</span>
         {% if content.field_event_url %}
-          {{ content.field_event_url }}
+          <span class="apc-online-badge__link">{{ content.field_event_url }}</span>
         {% endif %}
       </div>
     {% endif %}
