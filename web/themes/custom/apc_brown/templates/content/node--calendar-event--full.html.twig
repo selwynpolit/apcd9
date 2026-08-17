@@ -3,8 +3,9 @@
  * @file
  * Event detail page (full view mode of a calendar_event node).
  *
- * gallery, add_to_calendar_url, location_gallery, location_url and
- * location_pending are built in apc_brown_preprocess_node().
+ * gallery, add_to_calendar_url, publish_event_url, is_unpublished,
+ * location_gallery, location_url and location_pending are built in
+ * apc_brown_preprocess_node().
  *
  * Single column, no sidebar -- matches assets/event_detail.pdf. The
  * Location card's address/map/directions come from content.field_location
@@ -22,6 +23,10 @@
     <a href="/calendar">{{ 'Calendar'|t }}</a> / {{ label }}
   </div>
 
+  {% if is_unpublished %}
+    <div class="apc-unpublished-banner" role="status">{{ 'Unpublished — pending review'|t }}</div>
+  {% endif %}
+
   <h1 class="apc-detail__title">{{ label }}</h1>
 
   <div class="apc-detail__meta">
@@ -29,6 +34,9 @@
   </div>
 
   <div class="apc-detail__actions">
+    {% if publish_event_url %}
+      <a class="apc-pill-button apc-pill-button--primary" href="{{ publish_event_url }}">{{ 'Publish event & location'|t }}</a>
+    {% endif %}
     {% if add_to_calendar_url %}
       <a class="apc-pill-button" href="{{ add_to_calendar_url }}" target="_blank" rel="noopener noreferrer">{{ 'Add to calendar'|t }}</a>
     {% endif %}

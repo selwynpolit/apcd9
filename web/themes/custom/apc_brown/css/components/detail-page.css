@@ -16,6 +16,22 @@
   color: var(--color-text-neutral-soft);
 }
 
+/* Unpublished banner on the event/location detail pages -- only ever seen by
+   a reviewer (event_manager/administrator), since node/term access itself
+   keeps everyone else off this page for pending content. Gold matches core's
+   own semantic color for messages--warning (see messages.css). */
+.apc-unpublished-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp0-5, 0.5625rem);
+  margin-block-end: var(--sp1-5, 1.6875rem);
+  padding: var(--sp0-5, 0.5625rem) var(--sp1, 1.125rem);
+  border-radius: var(--border-radius);
+  background: var(--color--gold);
+  color: var(--color--gray-5);
+  font-weight: 700;
+}
+
 .apc-detail__badges {
   display: flex;
   flex-wrap: wrap;
