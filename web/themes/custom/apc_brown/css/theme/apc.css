@@ -340,6 +340,27 @@
   font-size: 12px;
 }
 
+/* ══ Location autocomplete "Add a new venue" row ═════════════════════════
+   Appended by apc_calendar/add_location_autocomplete
+   (js/add-location-autocomplete.js) to the Location field's autocomplete
+   suggestions on the calendar_event add/edit form -- including the
+   zero-results case, which is the moment a submitter most needs to notice
+   it. Uses the reserved accent-2 "high-emphasis" colour (see its definition
+   above): this is exactly the kind of rare, singular call-to-action moment
+   that colour exists for, not an ordinary matched venue in the same list. */
+
+.ui-autocomplete .apc-autocomplete-add-new {
+  margin-top: 4px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.ui-autocomplete .apc-autocomplete-add-new > div {
+  padding: 6px 8px;
+  background: var(--color-accent-2-100);
+  color: var(--color-accent-2-800);
+  font-weight: 700;
+}
+
 /* ══ Location page (/locations/%) ═══════════════════════════════════════ */
 
 .view-location-page .view-header { margin-bottom: var(--sp2); }

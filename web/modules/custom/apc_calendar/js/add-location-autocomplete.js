@@ -57,6 +57,25 @@
           }
         });
 
+        // Distinct rendering for the "Add a new venue" row, so it reads as a
+        // different kind of thing from a real matched venue rather than
+        // blending into the list. $.ui.autocomplete.prototype._renderItem is
+        // the actual base implementation (not a hand-copied guess at it), so
+        // ordinary rows keep rendering exactly as core would render them.
+        const instance = $input.autocomplete('instance');
+        if (instance) {
+          const baseRenderItem = $.ui.autocomplete.prototype._renderItem;
+          instance._renderItem = function (ul, item) {
+            if (item.apcAddNew) {
+              return $('<li>')
+                .addClass('apc-autocomplete-add-new')
+                .append($('<div>').text(item.label))
+                .appendTo(ul);
+            }
+            return baseRenderItem.call(this, ul, item);
+          };
+        }
+
         $input.autocomplete('option', 'select', function (event, ui) {
           if (ui.item && ui.item.apcAddNew) {
             event.preventDefault();
