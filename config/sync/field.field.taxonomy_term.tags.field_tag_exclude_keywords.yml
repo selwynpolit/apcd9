@@ -1,0 +1,19 @@
+uuid: 14995213-2e61-48fe-895e-407eaac751da
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_tag_exclude_keywords
+    - taxonomy.vocabulary.tags
+id: taxonomy_term.tags.field_tag_exclude_keywords
+field_name: field_tag_exclude_keywords
+entity_type: taxonomy_term
+bundle: tags
+label: 'Exclusion keywords'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string
