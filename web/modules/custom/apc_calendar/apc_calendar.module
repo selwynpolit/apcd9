@@ -63,11 +63,63 @@ function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
     }
    }
 
-  // Force an initial capital on the term name.
+  // Strip stray leading/trailing whitespace and force an initial capital on
+  // the term name. The trim matters beyond cosmetics: a leading space sorts
+  // before every letter under this column's collation, so a term saved with
+  // one silently floats to the top of any alphabetical listing regardless
+  // of what letter its name actually starts with (see the Tag Keywords view
+  // and apc_calendar_update_10004(), which cleans up names that predate
+  // this guard).
   if (in_array($term->bundle(), ['locations', 'tags'], TRUE)) {
-    $name = $term->getName();
-    if ($name !== '' && $name !== NULL) {
+    $name = trim((string) $term->getName());
+    if ($name !== '') {
       $term->setName(Unicode::ucfirst($name));
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for taxonomy_term_tags_form.
+ *
+ * Enforces the same ASCII-only requirement TagMapSettingsForm used to
+ * enforce on the YAML map, now that field_tag_keywords/
+ * field_tag_exclude_keywords live on the term itself.
+ * TagSuggester::anyPhraseMatches() deliberately does not use the /u (UTF-8)
+ * regex modifier -- \b's simpler, non-Unicode semantics are only safe to
+ * rely on if keywords are guaranteed ASCII.
+ *
+ * @see \Drupal\apc_calendar\TagSuggester
+ */
+function apc_calendar_form_taxonomy_term_tags_form_alter(array &$form, FormStateInterface $form_state): void {
+  $form['#validate'][] = 'apc_calendar_validate_tag_keywords_ascii';
+}
+
+/**
+ * Form validation handler: keywords must be ASCII.
+ *
+ * @see apc_calendar_form_taxonomy_term_tags_form_alter()
+ */
+function apc_calendar_validate_tag_keywords_ascii(array &$form, FormStateInterface $form_state): void {
+  foreach (['field_tag_keywords', 'field_tag_exclude_keywords'] as $field_name) {
+    if (!isset($form[$field_name])) {
+      continue;
+    }
+    foreach ($form_state->getValue($field_name) ?? [] as $delta => $item) {
+      // $form_state's raw values for a multi-value widget include an
+      // 'add_more' entry alongside the numeric deltas -- the "Add another
+      // item" button's own value, not a keyword row. Core's own
+      // WidgetBase::extractFormValues() unsets the same key for the same
+      // reason before treating the rest as delta => value pairs.
+      if (!is_array($item)) {
+        continue;
+      }
+      $value = trim((string) ($item['value'] ?? ''));
+      if ($value !== '' && preg_match('/[^\x00-\x7F]/', $value) === 1) {
+        $form_state->setError(
+          $form[$field_name]['widget'][$delta]['value'],
+          t('Keep keywords ASCII: "%value" is not.', ['%value' => $value])
+        );
+      }
     }
   }
 }
@@ -365,7 +417,34 @@ function _apc_calendar_normalize_geocoder_address(\Geocoder\Model\Address $addre
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for node_calendar_event_form.
+ * Implements hook_form_FORM_ID_alter() for node_calendar_event_form (add).
+ *
+ * @see _apc_calendar_calendar_event_form_alter()
+ */
+function apc_calendar_form_node_calendar_event_form_alter(array &$form, FormStateInterface $form_state): void {
+  _apc_calendar_calendar_event_form_alter($form, $form_state);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_calendar_event_edit_form.
+ *
+ * ContentEntityForm::getFormId() appends the operation to the form ID unless
+ * it is 'default', and Node's 'edit' form handler is registered under its
+ * own 'edit' key (not reusing 'default') -- so the add form is
+ * node_calendar_event_form but the edit form is
+ * node_calendar_event_edit_form, a genuinely different hook_form_FORM_ID_alter()
+ * target. Without this second implementation, everything in
+ * _apc_calendar_calendar_event_form_alter() -- including the "Suggest tags"
+ * button -- silently never ran on edit.
+ *
+ * @see _apc_calendar_calendar_event_form_alter()
+ */
+function apc_calendar_form_node_calendar_event_edit_form_alter(array &$form, FormStateInterface $form_state): void {
+  _apc_calendar_calendar_event_form_alter($form, $form_state);
+}
+
+/**
+ * Shared implementation for the calendar_event add and edit forms.
  *
  * Anonymous submitters cannot view their own unpublished node (core blocks
  * "view own unpublished content" for anonymous — every anonymous node is owned
@@ -374,8 +453,11 @@ function _apc_calendar_normalize_geocoder_address(\Geocoder\Model\Address $addre
  * with a "has been created" message that reads as though the event is live.
  *
  * Send them to a dedicated thank-you page with an accurate message instead.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see apc_calendar_form_node_calendar_event_edit_form_alter()
  */
-function apc_calendar_form_node_calendar_event_form_alter(array &$form, FormStateInterface $form_state): void {
+function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterface $form_state): void {
   $account = \Drupal::currentUser();
 
   // The confirmation redirect is anonymous-only — authenticated submitters can
@@ -411,6 +493,83 @@ function apc_calendar_form_node_calendar_event_form_alter(array &$form, FormStat
   // library attachment for the autocomplete enhancement as well as the link.
   if ($account->hasPermission('create terms in locations')) {
     apc_calendar_attach_add_location_link($form);
+  }
+
+  // "Suggest tags" — everyone gets it, anonymous included, same as the
+  // add-location affordance above. #limit_validation_errors => [] is what
+  // keeps a half-filled form (e.g. no location yet) from raising every other
+  // field's validation errors just because this button was clicked; this is
+  // not a real submission.
+  if (isset($form['field_tags'])) {
+    $form['field_tags']['apc_tag_suggestions'] = [
+      '#type' => 'container',
+      '#attributes' => ['id' => 'apc-tag-suggestions'],
+      '#weight' => 10,
+    ];
+
+    // Stashed in $form_state by apc_calendar_tag_suggest_submit() and
+    // survives the rebuild; rebuilt fresh here (not in the submit handler)
+    // because $form itself does not persist across a rebuild, only
+    // $form_state does. All checked by default -- unchecking is the
+    // deliberate act, per the design. NULL (button never clicked this
+    // request) is distinct from an empty array (clicked, nothing matched) --
+    // only the latter gets a "nothing found" message, so the container stays
+    // silent until the submitter has actually asked.
+    //
+    // $suggestions is [tid => label] (see TagSuggester::suggest()) --
+    // #options already wants that shape directly, and #default_value wants
+    // just the keys (the tids) to check.
+    $suggestions = $form_state->get('apc_tag_suggestions');
+    if ($suggestions) {
+      $form['field_tags']['apc_tag_suggestions']['tags'] = [
+        '#type' => 'checkboxes',
+        '#title' => t('Suggested tags'),
+        '#options' => $suggestions,
+        '#default_value' => array_keys($suggestions),
+        // Explicit rather than left to default computation: $form['field_tags']
+        // (the field widget's own outer wrapper) is not #tree, so an element
+        // nested under it with no #parents of its own does not land where its
+        // render-array position suggests -- it flattens to a bare top-level
+        // 'tags' key in $form_state->getValues(), same depth as 'title' or
+        // 'body'. Fixing the read site to match that incidental flattening
+        // would work today but silently break the moment this element's
+        // position in the render array changes; naming the parents directly
+        // removes the dependency on that behaviour entirely.
+        '#parents' => ['apc_tag_suggestions_checked'],
+      ];
+    }
+    elseif ($suggestions !== NULL) {
+      $form['field_tags']['apc_tag_suggestions']['empty'] = [
+        '#markup' => t('No tag suggestions found for the current title and body.'),
+      ];
+    }
+
+    $form['field_tags']['apc_tag_suggest'] = [
+      '#type' => 'submit',
+      '#value' => t('Suggest tags'),
+      '#limit_validation_errors' => [],
+      '#submit' => ['apc_calendar_tag_suggest_submit'],
+      '#ajax' => [
+        'callback' => 'apc_calendar_tag_suggest_ajax',
+        'wrapper' => 'apc-tag-suggestions',
+      ],
+      '#weight' => 9,
+    ];
+
+    // Insert before whichever handler currently saves the entity, rather
+    // than assuming the array's exact contents -- the anonymous branch above
+    // may or may not have already appended
+    // apc_calendar_event_submit_confirmation, and this must not clobber it
+    // either way. By the time apc_calendar_apply_suggested_tags() runs,
+    // ::submitForm has already built the entity from the widget values, so
+    // it acts on the built node directly rather than the tags widget's own
+    // text string.
+    $submit_handlers = $form['actions']['submit']['#submit'];
+    $save_index = array_search('::save', $submit_handlers, TRUE);
+    if ($save_index !== FALSE) {
+      array_splice($submit_handlers, $save_index, 0, ['apc_calendar_apply_suggested_tags']);
+      $form['actions']['submit']['#submit'] = $submit_handlers;
+    }
   }
 
   // The online-only checkbox is available to everyone, anonymous included —
@@ -564,6 +723,104 @@ function apc_calendar_validate_location_not_found(array &$element, FormStateInte
     $form_state->setError($element, t('We couldn’t find a location called "%value". Use "Can’t find it? Add a new location" below to add it.', [
       '%value' => $input,
     ]));
+  }
+}
+
+/**
+ * Submit handler for the "Suggest tags" button.
+ *
+ * Reads title and body from $form_state (not from the entity -- the node
+ * behind this form is not saved yet), calls TagSuggester, and stashes the
+ * result in $form_state so apc_calendar_form_node_calendar_event_form_alter()
+ * can rebuild the checkbox list on the next pass. Runs before core's own
+ * ::save handler ever fires; nothing here touches the entity.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see apc_calendar_tag_suggest_ajax()
+ */
+function apc_calendar_tag_suggest_submit(array $form, FormStateInterface $form_state): void {
+  // Read from raw user input, not $form_state->getValues() -- with
+  // #limit_validation_errors => [] (an empty array, not FALSE),
+  // FormValidator::handleErrorsWithLimitedValidation() rebuilds the values
+  // array to contain *only* the listed sections, which is none of them
+  // here. title and body would silently come back empty from getValue() even
+  // though the submitter typed them. getUserInput() is the raw POST data and
+  // is not filtered by #limit_validation_errors at all.
+  $input = $form_state->getUserInput();
+  $title = (string) ($input['title'][0]['value'] ?? '');
+  $body = (string) ($input['body'][0]['value'] ?? '');
+
+  $suggestions = \Drupal::service('apc_calendar.tag_suggester')->suggest($title, $body);
+  $form_state->set('apc_tag_suggestions', $suggestions);
+  $form_state->setRebuild(TRUE);
+}
+
+/**
+ * AJAX callback for the "Suggest tags" button.
+ *
+ * Returns only the suggestions container -- the rest of the rebuilt $form is
+ * discarded, never sent to the browser. See the "one real risk" note in
+ * auto-tag-task.md: the server-side rebuild that produces this container is
+ * a full form rebuild (Smart Date, Media Library, focal point and all), even
+ * though only this one piece of it is returned.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see apc_calendar_tag_suggest_submit()
+ */
+function apc_calendar_tag_suggest_ajax(array $form, FormStateInterface $form_state): array {
+  return $form['field_tags']['apc_tag_suggestions'];
+}
+
+/**
+ * Submit handler: applies checked tag suggestions to the entity.
+ *
+ * Spliced in immediately before ::save (see
+ * apc_calendar_form_node_calendar_event_form_alter()), so ::submitForm has
+ * already built the entity from the widget's own values by the time this
+ * runs. Acts on the built node directly -- never touches the tags widget's
+ * text string or its comma-quoting format.
+ *
+ * Unlike the old config-backed map, a suggestion can only ever exist for a
+ * term that already exists -- TagSuggester only matches terms that already
+ * have field_tag_keywords populated (see TagSuggester::suggest()) -- so
+ * there is no "find or create by name" step here any more, just a load by
+ * the tid the checkbox already carries.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see \Drupal\apc_calendar\TagSuggester
+ */
+function apc_calendar_apply_suggested_tags(array $form, FormStateInterface $form_state): void {
+  $checked = array_filter($form_state->getValue('apc_tag_suggestions_checked') ?? []);
+  if (!$checked) {
+    return;
+  }
+
+  $node = $form_state->getFormObject()->getEntity();
+  if (!$node instanceof NodeInterface || !$node->hasField('field_tags')) {
+    return;
+  }
+
+  // Tracked so a suggestion the submitter also typed by hand gets one
+  // reference, not two.
+  $existing_tids = [];
+  foreach ($node->get('field_tags') as $item) {
+    if ($item->target_id) {
+      $existing_tids[(int) $item->target_id] = TRUE;
+    }
+  }
+
+  $storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+  foreach (array_keys($checked) as $tid) {
+    $tid = (int) $tid;
+    // The term could in principle have been deleted between the AJAX
+    // suggestion and this submission; skip rather than create a bare
+    // replacement -- that would silently reintroduce the "find or create"
+    // problem this design specifically avoids.
+    if (isset($existing_tids[$tid]) || !$storage->load($tid)) {
+      continue;
+    }
+    $node->get('field_tags')->appendItem($tid);
+    $existing_tids[$tid] = TRUE;
   }
 }
 
