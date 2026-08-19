@@ -8,3 +8,13 @@ prod:
     tty: 0
   paths:
     drush-script: /home/austinpr/public_html/d9/vendor/bin/drush
+# APC dev environment.
+dev:
+    host: chi204.greengeeks.net
+    user: austinpr
+    root: /home/austinpr/public_html/apcdev/web
+    uri: dev.austinprogressivecalendar.com
+    ssh:
+      tty: 0
+    paths:
+      drush-script: /home/austinpr/public_html/apcdev/vendor/bin/drush
