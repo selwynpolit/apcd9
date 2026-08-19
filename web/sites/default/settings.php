@@ -713,6 +713,7 @@ $settings['trusted_host_patterns'] = [
   '^d9\.austinprogressivecalendar\.com$',
   '^.+\d9\.austinprogressivecalendar\.com$',
   '^\.austinprogressivecalendar\.com$',
+  '^dev.austinprogressivecalendar\.com$',
 ];
 
 

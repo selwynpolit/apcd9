@@ -67,6 +67,51 @@ function apc_calendar_uninstall(): void {
  * TagMapSettingsForm and its route/config schema are removed in the same
  * release, so nothing else can create or edit that config object again.
  *
+ * IMPORTANT, one-time-only exception: on a site where `apc_calendar` has
+ * never been enabled before, this update (and 10002-10003) never run
+ * automatically the first time the module gets enabled, no matter how
+ * `drush updb` is invoked. Enabling any module -- interactively, via
+ * `drush en`, or as a side effect of `drush cim` importing a `core.
+ * extension` that now lists it, which is how it will actually happen on
+ * this project's documented deploy sequence -- makes Drupal's own
+ * ModuleInstaller immediately mark every hook_update_N() the module
+ * already has as already-applied
+ * (\Drupal\Core\Update\UpdateHookRegistry::setInstalledVersion() is set to
+ * the latest available number as part of installExtension()). A
+ * subsequent `drush updb` then correctly reports nothing pending, even
+ * though none of these three functions ever ran their bodies. Confirmed by
+ * testing against a copy of the real target database: moving the field
+ * definitions into this module's own config/install/ (the usual fix for
+ * "module needs its own field to exist the moment it's installed") does
+ * NOT help here either -- Drupal's config importer deliberately skips a
+ * newly-installed module's config/install defaults when that module is
+ * being installed as part of a config import, on the assumption
+ * config/sync will supply whatever it needs instead. That is exactly this
+ * project's deploy path, so config/install default config is never
+ * applied here in practice, confirmed directly: the same field.storage
+ * file, present on disk, was correctly picked up by a standalone `drush en
+ * apc_calendar` but silently never created when the module was enabled by
+ * `drush cim` in the same batch as several other newly-required modules.
+ *
+ * The one reliable fix: the first time this module is deployed to a site
+ * that has never had it enabled before, run this once, immediately after
+ * the `drush cim` that enables it (before or after the accompanying `drush
+ * updb` makes no difference -- it will report nothing pending either way):
+ *
+ * @code
+ *   drush php:eval "
+ *     \Drupal::moduleHandler()->loadInclude('apc_calendar', 'install');
+ *     apc_calendar_update_10001();
+ *     apc_calendar_update_10002();
+ *     apc_calendar_update_10003();
+ *   "
+ * @endcode
+ *
+ * Every future update to this module (10004 onward, on a site that already
+ * has apc_calendar enabled) runs automatically via a normal `drush updb`
+ * exactly as expected -- this caveat is specific to a module's very first
+ * install on a given site, not an ongoing concern.
+ *
  * @see \Drupal\apc_calendar\TagSuggester
  */
 function apc_calendar_update_10001(): string {
@@ -130,61 +175,17 @@ function apc_calendar_update_10001(): string {
 }
 
 /**
- * Deploys the tag-keyword curation done in DDEV onto this site's `tags` terms.
- *
- * field_tag_keywords/field_tag_exclude_keywords (added in update 10001) are
- * ordinary content, not exported config -- `drush cex`/`cim` never touch
- * them, so curating a tag through the Tag Keywords view on one environment
- * does not by itself reach another. This hook is the deploy step for that:
- * name-matched, create-the-term-if-missing, safe to run again (values are
- * simply overwritten, not appended). The same shape as update 10001's
- * migration loop, just with the curated data inlined instead of read from
- * the now-deleted apc_calendar.tag_map config.
- *
- * Since TagSuggester also matches on a tag's own name now (no keywords
- * required -- see TagSuggester), this list only needs entries for
- * synonyms/variations the name alone wouldn't catch, or exclusions to
- * suppress a false positive. Add a future batch of curation the same way:
- * another hook_update_N() with the new entries, deployed via the normal
- * `drush updb` step already in this project's deploy process.
- */
-function apc_calendar_update_10002(): string {
-  $curation = [
-    'Housing' => [
-      'keywords' => ['housing', 'rent', 'eviction', 'tenant', 'affordable housing'],
-      'exclude' => [],
-    ],
-    'Parking' => [
-      'keywords' => ['parking'],
-      'exclude' => ['no parking'],
-    ],
-    'City council' => [
-      'keywords' => ['city council', 'council meeting'],
-      'exclude' => [],
-    ],
-  ];
-
-  $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
-  foreach ($curation as $name => $entry) {
-    $existing = $term_storage->loadByProperties(['vid' => 'tags', 'name' => $name]);
-    $term = $existing ? reset($existing) : $term_storage->create(['vid' => 'tags', 'name' => $name]);
-    $term->set('field_tag_keywords', $entry['keywords']);
-    $term->set('field_tag_exclude_keywords', $entry['exclude']);
-    $term->save();
-  }
-
-  return (string) t('Curated field_tag_keywords/field_tag_exclude_keywords on @count tag(s): @names.', [
-    '@count' => count($curation),
-    '@names' => implode(', ', array_keys($curation)),
-  ]);
-}
-
-/**
- * A broader starter set of tag curation for a progressive community calendar.
+ * The full starter set of tag curation for a progressive community calendar.
  *
  * Draft content for review, not a final answer -- add, drop, or reword any
  * of this through the Tag Keywords view (/admin/content/tag-keywords) same
- * as always; nothing here is special-cased.
+ * as always; nothing here is special-cased. field_tag_keywords/
+ * field_tag_exclude_keywords (added in update 10001) are ordinary content,
+ * not exported config -- `drush cex`/`cim` never touch them, so curating a
+ * tag through that view on one environment does not by itself reach
+ * another. This hook is the deploy step for that: name-matched,
+ * create-the-term-if-missing, safe to run again (values are simply
+ * overwritten, not appended).
  *
  * Some entries reuse terms that already existed in this vocabulary before
  * any curation work started (Protest, Peace, voting, Activism, Signs of
@@ -204,13 +205,38 @@ function apc_calendar_update_10002(): string {
  * omitted or replaced with a longer, more specific phrase instead.
  * "march" is left out of Protest's keywords for the same reason in reverse:
  * it is also a calendar month, and this site's event text is full of dates.
+ *
+ * Since TagSuggester also matches on a tag's own name now (no keywords
+ * required), most entries below only need exclusions where a keyword is a
+ * generic-enough phrase to plausibly collide with something unrelated --
+ * most curated phrases are specific enough not to need one, same as the
+ * original "no parking" example for Parking. Where an exclusion exists, it
+ * targets a real, concrete collision: a Texas town that happens to share
+ * Palestine's name, a school pep rally versus a protest rally, a private
+ * funeral notice versus a public remembrance vigil, and so on -- add more
+ * the same way as false positives turn up in practice, through the Tag
+ * Keywords view rather than by editing this migration again.
  */
-function apc_calendar_update_10003(): string {
+function apc_calendar_update_10002(): string {
   $curation = [
+    // Curated from the start.
+    'Housing' => [
+      'keywords' => ['housing', 'rent', 'eviction', 'tenant', 'affordable housing'],
+      'exclude' => ['for rent', 'rent a car'],
+    ],
+    'Parking' => [
+      'keywords' => ['parking'],
+      'exclude' => ['no parking'],
+    ],
+    'City council' => [
+      'keywords' => ['city council', 'council meeting'],
+      'exclude' => [],
+    ],
+
     // Existing terms, curated rather than duplicated.
     'Protest' => [
       'keywords' => ['rally', 'demonstration', 'sit-in', 'walkout', 'die-in', 'picket line'],
-      'exclude' => [],
+      'exclude' => ['pep rally'],
     ],
     'Peace' => [
       'keywords' => ['anti-war', 'peace rally', 'peace vigil', 'ceasefire', 'end the war'],
@@ -252,7 +278,7 @@ function apc_calendar_update_10003(): string {
     ],
     'Racial Justice' => [
       'keywords' => ['racial justice', 'racial equity', 'civil rights', 'Black Lives Matter', 'systemic racism', 'anti-racism', 'reparations'],
-      'exclude' => [],
+      'exclude' => ['war reparations'],
     ],
     'LGBTQ+ Rights' => [
       'keywords' => ['LGBTQ rights', 'LGBTQIA', 'pride parade', 'pride march', 'pride festival', 'pride month', 'marriage equality', 'queer community'],
@@ -268,7 +294,7 @@ function apc_calendar_update_10003(): string {
     ],
     'Gun Violence Prevention' => [
       'keywords' => ['gun violence', 'gun control', 'gun safety', 'gun reform', 'moms demand action', 'march for our lives'],
-      'exclude' => [],
+      'exclude' => ['gun safety class'],
     ],
     'Labor Rights' => [
       'keywords' => ['labor union', 'workers rights', 'unionize', 'collective bargaining', 'fair wages', 'workers strike', 'on strike'],
@@ -316,7 +342,7 @@ function apc_calendar_update_10003(): string {
     ],
     'Mutual Aid' => [
       'keywords' => ['mutual aid', 'food bank', 'food pantry', 'food insecurity', 'community fridge', 'free store'],
-      'exclude' => [],
+      'exclude' => ['free store credit'],
     ],
     'Disability Rights' => [
       'keywords' => ['disability rights', 'disability justice', 'accessibility advocacy', 'ADA compliance'],
@@ -324,7 +350,7 @@ function apc_calendar_update_10003(): string {
     ],
     'Indigenous Rights' => [
       'keywords' => ['indigenous rights', 'native american', 'tribal sovereignty', 'land back', 'indigenous peoples'],
-      'exclude' => [],
+      'exclude' => ['native american cuisine'],
     ],
     "Women's Rights" => [
       'keywords' => ["women's rights", 'gender equality', 'equal pay', "women's march"],
@@ -332,7 +358,7 @@ function apc_calendar_update_10003(): string {
     ],
     'Palestine Solidarity' => [
       'keywords' => ['Palestine', 'Gaza', 'Palestinian rights', 'free Palestine', 'ceasefire now'],
-      'exclude' => [],
+      'exclude' => ['Palestine, Texas', 'Palestine, TX'],
     ],
     'Public Transit' => [
       'keywords' => ['public transit', 'transit equity', 'CapMetro', 'Project Connect', 'bike lanes'],
@@ -352,7 +378,7 @@ function apc_calendar_update_10003(): string {
     ],
     'Town Hall' => [
       'keywords' => ['town hall', 'candidate forum', 'meet the candidates', 'public comment period'],
-      'exclude' => [],
+      'exclude' => ['town hall pub', 'town hall bar'],
     ],
     'Volunteer Opportunities' => [
       'keywords' => ['volunteer opportunity', 'volunteers needed', 'sign up to volunteer'],
@@ -364,7 +390,7 @@ function apc_calendar_update_10003(): string {
     ],
     'Vigil & Remembrance' => [
       'keywords' => ['vigil', 'candlelight vigil', 'memorial service', 'remembrance'],
-      'exclude' => [],
+      'exclude' => ['private memorial service'],
     ],
   ];
 
@@ -406,7 +432,7 @@ function apc_calendar_update_10003(): string {
  * this can surface (e.g. "Drupal" already existed alongside " Drupal") --
  * that is a content decision, not a data-hygiene one.
  */
-function apc_calendar_update_10004(): string {
+function apc_calendar_update_10003(): string {
   $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
   $terms = $term_storage->loadByProperties(['vid' => ['locations', 'tags']]);
 
