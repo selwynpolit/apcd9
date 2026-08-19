@@ -1,0 +1,22 @@
+uuid: 3bb52db3-8f39-494f-ad28-793d508770ec
+langcode: en
+status: true
+dependencies:
+  theme:
+    - apc_brown
+_core:
+  default_config_hash: nGE3EoPQQaQCuqTUtZgw0-KIzmrqdKDzdNQf2JyPUt4
+id: apc_brown_primary_local_tasks
+theme: apc_brown
+region: highlighted
+weight: -4
+provider: null
+plugin: local_tasks_block
+settings:
+  id: local_tasks_block
+  label: 'Primary tabs'
+  label_display: '0'
+  provider: core
+  primary: true
+  secondary: false
+visibility: {  }

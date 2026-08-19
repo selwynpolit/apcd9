@@ -1,0 +1,54 @@
+apc_calendar.event_submitted:
+  path: '/event-submitted'
+  defaults:
+    _title: 'Event Submitted'
+    _controller: '\Drupal\apc_calendar\Controller\EventSubmittedController'
+  requirements:
+    _permission: 'access content'
+  options:
+    # The response renders the visitor's own unpublished node, so it is
+    # per-session and must never be stored in the anonymous page cache.
+    no_cache: TRUE
+
+apc_calendar.event_popup:
+  path: '/calendar/event/{node}/{delta}'
+  defaults:
+    _title: 'Event'
+    _controller: '\Drupal\apc_calendar\Controller\EventPopupController::popup'
+  requirements:
+    # Node access is what stops this route becoming a way to read unpublished
+    # pending submissions. Do not relax it.
+    _entity_access: 'node.view'
+    node: \d+
+    delta: \d+
+  options:
+    parameters:
+      node:
+        type: 'entity:node'
+
+apc_calendar.publish_event_and_location:
+  path: '/calendar/event/{node}/publish'
+  defaults:
+    _controller: '\Drupal\apc_calendar\Controller\PublishEventAndLocationController::publish'
+  requirements:
+    # Same access PublishEventAndLocation::access() already checks for the VBO
+    # action -- plain entity update access, not administer nodes.
+    _entity_access: 'node.update'
+    node: \d+
+    _csrf_token: 'TRUE'
+  options:
+    parameters:
+      node:
+        type: 'entity:node'
+
+apc_calendar.add_location:
+  path: '/calendar/location/add'
+  defaults:
+    _title: 'Add a location'
+    _form: '\Drupal\apc_calendar\Form\AddLocationForm'
+  requirements:
+    # The same permission core checks for creating a term in this vocabulary.
+    # Anonymous already holds it; see the plan, §3d.
+    _permission: 'create terms in locations'
+  options:
+    no_cache: TRUE

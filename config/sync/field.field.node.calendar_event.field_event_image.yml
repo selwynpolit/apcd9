@@ -1,0 +1,29 @@
+uuid: 33513135-e717-4b8a-95a1-9222a74d065d
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_event_image
+    - media.type.image
+    - node.type.calendar_event
+id: node.calendar_event.field_event_image
+field_name: field_event_image
+entity_type: node
+bundle: calendar_event
+label: 'Event Image'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:media'
+  handler_settings:
+    target_bundles:
+      image: image
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

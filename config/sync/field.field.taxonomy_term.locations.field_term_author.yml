@@ -1,0 +1,29 @@
+uuid: 06a2b357-de31-4893-9b28-de0c76f23079
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_term_author
+    - taxonomy.vocabulary.locations
+id: taxonomy_term.locations.field_term_author
+field_name: field_term_author
+entity_type: taxonomy_term
+bundle: locations
+label: 'Term Author'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    filter:
+      type: _none
+    include_anonymous: true
+field_type: entity_reference

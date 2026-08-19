@@ -1,0 +1,14 @@
+uuid: 949c775c-0a53-4223-9c6e-49164b6b7229
+langcode: en
+status: true
+dependencies:
+  config:
+    - user.role.event_contributor
+  module:
+    - user
+id: user_remove_role_action.event_contributor
+label: 'Remove the Event Contributor role from the selected user(s)'
+type: user
+plugin: user_remove_role_action
+configuration:
+  rid: event_contributor

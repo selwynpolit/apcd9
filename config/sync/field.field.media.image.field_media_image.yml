@@ -17,7 +17,7 @@ field_name: field_media_image
 entity_type: media
 bundle: image
 label: Image
-description: ''
+description: 'After uploading, click on the photo to mark its most important part (a face, a sign, whatever matters most). That spot stays in view when the photo gets resized for the calendar. If you skip this, we assume it is near the top of the photo.'
 required: true
 translatable: true
 default_value: {  }
@@ -26,16 +26,16 @@ settings:
   handler: 'default:file'
   handler_settings: {  }
   file_directory: '[date:custom:Y]-[date:custom:m]'
-  file_extensions: 'png gif jpg jpeg'
-  max_filesize: ''
-  max_resolution: ''
+  file_extensions: 'png gif jpg jpeg webp'
+  max_filesize: '12 MB'
+  max_resolution: 2000x2000
   min_resolution: ''
   alt_field: true
   alt_field_required: true
   title_field: false
   title_field_required: false
   default_image:
-    uuid: null
+    uuid: ''
     alt: ''
     title: ''
     width: null

@@ -1,0 +1,450 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall hooks for the APC Calendar module.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Component\Utility\Unicode;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Hands `field_location` back to core's selection handler.
+ *
+ * Without this, uninstalling the module leaves the field pointing at the
+ * `apc_locations` plugin, which no longer exists. That is not a soft failure:
+ * SelectionPluginManager::getPluginId() does
+ *
+ * @code
+ *   uasort($selection_handler_groups[$base_plugin_id], ...);
+ * @endcode
+ *
+ * on a group that is now missing, so every page rendering the field — the event
+ * form, the autocomplete endpoint, admin content screens — dies with
+ * "uasort(): Argument #1 must be of type array, null given" and no indication of
+ * the cause.
+ *
+ * `auto_create` deliberately stays FALSE. Turning it back on would restore the
+ * old behaviour where typing an unmatched name silently creates a bare term with
+ * no address, which is what the modal exists to replace. A site without this
+ * module should simply require an existing location.
+ */
+function apc_calendar_uninstall(): void {
+  $field = FieldConfig::loadByName('node', 'calendar_event', 'field_location');
+  if (!$field) {
+    return;
+  }
+
+  $settings = $field->getSetting('handler_settings') ?: [];
+  unset($settings['auto_create_bundle']);
+  $settings['auto_create'] = FALSE;
+
+  $field->setSetting('handler', 'default:taxonomy_term');
+  $field->setSetting('handler_settings', $settings);
+  $field->save();
+
+  \Drupal::messenger()->addStatus(t('The Location field has been reset to the default taxonomy term selection handler. Locations created by visitors but not yet approved will no longer be selectable by the person who added them.'));
+}
+
+/**
+ * Moves the tag-suggestion keyword map from config onto `tags` terms.
+ *
+ * `apc_calendar.tag_map` (a single YAML-edited config object, see
+ * auto-tag-task.md) sat in config/sync despite being tuned frequently as
+ * content, not structure -- exactly the kind of thing that silently reverts
+ * on the next `cim` if someone edits it through the UI and forgets to
+ * `cex`. Two new fields on the `tags` vocabulary, `field_tag_keywords` and
+ * `field_tag_exclude_keywords`, replace it: ordinary content, no export
+ * step, and a purpose-built View (added separately) to curate them instead
+ * of one big textarea.
+ *
+ * This is the last code that ever reads `apc_calendar.tag_map` --
+ * TagMapSettingsForm and its route/config schema are removed in the same
+ * release, so nothing else can create or edit that config object again.
+ *
+ * IMPORTANT, one-time-only exception: on a site where `apc_calendar` has
+ * never been enabled before, this update (and 10002-10003) never run
+ * automatically the first time the module gets enabled, no matter how
+ * `drush updb` is invoked. Enabling any module -- interactively, via
+ * `drush en`, or as a side effect of `drush cim` importing a `core.
+ * extension` that now lists it, which is how it will actually happen on
+ * this project's documented deploy sequence -- makes Drupal's own
+ * ModuleInstaller immediately mark every hook_update_N() the module
+ * already has as already-applied
+ * (\Drupal\Core\Update\UpdateHookRegistry::setInstalledVersion() is set to
+ * the latest available number as part of installExtension()). A
+ * subsequent `drush updb` then correctly reports nothing pending, even
+ * though none of these three functions ever ran their bodies. Confirmed by
+ * testing against a copy of the real target database: moving the field
+ * definitions into this module's own config/install/ (the usual fix for
+ * "module needs its own field to exist the moment it's installed") does
+ * NOT help here either -- Drupal's config importer deliberately skips a
+ * newly-installed module's config/install defaults when that module is
+ * being installed as part of a config import, on the assumption
+ * config/sync will supply whatever it needs instead. That is exactly this
+ * project's deploy path, so config/install default config is never
+ * applied here in practice, confirmed directly: the same field.storage
+ * file, present on disk, was correctly picked up by a standalone `drush en
+ * apc_calendar` but silently never created when the module was enabled by
+ * `drush cim` in the same batch as several other newly-required modules.
+ *
+ * The one reliable fix: the first time this module is deployed to a site
+ * that has never had it enabled before, run this once, immediately after
+ * the `drush cim` that enables it (before or after the accompanying `drush
+ * updb` makes no difference -- it will report nothing pending either way):
+ *
+ * @code
+ *   drush php:eval "
+ *     \Drupal::moduleHandler()->loadInclude('apc_calendar', 'install');
+ *     apc_calendar_update_10001();
+ *     apc_calendar_update_10002();
+ *     apc_calendar_update_10003();
+ *   "
+ * @endcode
+ *
+ * Every future update to this module (10004 onward, on a site that already
+ * has apc_calendar enabled) runs automatically via a normal `drush updb`
+ * exactly as expected -- this caveat is specific to a module's very first
+ * install on a given site, not an ongoing concern.
+ *
+ * @see \Drupal\apc_calendar\TagSuggester
+ */
+function apc_calendar_update_10001(): string {
+  $fields = [
+    'field_tag_keywords' => 'Match keywords',
+    'field_tag_exclude_keywords' => 'Exclusion keywords',
+  ];
+
+  foreach ($fields as $field_name => $label) {
+    if (!FieldStorageConfig::loadByName('taxonomy_term', $field_name)) {
+      FieldStorageConfig::create([
+        'field_name' => $field_name,
+        'entity_type' => 'taxonomy_term',
+        'type' => 'string',
+        'cardinality' => FieldStorageConfig::CARDINALITY_UNLIMITED,
+      ])->save();
+    }
+    if (!FieldConfig::loadByName('taxonomy_term', 'tags', $field_name)) {
+      FieldConfig::create([
+        'field_name' => $field_name,
+        'entity_type' => 'taxonomy_term',
+        'bundle' => 'tags',
+        'label' => $label,
+      ])->save();
+    }
+  }
+
+  /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
+  $display_repository = \Drupal::service('entity_display.repository');
+
+  $display_repository->getFormDisplay('taxonomy_term', 'tags')
+    ->setComponent('field_tag_keywords', ['type' => 'string_textfield', 'weight' => 10])
+    ->setComponent('field_tag_exclude_keywords', ['type' => 'string_textfield', 'weight' => 11])
+    ->save();
+
+  $display_repository->getViewDisplay('taxonomy_term', 'tags')
+    ->setComponent('field_tag_keywords', ['type' => 'string', 'weight' => 10])
+    ->setComponent('field_tag_exclude_keywords', ['type' => 'string', 'weight' => 11])
+    ->save();
+
+  // Migrate whatever is still in the old config onto real terms -- exact
+  // name match is fine here (unlike the runtime suggestion-acceptance path,
+  // which has to guard against DB-collation-dependent case folding): both
+  // sides come from the same canonical, already-capitalised map keys.
+  $config_factory = \Drupal::configFactory();
+  $tag_map = $config_factory->getEditable('apc_calendar.tag_map');
+  $tags = $tag_map->get('tags') ?? [];
+
+  $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+  foreach ($tags as $name => $entry) {
+    $existing = $term_storage->loadByProperties(['vid' => 'tags', 'name' => $name]);
+    $term = $existing ? reset($existing) : $term_storage->create(['vid' => 'tags', 'name' => $name]);
+    $term->set('field_tag_keywords', array_values($entry['keywords'] ?? []));
+    $term->set('field_tag_exclude_keywords', array_values($entry['exclude'] ?? []));
+    $term->save();
+  }
+
+  $tag_map->delete();
+
+  return (string) t('Added field_tag_keywords/field_tag_exclude_keywords to the tags vocabulary and migrated apc_calendar.tag_map onto @count term(s).', ['@count' => count($tags)]);
+}
+
+/**
+ * The full starter set of tag curation for a progressive community calendar.
+ *
+ * Draft content for review, not a final answer -- add, drop, or reword any
+ * of this through the Tag Keywords view (/admin/content/tag-keywords) same
+ * as always; nothing here is special-cased. field_tag_keywords/
+ * field_tag_exclude_keywords (added in update 10001) are ordinary content,
+ * not exported config -- `drush cex`/`cim` never touch them, so curating a
+ * tag through that view on one environment does not by itself reach
+ * another. This hook is the deploy step for that: name-matched,
+ * create-the-term-if-missing, safe to run again (values are simply
+ * overwritten, not appended).
+ *
+ * Some entries reuse terms that already existed in this vocabulary before
+ * any curation work started (Protest, Peace, voting, Activism, Signs of
+ * Fascism, HonkTX, Recycling) rather than creating near-duplicates --
+ * loadByProperties() by name picks those up and adds keywords/exclusions to
+ * them, same as it would create a new term.
+ *
+ * Two matching-engine quirks shaped these word choices (see TagSuggester):
+ * no stemming, so plurals/variants need their own explicit entry when they
+ * matter; and no "which of my several tags is more specific" ranking, so a
+ * bare common word as a keyword tends to fire constantly. That ruled out
+ * several obvious-looking single words entirely -- "justice" (used in half
+ * these categories: racial, criminal, economic, environmental...), "choice"
+ * (reproductive rights), "union" (labor, but also "credit union"), "power"
+ * (political power, but also just electricity), and "ICE" (immigration
+ * enforcement, but also frozen water at a picnic) are all deliberately
+ * omitted or replaced with a longer, more specific phrase instead.
+ * "march" is left out of Protest's keywords for the same reason in reverse:
+ * it is also a calendar month, and this site's event text is full of dates.
+ *
+ * Since TagSuggester also matches on a tag's own name now (no keywords
+ * required), most entries below only need exclusions where a keyword is a
+ * generic-enough phrase to plausibly collide with something unrelated --
+ * most curated phrases are specific enough not to need one, same as the
+ * original "no parking" example for Parking. Where an exclusion exists, it
+ * targets a real, concrete collision: a Texas town that happens to share
+ * Palestine's name, a school pep rally versus a protest rally, a private
+ * funeral notice versus a public remembrance vigil, and so on -- add more
+ * the same way as false positives turn up in practice, through the Tag
+ * Keywords view rather than by editing this migration again.
+ */
+function apc_calendar_update_10002(): string {
+  $curation = [
+    // Curated from the start.
+    'Housing' => [
+      'keywords' => ['housing', 'rent', 'eviction', 'tenant', 'affordable housing'],
+      'exclude' => ['for rent', 'rent a car'],
+    ],
+    'Parking' => [
+      'keywords' => ['parking'],
+      'exclude' => ['no parking'],
+    ],
+    'City council' => [
+      'keywords' => ['city council', 'council meeting'],
+      'exclude' => [],
+    ],
+
+    // Existing terms, curated rather than duplicated.
+    'Protest' => [
+      'keywords' => ['rally', 'demonstration', 'sit-in', 'walkout', 'die-in', 'picket line'],
+      'exclude' => ['pep rally'],
+    ],
+    'Peace' => [
+      'keywords' => ['anti-war', 'peace rally', 'peace vigil', 'ceasefire', 'end the war'],
+      'exclude' => [],
+    ],
+    'voting' => [
+      'keywords' => [
+        'voting rights', 'voter suppression', 'voter registration', 'early voting',
+        'election day', 'polling place', 'redistricting', 'gerrymandering',
+        'get out the vote', 'canvassing', 'phone bank', 'text bank',
+      ],
+      'exclude' => [],
+    ],
+    'Activism' => [
+      'keywords' => ['direct action', 'civil disobedience', 'grassroots organizing', 'community organizing'],
+      'exclude' => [],
+    ],
+    'Signs of Fascism' => [
+      'keywords' => ['fascism', 'fascist', 'authoritarianism', 'democracy under threat'],
+      'exclude' => [],
+    ],
+    'HonkTX' => [
+      'keywords' => ['honk fest', 'honkfest', 'honk tx', 'street band festival'],
+      'exclude' => [],
+    ],
+    'Recycling' => [
+      'keywords' => ['composting', 'zero waste'],
+      'exclude' => [],
+    ],
+
+    // New terms.
+    'Immigrant Rights' => [
+      'keywords' => [
+        'immigrant rights', 'immigration reform', 'asylum seekers', 'refugee resettlement',
+        'DACA', 'dreamers', 'deportation defense', 'sanctuary city', 'undocumented immigrants',
+        'ICE raid', 'immigration enforcement',
+      ],
+      'exclude' => [],
+    ],
+    'Racial Justice' => [
+      'keywords' => ['racial justice', 'racial equity', 'civil rights', 'Black Lives Matter', 'systemic racism', 'anti-racism', 'reparations'],
+      'exclude' => ['war reparations'],
+    ],
+    'LGBTQ+ Rights' => [
+      'keywords' => ['LGBTQ rights', 'LGBTQIA', 'pride parade', 'pride march', 'pride festival', 'pride month', 'marriage equality', 'queer community'],
+      'exclude' => [],
+    ],
+    'Transgender Rights' => [
+      'keywords' => ['transgender rights', 'trans rights', 'trans youth', 'gender affirming care'],
+      'exclude' => [],
+    ],
+    'Reproductive Rights' => [
+      'keywords' => ['reproductive rights', 'reproductive justice', 'abortion access', 'abortion rights', 'pro-choice', 'birth control access'],
+      'exclude' => [],
+    ],
+    'Gun Violence Prevention' => [
+      'keywords' => ['gun violence', 'gun control', 'gun safety', 'gun reform', 'moms demand action', 'march for our lives'],
+      'exclude' => ['gun safety class'],
+    ],
+    'Labor Rights' => [
+      'keywords' => ['labor union', 'workers rights', 'unionize', 'collective bargaining', 'fair wages', 'workers strike', 'on strike'],
+      'exclude' => [],
+    ],
+    'Economic Justice' => [
+      'keywords' => ['minimum wage', 'living wage', 'income inequality', 'wealth inequality', 'economic justice'],
+      'exclude' => [],
+    ],
+    'Climate Action' => [
+      'keywords' => ['climate change', 'climate crisis', 'climate action', 'climate justice', 'climate strike', 'fossil fuels', 'renewable energy', 'clean energy'],
+      'exclude' => [],
+    ],
+    'Environmental Justice' => [
+      'keywords' => ['environmental justice', 'environmental racism', 'clean water', 'clean air', 'conservation', 'fracking', 'pipeline protest'],
+      'exclude' => [],
+    ],
+    'Water & Aquifer Protection' => [
+      'keywords' => ['Edwards Aquifer', 'Barton Springs', 'water quality', 'aquifer protection'],
+      'exclude' => [],
+    ],
+    'Criminal Justice Reform' => [
+      'keywords' => ['criminal justice reform', 'prison reform', 'bail reform', 'mass incarceration', 'decriminalization'],
+      'exclude' => [],
+    ],
+    'Police Accountability' => [
+      'keywords' => ['police accountability', 'police brutality', 'police reform', 'police oversight', 'community policing'],
+      'exclude' => [],
+    ],
+    'Public Education' => [
+      'keywords' => ['public education', 'school board', 'public schools', 'teacher pay', 'education funding', 'student debt'],
+      'exclude' => [],
+    ],
+    'Book Bans & Library Rights' => [
+      'keywords' => ['book ban', 'banned books', 'freedom to read', 'library advocacy'],
+      'exclude' => [],
+    ],
+    'Healthcare Access' => [
+      'keywords' => ['healthcare access', 'universal healthcare', 'medicare for all', 'medicaid expansion', 'affordable care act', 'mental health services'],
+      'exclude' => [],
+    ],
+    'Homelessness' => [
+      'keywords' => ['homelessness', 'unhoused community', 'houseless', 'homeless shelter', 'housing first'],
+      'exclude' => [],
+    ],
+    'Mutual Aid' => [
+      'keywords' => ['mutual aid', 'food bank', 'food pantry', 'food insecurity', 'community fridge', 'free store'],
+      'exclude' => ['free store credit'],
+    ],
+    'Disability Rights' => [
+      'keywords' => ['disability rights', 'disability justice', 'accessibility advocacy', 'ADA compliance'],
+      'exclude' => [],
+    ],
+    'Indigenous Rights' => [
+      'keywords' => ['indigenous rights', 'native american', 'tribal sovereignty', 'land back', 'indigenous peoples'],
+      'exclude' => ['native american cuisine'],
+    ],
+    "Women's Rights" => [
+      'keywords' => ["women's rights", 'gender equality', 'equal pay', "women's march"],
+      'exclude' => [],
+    ],
+    'Palestine Solidarity' => [
+      'keywords' => ['Palestine', 'Gaza', 'Palestinian rights', 'free Palestine', 'ceasefire now'],
+      'exclude' => ['Palestine, Texas', 'Palestine, TX'],
+    ],
+    'Public Transit' => [
+      'keywords' => ['public transit', 'transit equity', 'CapMetro', 'Project Connect', 'bike lanes'],
+      'exclude' => [],
+    ],
+    'Democracy & Accountability' => [
+      'keywords' => ['campaign finance reform', 'dark money', 'government transparency', 'ranked choice voting'],
+      'exclude' => [],
+    ],
+    'Travis County' => [
+      'keywords' => ['Travis County', 'commissioners court', 'Travis County Commissioners'],
+      'exclude' => [],
+    ],
+    'Texas Legislature' => [
+      'keywords' => ['Texas legislature', 'state capitol', 'state legislature', 'special session'],
+      'exclude' => [],
+    ],
+    'Town Hall' => [
+      'keywords' => ['town hall', 'candidate forum', 'meet the candidates', 'public comment period'],
+      'exclude' => ['town hall pub', 'town hall bar'],
+    ],
+    'Volunteer Opportunities' => [
+      'keywords' => ['volunteer opportunity', 'volunteers needed', 'sign up to volunteer'],
+      'exclude' => [],
+    ],
+    'Fundraiser' => [
+      'keywords' => ['fundraiser', 'benefit concert', 'donation drive'],
+      'exclude' => [],
+    ],
+    'Vigil & Remembrance' => [
+      'keywords' => ['vigil', 'candlelight vigil', 'memorial service', 'remembrance'],
+      'exclude' => ['private memorial service'],
+    ],
+  ];
+
+  $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+  foreach ($curation as $name => $entry) {
+    $existing = $term_storage->loadByProperties(['vid' => 'tags', 'name' => $name]);
+    $term = $existing ? reset($existing) : $term_storage->create(['vid' => 'tags', 'name' => $name]);
+    $term->set('field_tag_keywords', $entry['keywords']);
+    $term->set('field_tag_exclude_keywords', $entry['exclude']);
+    $term->save();
+  }
+
+  return (string) t('Curated field_tag_keywords/field_tag_exclude_keywords on @count tag(s): @names.', [
+    '@count' => count($curation),
+    '@names' => implode(', ', array_keys($curation)),
+  ]);
+}
+
+/**
+ * Normalizes legacy `tags`/`locations` term names: trimmed, initial capital.
+ *
+ * A leading space in some pre-existing term names sorts before every letter
+ * under taxonomy_term_field_data.name's collation, so those terms clustered
+ * at the very top of the Tag Keywords view's alphabetical listing regardless
+ * of what letter their name actually started with -- e.g. "Anti-virus"
+ * appeared far down the list, below every space-prefixed term. Separately, a
+ * handful of legacy tags (backup, jam, ssh, voting, ...) predate
+ * apc_calendar_taxonomy_term_presave()'s initial-capital rule and were never
+ * resaved since, so they stayed lowercase.
+ *
+ * apc_calendar_taxonomy_term_presave() now trims whitespace in addition to
+ * capitalizing, and re-applies both on every future save -- this is a
+ * one-time catch-up for names that predate that guard. Resaving (rather
+ * than duplicating the trim/capitalize logic here) is deliberate: it keeps
+ * this migration and the presave hook from being able to drift out of sync
+ * with each other.
+ *
+ * Deliberately does not merge the handful of now-identical-looking pairs
+ * this can surface (e.g. "Drupal" already existed alongside " Drupal") --
+ * that is a content decision, not a data-hygiene one.
+ */
+function apc_calendar_update_10003(): string {
+  $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+  $terms = $term_storage->loadByProperties(['vid' => ['locations', 'tags']]);
+
+  $changed = 0;
+  foreach ($terms as $term) {
+    $name = (string) $term->getName();
+    $normalized = Unicode::ucfirst(trim($name));
+    if ($normalized !== $name) {
+      $term->save();
+      $changed++;
+    }
+  }
+
+  return (string) t('Trimmed whitespace and/or capitalized @count term name(s).', ['@count' => $changed]);
+}

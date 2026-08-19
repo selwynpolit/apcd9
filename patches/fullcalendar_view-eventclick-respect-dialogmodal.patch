@@ -1,0 +1,35 @@
+Respect the dialogModal setting in eventClick().
+
+When "Open event title link target in a modal popup" is enabled, eventDidMount()
+adds Drupal's use-ajax and data-dialog-type attributes to the event anchor, so
+core's dialog system already handles the click. eventClick() then runs as well
+and unconditionally navigates -- window.open() when openEntityInNewTab is set,
+otherwise location.href -- which races the AJAX dialog. In practice the dialog
+opens and the browser immediately leaves the page, so the modal option cannot be
+used at all.
+
+preventDefault() does not help: it stops the anchor's default navigation, not
+the explicit window.open()/location.href calls further down.
+
+This adds an early return so eventClick() defers to the dialog system when
+dialogModal is on, matching the behaviour the setting advertises.
+
+Filed against fullcalendar_view 5.2.5.
+
+--- a/js/fullcalendar_view.js
++++ b/js/fullcalendar_view.js
+@@ -195,6 +195,13 @@
+       Drupal.ajax.bindAjaxLinks(document.body);
+ 
+       return false;
+     }
++    // When the event link is configured to open in a modal, Drupal's dialog
++    // system handles this click through the use-ajax attributes added in
++    // eventDidMount(). Navigating here as well would race that AJAX request.
++    if (viewSettings.dialogModal) {
++      return false;
++    }
++
+     // Open a new window to show the details of the event.
+     if (thisEvent.url) {
+       let eventURL = new URL(thisEvent.url, location.origin);

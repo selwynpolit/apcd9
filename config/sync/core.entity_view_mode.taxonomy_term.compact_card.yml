@@ -1,0 +1,11 @@
+uuid: acfdb441-c072-4df2-a86f-e70cc787644f
+langcode: en
+status: true
+dependencies:
+  module:
+    - taxonomy
+id: taxonomy_term.compact_card
+label: 'Compact card'
+description: 'Small card for use in calendar popup'
+targetEntityType: taxonomy_term
+cache: true

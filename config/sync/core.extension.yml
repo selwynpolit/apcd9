@@ -1,8 +1,11 @@
 _core:
   default_config_hash: R4IF-ClDHXxblLcG0L7MgsLvfBIMAvi_skumNFQwkDc
 module:
+  address: 0
+  addtocal: 0
   admin_toolbar: 0
   admin_toolbar_tools: 0
+  apc_calendar: 0
   automated_cron: 0
   better_exposed_filters: 0
   big_pipe: 0
@@ -17,6 +20,7 @@ module:
   config: 0
   contact: 0
   contextual: 0
+  crop: 0
   ctools: 0
   ctools_block: 0
   ctools_views: 0
@@ -33,7 +37,14 @@ module:
   field_ui: 0
   file: 0
   filter: 0
+  focal_point: 0
   fontawesome: 0
+  fullcalendar_view: 0
+  geocoder: 0
+  geocoder_address: 0
+  geocoder_field: 0
+  geocoder_geofield: 0
+  geofield: 0
   help: 0
   history: 0
   honeypot: 0
@@ -47,6 +58,7 @@ module:
   jquery_ui_touch_punch: 0
   layout_builder: 0
   layout_discovery: 0
+  leaflet: 0
   link: 0
   linkchecker: 0
   linkit: 0
@@ -63,6 +75,7 @@ module:
   path_alias: 0
   phpass: 0
   rabbit_hole: 0
+  responsive_image: 0
   rh_media: 0
   search: 0
   seckit: 0
@@ -71,10 +84,15 @@ module:
   simple_sitemap_engines: 0
   smart_date: 0
   smart_date_recur: 0
+  stage_file_proxy: 0
   system: 0
   tamper: 0
   taxonomy: 0
+  taxonomy_manager: 0
+  taxonomy_manager_merge: 0
   telephone: 0
+  term_merge: 0
+  term_reference_change: 0
   text: 0
   token: 0
   toolbar: 0
@@ -89,4 +107,5 @@ module:
 theme:
   claro: 0
   olivero: 0
+  apc_brown: 0
 profile: standard

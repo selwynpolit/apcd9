@@ -12,10 +12,17 @@
         {
             "type": "composer",
             "url": "https://packages.drupal.org/8"
+        },
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
         }
     ],
     "require": {
         "composer/installers": "^1.9",
+        "cweagans/composer-patches": "^2.0",
+        "drupal/address": "^2.0",
+        "drupal/addtocal": "^3.0@beta",
         "drupal/admin_toolbar": "^3.0",
         "drupal/better_exposed_filters": "^7.1",
         "drupal/captcha": "^1.1",
@@ -29,12 +36,17 @@
         "drupal/extlink": "^2.0",
         "drupal/feeds": "^3.0@alpha",
         "drupal/feeds_tamper": "^2.0@beta",
+        "drupal/focal_point": "^2.1",
         "drupal/fontawesome": "^3.0",
+        "drupal/fullcalendar_view": "^5.2",
+        "drupal/geocoder": "^4.34",
+        "drupal/geofield": "^10.3",
         "drupal/honeypot": "^2.2",
         "drupal/imce": "^3.0",
         "drupal/jquery_ui_datepicker": "^2.1",
         "drupal/jquery_ui_slider": "^2.0.0",
         "drupal/jquery_ui_touch_punch": "^1.1",
+        "drupal/leaflet": "^10.4",
         "drupal/linkchecker": "^2",
         "drupal/linkit": "^7.0",
         "drupal/module_filter": "^5.0",
@@ -46,10 +58,23 @@
         "drupal/shield": "^1.4",
         "drupal/simple_sitemap": "^4.1",
         "drupal/smart_date": "^4.2",
+        "drupal/taxonomy_manager": "^2.0",
+        "drupal/term_merge": "^2.0",
         "drupal/token": "^1.7",
         "drupal/upgrade_status": "^4.0",
         "drupal/views_bulk_operations": "^4.0",
-        "drush/drush": "^13.7"
+        "drush/drush": "^13.7",
+        "geocoder-php/nominatim-provider": "^5.8",
+        "npm-asset/fullcalendar--core": "4.4.2",
+        "npm-asset/fullcalendar--daygrid": "4.4.2",
+        "npm-asset/fullcalendar--interaction": "4.4.2",
+        "npm-asset/fullcalendar--list": "4.4.2",
+        "npm-asset/fullcalendar--moment": "4.4.2",
+        "npm-asset/fullcalendar--rrule": "4.4.2",
+        "npm-asset/fullcalendar--timegrid": "4.4.2",
+        "npm-asset/moment": "2.29.4",
+        "npm-asset/rrule": "2.6.8",
+        "oomphinc/composer-installers-extender": "^2.0"
     },
     "conflict": {
         "drupal/drupal": "*"
@@ -60,8 +85,12 @@
         "sort-packages": true,
         "allow-plugins": {
             "composer/installers": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
             "drupal/core-composer-scaffold": true,
-            "drupal/core-project-message": true
+            "drupal/core-project-message": true,
+            "php-http/discovery": true,
+            "oomphinc/composer-installers-extender": true,
+            "cweagans/composer-patches": true
         }
     },
     "extra": {
@@ -70,12 +99,28 @@
                 "web-root": "web/"
             }
         },
+        "installer-types": ["npm-asset"],
+        "patches": {
+            "drupal/fullcalendar_view": {
+                "eventClick() ignores the dialogModal setting and navigates anyway": "patches/fullcalendar_view-eventclick-respect-dialogmodal.patch"
+            }
+        },
         "installer-paths": {
             "web/core": [
                 "type:drupal-core"
             ],
+            "web/libraries/fullcalendar/core": ["npm-asset/fullcalendar--core"],
+            "web/libraries/fullcalendar/daygrid": ["npm-asset/fullcalendar--daygrid"],
+            "web/libraries/fullcalendar/timegrid": ["npm-asset/fullcalendar--timegrid"],
+            "web/libraries/fullcalendar/list": ["npm-asset/fullcalendar--list"],
+            "web/libraries/fullcalendar/interaction": ["npm-asset/fullcalendar--interaction"],
+            "web/libraries/fullcalendar/moment": ["npm-asset/fullcalendar--moment"],
+            "web/libraries/fullcalendar/rrule": ["npm-asset/fullcalendar--rrule"],
+            "web/libraries/moment": ["npm-asset/moment"],
+            "web/libraries/rrule": ["npm-asset/rrule"],
             "web/libraries/{$name}": [
-                "type:drupal-library"
+                "type:drupal-library",
+                "type:npm-asset"
             ],
             "web/modules/contrib/{$name}": [
                 "type:drupal-module"
@@ -119,7 +164,10 @@
         }
     },
     "require-dev": {
+        "drupal/coder": "^9.0",
+        "drupal/core-dev": "^8.0@beta",
         "drupal/devel": "^5.3",
-        "drupal/stage_file_proxy": "^3.1"
+        "drupal/stage_file_proxy": "^3.1",
+        "squizlabs/php_codesniffer": "^4.0"
     }
 }

@@ -1,0 +1,13 @@
+uuid: 05c50543-0508-4066-bcef-454d592f4f61
+langcode: en
+status: true
+dependencies:
+  config:
+    - taxonomy.vocabulary.locations
+id: taxonomy_term.locations
+targetEntityType: taxonomy_term
+bundle: locations
+action: display_page
+no_bypass: true
+bypass_message: false
+configuration: {  }

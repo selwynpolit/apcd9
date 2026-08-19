@@ -1,0 +1,102 @@
+uuid: bcd80146-0426-4292-9f97-a42335f36608
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.calendar_event.body
+    - field.field.node.calendar_event.field_event_date
+    - field.field.node.calendar_event.field_event_image
+    - field.field.node.calendar_event.field_event_url
+    - field.field.node.calendar_event.field_location
+    - field.field.node.calendar_event.field_tags
+    - field.field.node.calendar_event.field_virtual
+    - node.type.calendar_event
+  module:
+    - link
+    - smart_date_recur
+    - text
+    - user
+id: node.calendar_event.default
+targetEntityType: node
+bundle: calendar_event
+mode: default
+content:
+  body:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_event_date:
+    type: smartdate_recurring
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+      format: default
+      force_chronological: false
+      add_classes: true
+      time_wrapper: true
+      localize: false
+      parts:
+        start: start
+        end: end
+        duration: duration
+      duration:
+        separator: ' | '
+        unit: ''
+        decimals: 2
+        suffix: h
+      past_display: 2
+      upcoming_display: 2
+      show_next: false
+      current_upcoming: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_event_image:
+    type: entity_reference_entity_view
+    label: hidden
+    settings:
+      view_mode: default
+      link: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_event_url:
+    type: link
+    label: hidden
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: _blank
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_location:
+    type: entity_reference_entity_view
+    label: hidden
+    settings:
+      view_mode: location_reference
+      link: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_tags:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  links:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+hidden:
+  field_virtual: true

@@ -1,0 +1,24 @@
+uuid: 81f539a8-900a-481a-af71-1c8c82970dff
+langcode: en
+status: true
+dependencies:
+  config:
+    - image.style.gallery_hero_desktop
+    - image.style.gallery_hero_mobile
+  theme:
+    - apc_brown
+id: gallery_hero
+label: 'Gallery hero'
+image_style_mappings:
+  -
+    image_mapping_type: image_style
+    image_mapping: gallery_hero_desktop
+    breakpoint_id: apc_brown.lg
+    multiplier: 1x
+  -
+    image_mapping_type: image_style
+    image_mapping: gallery_hero_mobile
+    breakpoint_id: apc_brown.sm
+    multiplier: 1x
+breakpoint_group: apc_brown
+fallback_image_style: gallery_hero_mobile

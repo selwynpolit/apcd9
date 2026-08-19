@@ -1,0 +1,17 @@
+uuid: 00e3ce1d-615f-4ca5-8984-71e1e87c1ca7
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: gallery_hero_desktop
+label: 'Gallery Hero Desktop'
+effects:
+  b7b42f79-52cb-4866-a4ef-c74733a0f57e:
+    uuid: b7b42f79-52cb-4866-a4ef-c74733a0f57e
+    id: focal_point_scale_and_crop
+    weight: null
+    data:
+      width: 900
+      height: 600
+      crop_type: focal_point

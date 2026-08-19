@@ -1,0 +1,9 @@
+publish calendar_event content immediately:
+  title: 'Publish own Calendar Event content immediately'
+  description: 'Bypasses the moderation queue: new calendar_event nodes created by this user publish on save instead of defaulting to unpublished. See apc_calendar_node_presave().'
+  restrict access: true
+
+bypass location approval:
+  title: 'Bypass location approval'
+  description: 'New locations (taxonomy terms in the Locations vocabulary) created by this user publish immediately instead of waiting for review. See apc_calendar_taxonomy_term_presave().'
+  restrict access: true
