@@ -7,11 +7,19 @@ hosted at greengeeks.com
 ## Sites
 - www.austinprogressivecalendar.com - Drupal 10 live site - ~/www/d9 (/home/austinpr/www/d9)
 - d9.austinprogressivecalendar.com - redirects to Drupal10 live site
+- 'database' => 'austinpr_d9', 'username' => 'austinpr_d9',
+
+- dev.austinprogressivecalendar.com - Drupal 10 dev site - ~/www/apcdev
+- 'database' => 'austinpr_apcdev', 'username' => 'austinpr_apcdev',
+
 
 - d7.austinprogressivecalendar.com - old d7 live site - ~/www/live
-- dev.austinprogressivecalendar.com - d7 dev site - ~/www/dev
+- 'database' => 'austinpr_apclive',   'username' => 'austinpr_apclive',
 
-From Domains in cPanel
+- d7dev.austinprogressivecalendar.com - d7 dev site - ~/www/dev
+- 'database' => 'austinpr_d7/domaindev','username' => 'austinpr_apcdev',
+
+From Domains in GreenGeeks cPanel
 - austinprogressivecalendar.com - /public_html
 - d7.austinprogressivecalendar.com - /public_html/live/docroot
 - d9.austinprogressivecalendar.com - /public_html/d9/web
@@ -88,3 +96,39 @@ timezone: America/Chicago
 - gzip it: `gzip dbprod.sql`
 - import it: `ddev import-db --file=dbprod.sql.gz`
 - launch site: `ddev launch $(ddev drush uli)`
+
+
+## Setup on Greengeeks
+- in Greengeeks cpanel add a new database e.g. austinpr_apcdev
+- Add a db user austinpr_apcdev with all privs and access to austinpr_apcdev db
+- in ~/www/apcdev git clone git@github.com:selwynpolit/apcd9.git apcdev
+- in Greengeeks, add a "domain" in the cpanel:
+dev.austinprogressivecalendar.com pointint to /public_html/apcdev/web
+- In ~/www/apcdev run composer install (no-dev may be an option for testing prod setup)
+- Add a trusted host for your new domain in settings.php: '^dev.austinprogressivecalendar\.com$'
+
+Add a web/sites/default/settings.local.php which looks like:
+
+```php
+<?php
+
+$databases['default']['default'] = array (
+  'database' => 'austinpr_apcdev',
+  'username' => 'austinpr_apcdev',
+  'password' => 'password goes here',
+  'prefix' => '',
+  'host' => 'localhost',
+  'port' => '3306',
+  'namespace' => 'Drupal\\Core\\Database\\Driver\\mysql',
+  'driver' => 'mysql',
+);
+
+$settings['hash_salt'] = 'bgpC1g9Dz6_kIH5LpsT5-IvYkT1AzBXtxnqsPDYIGMtCr2_hnvOOQXZs6UHEBvvaxIWQb5q1pw%';
+
+// 1-4-24: for submitting sitemap to search engines.
+$settings['simple_sitemap_engines.index_now.key'] = '9f170430-2830-413f-9410-f76f761f8f0b';
+```
+- drush cim -y in ~/www/apcdev
+- drush cr
+- enjoy!
+
