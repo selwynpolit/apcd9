@@ -1,0 +1,38 @@
+uuid: c852e85d-90d4-449d-bef1-b6d1f9a5c915
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_geofield
+    - taxonomy.vocabulary.locations
+  module:
+    - geocoder_field
+    - geofield
+third_party_settings:
+  geocoder_field:
+    method: geocode
+    weight: 0
+    field: field_address
+    skip_not_empty_value: false
+    disabled: false
+    hidden: false
+    providers:
+      - nominatim
+    dumper: wkt
+    delta_handling: default
+    failure:
+      handling: preserve
+      status_message: true
+      log: true
+id: taxonomy_term.locations.field_geofield
+field_name: field_geofield
+entity_type: taxonomy_term
+bundle: locations
+label: Coordinates
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: geofield

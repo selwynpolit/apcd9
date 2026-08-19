@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/organic-da5554b4-1bfc-403e-8111-9c9e2e539e6f/styles.css">
+  <script src="_ds/organic-da5554b4-1bfc-403e-8111-9c9e2e539e6f/_ds_bundle.js"></script>
+  <style>
+    :root{
+      --color-accent: #8a5a34;
+      --color-accent-100: #efe4d8;
+      --color-accent-200: #ddcbba;
+      --color-accent-300: #c9b09a;
+      --color-accent-400: #aa8668;
+      --color-accent-500: #8a5a34;
+      --color-accent-600: #774e2f;
+      --color-accent-700: #634329;
+      --color-accent-800: #503724;
+      --color-accent-900: #3e2d1f;
+      --color-accent-2: #b83f2e;
+      --color-accent-2-100: #f5e1d7;
+      --color-accent-2-200: #eac3b8;
+      --color-accent-2-300: #dea498;
+      --color-accent-2-400: #cb7364;
+      --color-accent-2-500: #b83f2e;
+      --color-accent-2-600: #9c382a;
+      --color-accent-2-700: #813225;
+      --color-accent-2-800: #652b21;
+      --color-accent-2-900: #4c251d;
+    }
+    .sg-section{padding:48px 64px;border-bottom:1px solid var(--color-divider);}
+    .sg-h{font-family:var(--font-heading);font-size:26px;color:var(--color-text);margin:0 0 6px;}
+    .sg-sub{font-family:var(--font-body);color:var(--color-neutral-700);font-size:15px;margin:0 0 28px;max-width:680px;}
+    .swatch{border-radius:var(--radius-md);height:64px;display:flex;align-items:flex-end;padding:6px 8px;font-family:var(--font-body);font-size:11px;font-weight:600;}
+    .devnote{font-family:var(--font-body);font-size:13px;color:var(--color-neutral-700);background:var(--color-neutral-100);border-radius:var(--radius-md);padding:10px 14px;margin-top:10px;}
+  </style>
+</helmet>
+<div style="background:var(--color-bg);">
+
+  <div style="background:var(--color-accent-900);color:var(--color-accent-100);padding:56px 64px;display:flex;align-items:center;gap:24px;">
+    <img src="uploads/apc_logo.jpg" style="width:72px;height:72px;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);"/>
+    <div>
+      <div style="font-family:var(--font-body);font-size:13px;letter-spacing:0.1em;text-transform:uppercase;opacity:0.75;">Drupal 10 theme</div>
+      <h1 style="font-family:var(--font-body);font-weight:700;font-size:38px;margin:2px 0 6px;color:#fff;">Austin Progressive Calendar</h1>
+      <p style="font-family:var(--font-body);font-size:15px;margin:0;max-width:560px;opacity:0.85;">Front-end style guide for the theme's developer — colors, type, components and page templates for a community events calendar and blog. Built on the Organic design system, tuned to the logo (Desert Warm palette).</p>
+    </div>
+  </div>
+
+  <div class="sg-section">
+    <h2 class="sg-h">Color</h2>
+    <p class="sg-sub">Accent (shell brown, from the armadillo's coat) carries primary actions and links. Accent-2 (collar red) is a pop color for a small number of high-emphasis moments — "Submit an event," featured-event badges — not a second full UI voice.</p>
+    <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:8px;margin-bottom:8px;">
+      <div class="swatch" style="background:var(--color-accent-100);color:var(--color-accent-800);">100</div>
+      <div class="swatch" style="background:var(--color-accent-200);color:var(--color-accent-800);">200</div>
+      <div class="swatch" style="background:var(--color-accent-300);color:var(--color-accent-900);">300</div>
+      <div class="swatch" style="background:var(--color-accent-400);color:#fff;">400</div>
+      <div class="swatch" style="background:var(--color-accent-500);color:#fff;">500</div>
+      <div class="swatch" style="background:var(--color-accent-600);color:#fff;">600</div>
+      <div class="swatch" style="background:var(--color-accent-700);color:#fff;">700</div>
+      <div class="swatch" style="background:var(--color-accent-800);color:#fff;">800</div>
+      <div class="swatch" style="background:var(--color-accent-900);color:#fff;">900</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:8px;margin-bottom:20px;">
+      <div class="swatch" style="background:var(--color-accent-2-100);color:var(--color-accent-2-800);">100</div>
+      <div class="swatch" style="background:var(--color-accent-2-200);color:var(--color-accent-2-800);">200</div>
+      <div class="swatch" style="background:var(--color-accent-2-300);color:var(--color-accent-2-900);">300</div>
+      <div class="swatch" style="background:var(--color-accent-2-400);color:#fff;">400</div>
+      <div class="swatch" style="background:var(--color-accent-2-500);color:#fff;">500</div>
+      <div class="swatch" style="background:var(--color-accent-2-600);color:#fff;">600</div>
+      <div class="swatch" style="background:var(--color-accent-2-700);color:#fff;">700</div>
+      <div class="swatch" style="background:var(--color-accent-2-800);color:#fff;">800</div>
+      <div class="swatch" style="background:var(--color-accent-2-900);color:#fff;">900</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <div class="swatch" style="flex:1;background:var(--color-bg);color:var(--color-text);border:1px solid var(--color-divider);">bg #f5ead8</div>
+      <div class="swatch" style="flex:1;background:var(--color-surface);color:var(--color-text);">surface #ebddc5</div>
+      <div class="swatch" style="flex:1;background:var(--color-text);color:#fff;">text #201e1d</div>
+    </div>
+    <div class="devnote">Implement as Sass/CSS variables in the theme's base stylesheet (<code>--color-accent-*</code>, <code>--color-accent-2-*</code>). Accent = <code>#8a5a34</code>, Accent-2 = <code>#b83f2e</code>. Body text and accent-on-tint text must sit on the 700–900 steps for AA contrast on this cream ground.</div>
+  </div>
+
+  <div class="sg-section">
+    <h2 class="sg-h">Type</h2>
+    <p class="sg-sub">Caprasimo for headings, Figtree for body — loaded via <code>--font-heading</code> / <code>--font-body</code>.</p>
+    <div style="font-family:var(--font-heading);color:var(--color-text);font-size:44px;line-height:1.1;">Event title, H1</div>
+    <div style="font-family:var(--font-heading);color:var(--color-text);font-size:30px;margin-top:14px;">Section heading, H2</div>
+    <div style="font-family:var(--font-heading);color:var(--color-text);font-size:22px;margin-top:12px;">Card title, H3</div>
+    <div style="font-family:var(--font-body);color:var(--color-text);font-size:16px;margin-top:16px;max-width:600px;line-height:1.6;">Body copy sits in Figtree at 16px with 1.6 line-height for the blog post and event description fields — this is the paragraph style editors will see in the WYSIWYG.</div>
+    <div style="font-family:var(--font-body);color:var(--color-neutral-700);font-size:13px;margin-top:10px;">Meta / timestamp text, 13px, neutral-700</div>
+  </div>
+
+  <div class="sg-section">
+    <h2 class="sg-h">Buttons &amp; tags</h2>
+    <p class="sg-sub">Primary for the main call to action per page (Submit Event, RSVP). Tag-accent-2 flags a featured or time-sensitive event.</p>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;">
+      <button class="btn btn-primary">Submit an event</button>
+      <button class="btn btn-secondary">View calendar</button>
+      <button class="btn btn-ghost">Learn more</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <span class="tag tag-accent">Community</span>
+      <span class="tag tag-accent-2">Featured</span>
+      <span class="tag tag-neutral">Recurring</span>
+      <span class="tag tag-outline">Free</span>
+    </div>
+  </div>
+
+  <div class="sg-section">
+    <h2 class="sg-h">Form fields</h2>
+    <p class="sg-sub">For the event-submission and blog-comment forms.</p>
+    <div style="display:flex;gap:20px;max-width:640px;flex-wrap:wrap;">
+      <div class="field" style="flex:1;min-width:220px;">
+        <label>Event name</label>
+        <input class="input" type="text" placeholder="Austin Repair Café"/>
+      </div>
+      <div class="field" style="flex:1;min-width:220px;">
+        <label>Location</label>
+        <input class="input" type="text" placeholder="Search a location…"/>
+      </div>
+    </div>
+    <div class="seg" style="margin-top:16px;width:fit-content;">
+      <label class="seg-opt"><input type="radio" name="repeat" checked/>One-time</label>
+      <label class="seg-opt"><input type="radio" name="repeat"/>Recurring</label>
+    </div>
+  </div>
+
+  <div class="sg-section">
+    <h2 class="sg-h">Content cards</h2>
+    <p class="sg-sub">One card layout per content type — Calendar Event, Blog Post, Location.</p>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div class="card elev-sm" style="width:280px;padding:20px;">
+        <div style="display:flex;gap:10px;align-items:baseline;">
+          <div style="font-family:var(--font-heading);font-size:28px;color:var(--color-accent-700);line-height:1;">14</div>
+          <div style="font-family:var(--font-body);font-size:13px;color:var(--color-neutral-700);">Sat · Aug · 6:00pm</div>
+        </div>
+        <div class="card-title" style="font-size:18px;margin-top:8px;">Repair Café at Springdale</div>
+        <p class="card-body" style="margin-top:4px;">Bring a broken lamp, a torn jacket, or a bike that needs a tune-up.</p>
+        <span class="tag tag-accent-2" style="margin-top:10px;display:inline-block;">Featured</span>
+      </div>
+      <div class="card elev-sm" style="width:280px;padding:20px;">
+        <div class="card-kicker">Blog post</div>
+        <div class="card-title" style="font-size:18px;">Why small repairs add up</div>
+        <p class="card-body" style="margin-top:4px;">A field note from three years of running community repair events across East Austin.</p>
+        <div style="font-family:var(--font-body);font-size:12px;color:var(--color-neutral-700);margin-top:10px;">July 28, 2026 · 4 min read</div>
+      </div>
+      <div class="card elev-sm" style="width:280px;padding:20px;">
+        <div class="card-kicker">Location</div>
+        <div class="card-title" style="font-size:18px;">Springdale Community Hub</div>
+        <p class="card-body" style="margin-top:4px;">2200 Springdale Rd · wheelchair accessible · 40 events hosted here.</p>
+        <button class="btn btn-ghost" style="margin-top:8px;padding-left:0;">See all events here →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sg-section">
+    <h2 class="sg-h">Navigation</h2>
+    <p class="sg-sub">Simple horizontal bar — logo mark left, primary links, Submit Event as the standing CTA.</p>
+    <div class="nav" style="background:var(--color-surface);border-radius:var(--radius-lg);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
+      <div class="nav-brand" style="display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:18px;">
+        <img src="uploads/apc_logo.jpg" style="width:32px;height:32px;border-radius:8px;"/>
+        APC
+      </div>
+      <div style="display:flex;gap:22px;">
+        <a href="#" aria-current="page">Calendar</a>
+        <a href="#">Blog</a>
+        <a href="#">Locations</a>
+        <a href="#">About</a>
+      </div>
+      <button class="btn btn-primary">Submit an event</button>
+    </div>
+  </div>
+
+  <div class="sg-section">
+    <h2 class="sg-h">Event list / table</h2>
+    <table class="table" style="width:100%;">
+      <thead><tr><th>Date</th><th>Event</th><th>Location</th><th>Tag</th></tr></thead>
+      <tbody>
+        <tr><td>Aug 14</td><td>Repair Café at Springdale</td><td>East Austin</td><td><span class="tag tag-accent-2">Featured</span></td></tr>
+        <tr><td>Aug 16</td><td>Community garden workday</td><td>South Congress</td><td><span class="tag tag-accent">Community</span></td></tr>
+        <tr><td>Aug 21</td><td>Mutual aid food distribution</td><td>North Loop</td><td><span class="tag tag-neutral">Recurring</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sg-section">
+    <h2 class="sg-h">Page templates</h2>
+    <p class="sg-sub">Wireframes mapped to Drupal regions — for the front page, blog post, calendar event and location page templates.</p>
+
+    <div style="font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--color-accent-700);margin-bottom:8px;">Front page</div>
+    <div style="border:1px solid var(--color-divider);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:28px;">
+      <div style="background:var(--color-surface);padding:10px 20px;font-size:12px;color:var(--color-neutral-700);">Header region — nav bar</div>
+      <div style="background:var(--color-accent-900);color:#fff;padding:32px 20px;display:flex;align-items:center;gap:20px;">
+        <img src="uploads/apc_logo.jpg" style="width:96px;height:96px;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);"/>
+        <div>
+          <div style="font-family:var(--font-heading);font-size:26px;">Progress, one event at a time</div>
+          <div style="font-family:var(--font-body);font-size:12px;opacity:0.8;margin-top:6px;">Highlighted region — hero with large logo mark</div>
+        </div>
+      </div>
+      <div style="padding:20px;background:var(--color-bg);">
+        <div style="font-size:12px;color:var(--color-neutral-700);margin-bottom:10px;">Content region — upcoming event cards, 3-column grid</div>
+        <div style="display:flex;gap:12px;">
+          <div style="flex:1;height:70px;background:var(--color-surface);border-radius:var(--radius-md);"></div>
+          <div style="flex:1;height:70px;background:var(--color-surface);border-radius:var(--radius-md);"></div>
+          <div style="flex:1;height:70px;background:var(--color-surface);border-radius:var(--radius-md);"></div>
+        </div>
+      </div>
+      <div style="background:var(--color-neutral-100);padding:10px 20px;font-size:12px;color:var(--color-neutral-700);">Footer region</div>
+    </div>
+
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:260px;">
+        <div style="font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--color-accent-700);margin-bottom:8px;">Blog post / calendar event</div>
+        <div style="border:1px solid var(--color-divider);border-radius:var(--radius-lg);overflow:hidden;">
+          <div style="background:var(--color-surface);padding:8px 16px;font-size:11px;color:var(--color-neutral-700);">Header region</div>
+          <div style="padding:18px;">
+            <div style="font-size:11px;color:var(--color-neutral-700);margin-bottom:8px;">Content region — title, meta, body; Sidebar region — date/location card, related tags</div>
+            <div style="display:flex;gap:12px;">
+              <div style="flex:2;height:90px;background:var(--color-surface);border-radius:var(--radius-md);"></div>
+              <div style="flex:1;height:90px;background:var(--color-accent-100);border-radius:var(--radius-md);"></div>
+            </div>
+          </div>
+          <div style="background:var(--color-neutral-100);padding:8px 16px;font-size:11px;color:var(--color-neutral-700);">Footer region</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:260px;">
+        <div style="font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--color-accent-700);margin-bottom:8px;">Location page</div>
+        <div style="border:1px solid var(--color-divider);border-radius:var(--radius-lg);overflow:hidden;">
+          <div style="background:var(--color-surface);padding:8px 16px;font-size:11px;color:var(--color-neutral-700);">Header region</div>
+          <div style="padding:18px;">
+            <div style="font-size:11px;color:var(--color-neutral-700);margin-bottom:8px;">Content region — map placeholder, address, list of events at this location</div>
+            <div style="height:70px;background:var(--color-surface);border-radius:var(--radius-md);margin-bottom:10px;"></div>
+            <div style="display:flex;gap:8px;">
+              <div style="flex:1;height:40px;background:var(--color-accent-100);border-radius:var(--radius-sm);"></div>
+              <div style="flex:1;height:40px;background:var(--color-accent-100);border-radius:var(--radius-sm);"></div>
+            </div>
+          </div>
+          <div style="background:var(--color-neutral-100);padding:8px 16px;font-size:11px;color:var(--color-neutral-700);">Footer region</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sg-section" style="border-bottom:none;">
+    <h2 class="sg-h">Implementation notes for the developer</h2>
+    <table class="table" style="width:100%;margin-bottom:20px;">
+      <thead><tr><th>Drupal region</th><th>Maps to</th></tr></thead>
+      <tbody>
+        <tr><td>Header</td><td>Site branding block (logo, 32px) + main menu (Calendar, Blog, Locations, About) + Submit-event CTA button</td></tr>
+        <tr><td>Highlighted</td><td>Front-page-only hero block with the large logo mark and standfirst copy</td></tr>
+        <tr><td>Content</td><td>View output — event grid on the front page, node body on Article/Event/Location pages</td></tr>
+        <tr><td>Sidebar first</td><td>Event meta card (date, time, location) on Calendar Event nodes; empty elsewhere</td></tr>
+        <tr><td>Footer</td><td>Secondary links + copyright, on neutral-100</td></tr>
+      </tbody>
+    </table>
+    <div class="devnote">
+      Content types → fields: <b>Blog post</b> (title, body, image, tags); <b>Location</b> (name, address, geo/map, accessibility notes); <b>Calendar event</b> (title, date/time via Smart Date or Date recur, body, reference to Location, reference to tags, featured flag → <code>tag-accent-2</code>); <b>Calendar</b> is a View over Calendar-event nodes (month grid + list toggle), styled with the <code>.table</code> rules above for the list mode.
+      <br/><br/>
+      Breakpoints: mobile &lt;640px (nav collapses to a menu button, cards stack 1-col), tablet 640–1024px (cards 2-col), desktop &gt;1024px (cards 3-col, nav shown in full per the wireframe above). Radii, spacing and shadows all read from the Organic <code>--radius-*</code> / <code>--space-*</code> / <code>--shadow-*</code> tokens already in <code>styles.css</code> — only the two accent ramps above are new.
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+</body>
+</html>

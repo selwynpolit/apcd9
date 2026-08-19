@@ -1,0 +1,23 @@
+uuid: 9452065a-cedb-4e8b-a20b-b29c0aac0f3f
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_virtual
+    - node.type.calendar_event
+id: node.calendar_event.field_virtual
+field_name: field_virtual
+entity_type: node
+bundle: calendar_event
+label: 'This is an online-only event'
+description: 'Check this if the event happens online rather than at a physical location. The location fields below will disappear.'
+required: false
+translatable: true
+default_value:
+  -
+    value: 0
+default_value_callback: ''
+settings:
+  on_label: 'Yes'
+  off_label: 'No'
+field_type: boolean

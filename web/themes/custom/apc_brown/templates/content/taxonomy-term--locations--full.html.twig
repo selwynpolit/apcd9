@@ -1,0 +1,110 @@
+{#
+/**
+ * @file
+ * Location detail page (full view mode of a locations taxonomy term).
+ *
+ * gallery, upcoming_events, past_events and is_unpublished are built in
+ * apc_brown_preprocess_taxonomy_term().
+ *
+ * @see apc_brown_preprocess_taxonomy_term()
+ */
+#}
+{{ attach_library('apc_brown/detail-page') }}
+<div{{ attributes.addClass('apc-detail') }}>
+  <div class="apc-detail__breadcrumb">
+    <a href="/locations">{{ 'Locations'|t }}</a> / {{ name }}
+  </div>
+
+  {% if is_unpublished %}
+    <div class="apc-unpublished-banner" role="status">{{ 'Unpublished — pending review'|t }}</div>
+  {% endif %}
+
+  <h1 class="apc-detail__title">{{ name }}</h1>
+
+  {% if content.field_address %}
+    <div class="apc-detail__meta">{{ content.field_address }}</div>
+  {% endif %}
+
+  <div class="apc-detail__actions">
+    {% if content.directions %}
+      {{ content.directions }}
+    {% endif %}
+  </div>
+
+  <div class="apc-detail__grid">
+    <div class="apc-detail__main">
+      {% if gallery or content.field_geofield %}
+        <div class="apc-detail__media">
+          {% if gallery %}
+            <div class="apc-gallery" data-apc-gallery>
+              <picture class="apc-gallery__hero" data-apc-gallery-hero>
+                {% if gallery|length > 1 %}
+                  <source media="(min-width: 62.5rem)" srcset="{{ gallery.0.hero_desktop }}" data-apc-gallery-source-desktop>
+                {% endif %}
+                <img src="{{ gallery.0.hero_mobile }}" alt="{{ gallery.0.alt }}" data-apc-gallery-img>
+              </picture>
+              {% if gallery|length > 1 %}
+                <div class="apc-gallery__thumbs" data-apc-gallery-thumbs>
+                  {% for item in gallery %}
+                    <button type="button" class="apc-gallery__thumb{{ loop.first ? ' is-active' }}" data-apc-gallery-thumb data-hero-mobile="{{ item.hero_mobile }}" data-hero-desktop="{{ item.hero_desktop }}" data-alt="{{ item.alt }}">
+                      <img src="{{ item.thumb }}" alt="">
+                    </button>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          {% if content.field_geofield %}
+            <div class="apc-detail__map">
+              {{ content.field_geofield }}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if content.description %}
+        <div class="apc-detail__body">
+          <h2 class="apc-detail__section-title">{{ 'About this location'|t }}</h2>
+          {{ content.description }}
+        </div>
+      {% endif %}
+
+      {% if content.field_tags %}
+        <div class="apc-detail__badges">
+          {{ content.field_tags }}
+        </div>
+      {% endif %}
+
+      {% if upcoming_events %}
+        <div>
+          <h2 class="apc-detail__section-title">{{ 'Upcoming events here'|t }}</h2>
+          {{ upcoming_events }}
+        </div>
+      {% endif %}
+
+      {% if past_events %}
+        <div>
+          <h2 class="apc-detail__section-title">{{ 'Past events'|t }}</h2>
+          {{ past_events }}
+        </div>
+      {% endif %}
+    </div>
+
+    <aside class="apc-detail__sidebar">
+      {% if content.field_address %}
+        <div class="apc-info-card">
+          <p class="apc-info-card__label">{{ 'Address'|t }}</p>
+          {{ content.field_address }}
+        </div>
+      {% endif %}
+
+      {% if content.field_notes %}
+        <div class="apc-info-card">
+          <p class="apc-info-card__label">{{ 'Accessibility'|t }}</p>
+          {{ content.field_notes }}
+        </div>
+      {% endif %}
+    </aside>
+  </div>
+</div>

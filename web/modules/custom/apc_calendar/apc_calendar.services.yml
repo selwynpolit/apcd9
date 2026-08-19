@@ -1,0 +1,4 @@
+services:
+  apc_calendar.tag_suggester:
+    class: Drupal\apc_calendar\TagSuggester
+    arguments: ['@entity_type.manager']

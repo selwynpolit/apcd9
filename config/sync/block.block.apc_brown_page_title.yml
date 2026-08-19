@@ -1,0 +1,29 @@
+uuid: 5f43167f-6ea4-438c-9a35-6ebde57f829f
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - apc_brown
+_core:
+  default_config_hash: 6aOgWsNTXjqrDm98TXSAjP6qd2nCijD1xw45MrnbK-Y
+id: apc_brown_page_title
+theme: apc_brown
+region: content_above
+weight: -5
+provider: null
+plugin: page_title_block
+settings:
+  id: page_title_block
+  label: 'Page title'
+  label_display: '0'
+  provider: core
+visibility:
+  request_path:
+    id: request_path
+    negate: true
+    pages: |-
+      /calendar
+      /calendar/*
+      /locations/*

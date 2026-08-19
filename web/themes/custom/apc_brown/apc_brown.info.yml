@@ -1,0 +1,75 @@
+#
+name: 'APC Brown'
+type: theme
+base theme: false
+description: 'Austin Progressive Calendar front-end theme. Forked from Olivero and retuned to the APC logo (Desert Warm palette).'
+alt text: 'Screenshot of the APC Brown theme.'
+package: APC
+core_version_requirement: ^10 || ^11
+libraries:
+  - apc_brown/global-styling
+regions:
+  header: Header
+  primary_menu: Primary menu
+  secondary_menu: Secondary menu
+  hero: Hero (full width)
+  highlighted: Highlighted
+  breadcrumb: Breadcrumb
+  social: Social Bar
+  content_above: Content Above
+  content: Content
+  sidebar: Sidebar
+  content_below: Content Below
+  footer_top: Footer Top
+  footer_bottom: Footer Bottom
+libraries-override:
+  core/drupal.ajax:
+    css:
+      component:
+        core/components/ajax-progress.module.css: css/components/ajax-progress.module.css
+  core/drupal.autocomplete:
+    css:
+      component:
+        core/components/autocomplete-loading.module.css: css/components/autocomplete-loading.module.css
+  system/admin:
+    css:
+      theme:
+        css/system.admin.css: false
+  core/drupal.checkbox: false
+  core/drupal.dropbutton:
+    css:
+      component:
+        misc/dropbutton/dropbutton.css: css/components/dropbutton.css
+  core/drupal.vertical-tabs:
+    css:
+      component:
+        misc/vertical-tabs.css: css/components/vertical-tabs.css
+  media/oembed.formatter: false
+  layout_builder/twocol_section: apc_brown/layout_builder_twocol_section
+  layout_builder/threecol_section: apc_brown/layout_builder_threecol_section
+  layout_builder/fourcol_section: apc_brown/layout_builder_fourcol_section
+libraries-extend:
+  core/drupal.message:
+    - apc_brown/drupal.message
+  core/drupal.collapse:
+    - apc_brown/details
+  core/drupal.dialog:
+    - apc_brown/drupal.dialog
+  core/drupal.progress:
+    - apc_brown/progress
+  core/drupal.tabledrag:
+    - apc_brown/tabledrag
+  layout_discovery/onecol:
+    - apc_brown/layout_discovery_section
+  layout_discovery/twocol_bricks:
+    - apc_brown/layout_discovery_section
+  layout_discovery/twocol:
+    - apc_brown/layout_discovery_section
+  layout_discovery/threecol_25_50_25:
+    - apc_brown/layout_discovery_section
+  layout_discovery/threecol_33_34_33:
+    - apc_brown/layout_discovery_section
+  node/drupal.node.preview:
+    - apc_brown/drupal.node.preview
+  content_moderation/content_moderation:
+    - apc_brown/content_moderation

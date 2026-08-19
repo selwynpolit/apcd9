@@ -1,0 +1,22 @@
+uuid: 25469eb7-2fdb-463f-b41a-1cb083a6e842
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - apc_brown
+_core:
+  default_config_hash: erQSEZF2XUjNmgTl0uNRBzmg18ZGXwUcw2FhApoeuHk
+id: apc_brown_content
+theme: apc_brown
+region: content
+weight: -9
+provider: null
+plugin: system_main_block
+settings:
+  id: system_main_block
+  label: 'Main page content'
+  label_display: '0'
+  provider: system
+visibility: {  }

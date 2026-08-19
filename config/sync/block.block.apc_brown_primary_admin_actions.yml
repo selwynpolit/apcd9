@@ -1,0 +1,20 @@
+uuid: 5a2f51c9-3c77-495a-9597-49f76bd52f71
+langcode: en
+status: true
+dependencies:
+  theme:
+    - apc_brown
+_core:
+  default_config_hash: Q9_2whdOj1YIomfvsIfopROW4FT_X5pY0DjdOiOaQ5U
+id: apc_brown_primary_admin_actions
+theme: apc_brown
+region: highlighted
+weight: -5
+provider: null
+plugin: local_actions_block
+settings:
+  id: local_actions_block
+  label: 'Primary admin actions'
+  label_display: '0'
+  provider: core
+visibility: {  }

@@ -1,0 +1,59 @@
+uuid: 34062145-5f45-4fc1-9e2d-8c157f7462c1
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.taxonomy_term.compact_card
+    - field.field.taxonomy_term.locations.field_address
+    - field.field.taxonomy_term.locations.field_geofield
+    - field.field.taxonomy_term.locations.field_location_image
+    - field.field.taxonomy_term.locations.field_notes
+    - field.field.taxonomy_term.locations.field_tags
+    - field.field.taxonomy_term.locations.field_term_author
+    - image.style.thumbnail
+    - taxonomy.vocabulary.locations
+  module:
+    - address
+    - layout_builder
+    - media
+    - text
+third_party_settings:
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: taxonomy_term.locations.compact_card
+targetEntityType: taxonomy_term
+bundle: locations
+mode: compact_card
+content:
+  field_address:
+    type: address_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_location_image:
+    type: media_thumbnail
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: thumbnail
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_notes:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  description: true
+  directions: true
+  field_geofield: true
+  field_tags: true
+  field_term_author: true

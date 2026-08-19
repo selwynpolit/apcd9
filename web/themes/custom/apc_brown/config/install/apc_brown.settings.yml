@@ -1,0 +1,32 @@
+logo:
+  use_default: false
+  path: 'themes/custom/apc_brown/images/apc_logo.jpg'
+favicon:
+  use_default: true
+  path: ''
+features:
+  comment_user_picture: true
+  comment_user_verification: true
+  favicon: true
+  logo: true
+  name: true
+  node_user_picture: true
+  slogan: true
+mobile_menu_all_widths: 0
+# 'default' keeps the branding block's gradient, which now derives from the
+# brand colour below. 'gray' and 'white' are Olivero's alternatives.
+site_branding_bg_color: default
+
+# Olivero's brand colour. apc_brown_preprocess_html() converts this to HSL and
+# writes it as an INLINE STYLE on the <html> element:
+#
+#   --color--primary-hue / -saturation / -lightness
+#
+# Inline styles beat every stylesheet regardless of load order or specificity,
+# so this setting — not css/base/variables.css — is what actually controls the
+# primary colour. Leaving it unset falls back to Olivero's blue (#1b9ae4), which
+# is why the header, hamburger and RSS tab stayed blue while everything else
+# picked up the palette.
+#
+# #8a5a34 is the shell brown from the APC logo.
+base_primary_color: '#8a5a34'

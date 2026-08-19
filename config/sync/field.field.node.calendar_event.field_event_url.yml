@@ -1,0 +1,23 @@
+uuid: a9643ccb-c87a-4b3b-b10c-3863d5b107c5
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_event_url
+    - node.type.calendar_event
+  module:
+    - link
+id: node.calendar_event.field_event_url
+field_name: field_event_url
+entity_type: node
+bundle: calendar_event
+label: 'Event URL'
+description: 'Optional link to the event, such as a Zoom or livestream URL.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  title: 0
+  link_type: 16
+field_type: link

@@ -1,0 +1,1186 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for APC Calendar module.
+ */
+
+use Drupal\apc_calendar\Controller\EventSubmittedController;
+use Drupal\apc_calendar\UsStates;
+use Drupal\Component\Serialization\Json;
+use Drupal\Component\Utility\Unicode;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\Element\EntityAutocomplete;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Url;
+use Drupal\node\NodeInterface;
+use Drupal\taxonomy\TermInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for taxonomy_term entities.
+ *
+ * Locations terms auto-created by anonymous event submitters are saved
+ * unpublished so they stay out of the reference autocomplete (core's
+ * TermSelection::buildEntityQuery() filters on status for non-admins) and off
+ * the public term page until an admin publishes them.
+ *
+ * Gated on the 'bypass location approval' permission rather than
+ * !isAnonymous(). Until the event_contributor/event_manager roles existed,
+ * every authenticated user was a known, accountable person, so gating on
+ * anonymity alone was equivalent and simpler. That stopped being true the
+ * moment a role meant to be handed out more freely (event_contributor)
+ * existed — a permission check is what keeps a future low-trust or
+ * self-registered role from silently inheriting instant-publish. Currently
+ * granted to event_contributor and event_manager (administrator has every
+ * permission implicitly via is_admin).
+ *
+ * Also forces an initial capital on term names in the locations and tags
+ * vocabularies, so "burger king" and "Burger King" don't end up as two
+ * different terms depending on who typed which one first. Runs on every
+ * save, not just new terms, so a later edit gets normalized too.
+ * Unicode::ucfirst() rather than PHP's ucfirst(), which is byte-oriented and
+ * would corrupt a multibyte leading character (e.g. an accented venue name).
+ * No exception is carved out for deliberately-lowercase names ("eBay",
+ * "danceAustin") — not worth the added complexity for how rarely it comes
+ * up here.
+ */
+function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
+  // Fill in author name.
+  if ($term->bundle() === 'locations') {
+    if ($term->get('field_term_author')->isEmpty()) {
+      $term->set('field_term_author', \Drupal::currentUser()->id());
+    }
+  }
+
+  // Set unpublished for anonymous users.
+  if ($term->isNew() && $term->bundle() === 'locations') {
+    if (!\Drupal::currentUser()->hasPermission('bypass location approval')) {
+      $term->setUnpublished();
+    }
+   }
+
+  // Strip stray leading/trailing whitespace and force an initial capital on
+  // the term name. The trim matters beyond cosmetics: a leading space sorts
+  // before every letter under this column's collation, so a term saved with
+  // one silently floats to the top of any alphabetical listing regardless
+  // of what letter its name actually starts with (see the Tag Keywords view
+  // and apc_calendar_update_10004(), which cleans up names that predate
+  // this guard).
+  if (in_array($term->bundle(), ['locations', 'tags'], TRUE)) {
+    $name = trim((string) $term->getName());
+    if ($name !== '') {
+      $term->setName(Unicode::ucfirst($name));
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for taxonomy_term_tags_form.
+ *
+ * Enforces the same ASCII-only requirement TagMapSettingsForm used to
+ * enforce on the YAML map, now that field_tag_keywords/
+ * field_tag_exclude_keywords live on the term itself.
+ * TagSuggester::anyPhraseMatches() deliberately does not use the /u (UTF-8)
+ * regex modifier -- \b's simpler, non-Unicode semantics are only safe to
+ * rely on if keywords are guaranteed ASCII.
+ *
+ * @see \Drupal\apc_calendar\TagSuggester
+ */
+function apc_calendar_form_taxonomy_term_tags_form_alter(array &$form, FormStateInterface $form_state): void {
+  $form['#validate'][] = 'apc_calendar_validate_tag_keywords_ascii';
+}
+
+/**
+ * Form validation handler: keywords must be ASCII.
+ *
+ * @see apc_calendar_form_taxonomy_term_tags_form_alter()
+ */
+function apc_calendar_validate_tag_keywords_ascii(array &$form, FormStateInterface $form_state): void {
+  foreach (['field_tag_keywords', 'field_tag_exclude_keywords'] as $field_name) {
+    if (!isset($form[$field_name])) {
+      continue;
+    }
+    foreach ($form_state->getValue($field_name) ?? [] as $delta => $item) {
+      // $form_state's raw values for a multi-value widget include an
+      // 'add_more' entry alongside the numeric deltas -- the "Add another
+      // item" button's own value, not a keyword row. Core's own
+      // WidgetBase::extractFormValues() unsets the same key for the same
+      // reason before treating the rest as delta => value pairs.
+      if (!is_array($item)) {
+        continue;
+      }
+      $value = trim((string) ($item['value'] ?? ''));
+      if ($value !== '' && preg_match('/[^\x00-\x7F]/', $value) === 1) {
+        $form_state->setError(
+          $form[$field_name]['widget'][$delta]['value'],
+          t('Keep keywords ASCII: "%value" is not.', ['%value' => $value])
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for taxonomy_term_locations_form.
+ *
+ * Adds "Find on Google Maps" / "Find on OpenStreetMap" links so an admin
+ * repairing a location with no address can locate the venue without leaving
+ * the form. Deliberately static links computed from the term's current
+ * saved values, not the in-progress form input — no AJAX, no geocoder call,
+ * nothing that can fail or hit the geocoder's rate limit just from opening
+ * this form.
+ *
+ * @see apc_calendar_build_directions()
+ */
+function apc_calendar_form_taxonomy_term_locations_form_alter(array &$form, FormStateInterface $form_state): void {
+  /** @var \Drupal\taxonomy\TermInterface $term */
+  $term = $form_state->getFormObject()->getEntity();
+
+  $query = $term->label();
+  $locality = NULL;
+  $administrative_area = NULL;
+  if ($term->hasField('field_address') && !$term->get('field_address')->isEmpty()) {
+    $address = $term->get('field_address')->first();
+    $locality = $address->get('locality')->getValue();
+    $administrative_area = $address->get('administrative_area')->getValue();
+  }
+  // Bare venue names are ambiguous worldwide -- put a city in the query even
+  // when the term has no address yet, same reasoning as
+  // apc_calendar_build_directions() preferring an unambiguous destination.
+  $query .= ' ' . (($locality || $administrative_area) ? trim($locality . ' ' . $administrative_area) : 'Austin TX');
+  $encoded = rawurlencode($query);
+
+  $form['apc_map_search'] = [
+    '#type' => 'container',
+    '#weight' => -1,
+    '#attributes' => ['class' => ['apc-map-search']],
+    'label' => [
+      '#type' => 'html_tag',
+      '#tag' => 'span',
+      '#value' => t('Find this venue:'),
+    ],
+    'google' => [
+      '#type' => 'link',
+      '#title' => t('Google Maps'),
+      '#url' => Url::fromUri('https://www.google.com/maps/search/?api=1&query=' . $encoded),
+      '#attributes' => ['target' => '_blank', 'rel' => 'noopener noreferrer'],
+    ],
+    'osm' => [
+      '#type' => 'link',
+      '#title' => t('OpenStreetMap'),
+      '#url' => Url::fromUri('https://www.openstreetmap.org/search?query=' . $encoded),
+      '#attributes' => ['target' => '_blank', 'rel' => 'noopener noreferrer'],
+    ],
+  ];
+
+  // Paste-box geocoder: accepts either coordinates (copied from the Maps
+  // link above) or an address string, looks it up via Nominatim, and shows
+  // a read-only preview. "Apply" is a genuine form submit rather than an
+  // AJAX widget update -- the Address field and Geofield widgets each have
+  // their own internal format (a composite element and a GeoJSON textarea
+  // respectively), and injecting values past those correctly is fragile.
+  // Routing through $form_state->setValueForElement() and letting
+  // TermForm's own save cycle run afterward is simpler and also means
+  // whatever else the admin has already typed elsewhere on the form is
+  // saved together with the geocoded address, not discarded.
+  $form['apc_geocode'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Look up an address or coordinates'),
+    '#weight' => 0,
+    '#tree' => TRUE,
+    '#prefix' => '<div id="apc-geocode-wrapper">',
+    '#suffix' => '</div>',
+  ];
+  $form['apc_geocode']['input'] = [
+    '#type' => 'textfield',
+    '#title' => t('Paste coordinates or an address'),
+    '#description' => t('Paste a lat,lon pair copied from Google Maps (e.g. 30.2903, -97.7000), or an address string.'),
+  ];
+  $form['apc_geocode']['lookup'] = [
+    '#type' => 'submit',
+    '#value' => t('Look up'),
+    '#name' => 'apc_geocode_lookup',
+    '#submit' => ['apc_calendar_geocode_lookup_submit'],
+    '#ajax' => [
+      'callback' => 'apc_calendar_geocode_lookup_ajax',
+      'wrapper' => 'apc-geocode-wrapper',
+    ],
+    '#limit_validation_errors' => [['apc_geocode', 'input']],
+  ];
+
+  $candidates = $form_state->get('apc_geocode_candidates');
+  if ($candidates) {
+    $form['apc_geocode']['result'] = [
+      '#type' => 'container',
+    ];
+    if (count($candidates) === 1) {
+      $form['apc_geocode']['result']['summary'] = [
+        '#type' => 'html_tag',
+        '#tag' => 'p',
+        '#value' => t('Found: @summary', ['@summary' => $candidates[0]['summary']]),
+      ];
+      $form['apc_geocode']['result']['selected'] = [
+        '#type' => 'value',
+        '#value' => 0,
+      ];
+    }
+    else {
+      $form['apc_geocode']['result']['selected'] = [
+        '#type' => 'radios',
+        '#title' => t('Multiple matches -- pick the right one'),
+        '#options' => array_map(static fn (array $c) => $c['summary'], $candidates),
+        '#default_value' => 0,
+      ];
+    }
+    $form['apc_geocode']['result']['apply'] = [
+      '#type' => 'submit',
+      '#value' => t('Apply to address fields'),
+      '#name' => 'apc_geocode_apply',
+      '#submit' => ['apc_calendar_geocode_apply_submit'],
+      '#limit_validation_errors' => [['apc_geocode', 'result', 'selected']],
+    ];
+  }
+  elseif ($form_state->get('apc_geocode_error')) {
+    $form['apc_geocode']['error'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'p',
+      '#attributes' => ['class' => ['apc-geocode-error']],
+      '#value' => $form_state->get('apc_geocode_error'),
+    ];
+  }
+}
+
+/**
+ * Submit handler for the "Look up" button.
+ *
+ * @see apc_calendar_form_taxonomy_term_locations_form_alter()
+ */
+function apc_calendar_geocode_lookup_submit(array &$form, FormStateInterface $form_state): void {
+  $form_state->set('apc_geocode_candidates', NULL);
+  $form_state->set('apc_geocode_error', NULL);
+
+  $input = trim((string) $form_state->getValue(['apc_geocode', 'input']));
+  if ($input === '') {
+    $form_state->set('apc_geocode_error', t('Paste an address or a lat,lon pair first.'));
+    $form_state->setRebuild(TRUE);
+    return;
+  }
+
+  $geocoder = \Drupal::service('geocoder');
+
+  // Coordinate pair: two floats separated by a comma, e.g. "30.29, -97.70".
+  if (preg_match('/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/', $input, $matches)) {
+    $lat = $matches[1];
+    $lon = $matches[2];
+    $collection = $geocoder->reverse($lat, $lon, ['nominatim']);
+    $pasted_coordinates = ['lat' => (float) $lat, 'lon' => (float) $lon];
+  }
+  else {
+    $collection = $geocoder->geocode($input, ['nominatim']);
+    $pasted_coordinates = NULL;
+  }
+
+  if ($collection === NULL || $collection->isEmpty()) {
+    $form_state->set('apc_geocode_error', t('No results for that. Check the spelling, or paste coordinates instead.'));
+    $form_state->setRebuild(TRUE);
+    return;
+  }
+
+  $candidates = [];
+  foreach ($collection as $address) {
+    $candidates[] = _apc_calendar_normalize_geocoder_address($address, $pasted_coordinates);
+  }
+  $form_state->set('apc_geocode_candidates', $candidates);
+  $form_state->setRebuild(TRUE);
+}
+
+/**
+ * AJAX callback for the "Look up" button.
+ *
+ * @see apc_calendar_form_taxonomy_term_locations_form_alter()
+ */
+function apc_calendar_geocode_lookup_ajax(array &$form, FormStateInterface $form_state): array {
+  return $form['apc_geocode'];
+}
+
+/**
+ * Submit handler for "Apply to address fields".
+ *
+ * Saves field_address and field_geofield immediately and redirects back to
+ * this same edit page, rather than trying to make the rebuilt form's
+ * widgets display the new values in memory before a save.
+ *
+ * That in-memory approach was tried first and did not work reliably:
+ * $form_state->setValueForElement() only changes what a later submit
+ * handler reads, not what a rebuilt widget displays (widgets rebuild their
+ * displayed value from the form's entity, not from $form_state's values),
+ * and setting the values directly on the form's (still unsaved) entity
+ * before calling $form_state->setRebuild(TRUE) also did not reliably
+ * redisplay them -- both the Address field (a composite element) and
+ * Geofield (a GeoJSON textarea widget with its own map-refresh behaviour)
+ * have enough of their own internal state that an in-memory rebuild was
+ * not trustworthy. A real save followed by a normal fresh page load always
+ * shows correct widget state, because that is the one path every field
+ * widget is guaranteed to get right.
+ *
+ * This does mean other fields the admin was mid-editing (name, notes,
+ * image, tags) are not part of this intermediate save -- they stay in the
+ * form for the admin to submit normally afterward, not lost, just not
+ * saved by this button.
+ *
+ * @see apc_calendar_form_taxonomy_term_locations_form_alter()
+ */
+function apc_calendar_geocode_apply_submit(array &$form, FormStateInterface $form_state): void {
+  $candidates = $form_state->get('apc_geocode_candidates');
+  $selected = $form_state->getValue(['apc_geocode', 'result', 'selected']);
+  $candidate = $candidates[$selected] ?? NULL;
+  if ($candidate === NULL) {
+    return;
+  }
+
+  /** @var \Drupal\taxonomy\TermInterface $term */
+  $term = $form_state->getFormObject()->getEntity();
+  $term->set('field_address', $candidate['address']);
+  $term->set('field_geofield', $candidate['geofield_value']);
+  $term->save();
+
+  \Drupal::messenger()->addStatus(t('Address and coordinates saved. Review the fields below.'));
+  $form_state->setRedirect('entity.taxonomy_term.edit_form', ['taxonomy_term' => $term->id()]);
+}
+
+/**
+ * Normalizes one geocoder-php Address result into this site's field shapes.
+ *
+ * @param \Geocoder\Model\Address $address
+ *   One result from Geocoder::geocode() or ::reverse().
+ * @param array{lat: float, lon: float}|null $pasted_coordinates
+ *   When the admin pasted coordinates (a reverse-geocode lookup), the exact
+ *   pasted pair -- written to the geofield in preference to whatever the
+ *   geocoder echoes back, since a pin the admin visually confirmed is more
+ *   accurate than anything re-derived from the address the reverse lookup
+ *   resolved to.
+ *
+ * @return array{summary: string, address: array, geofield_value: string}
+ */
+function _apc_calendar_normalize_geocoder_address(\Geocoder\Model\Address $address, ?array $pasted_coordinates): array {
+  $street_number = $address->getStreetNumber();
+  $street_name = $address->getStreetName();
+  $address_line1 = trim(($street_number ? $street_number . ' ' : '') . ($street_name ?? ''));
+
+  // Nominatim's "locality" is not always populated for small venues -- a
+  // town, village, or hamlet designation can arrive in its place. The
+  // geocoder-php Nominatim provider maps the first of these it finds into
+  // getLocality(), so this is not re-parsed here; if a venue's city still
+  // comes back empty in practice, that gap lives in the provider, not here.
+  $locality = $address->getLocality() ?? '';
+
+  $administrative_area = '';
+  foreach ($address->getAdminLevels() as $level) {
+    $code = $level->getCode();
+    if ($code && strlen($code) === 2) {
+      $administrative_area = strtoupper($code);
+      break;
+    }
+    $name = $level->getName();
+    if ($name && isset(UsStates::NAME_TO_CODE[strtolower($name)])) {
+      $administrative_area = UsStates::NAME_TO_CODE[strtolower($name)];
+      break;
+    }
+  }
+
+  $country_code = $address->getCountry()?->getCode() ?? 'US';
+  $postal_code = $address->getPostalCode() ?? '';
+
+  $coordinates = $address->getCoordinates();
+  $lat = $pasted_coordinates['lat'] ?? $coordinates?->getLatitude();
+  $lon = $pasted_coordinates['lon'] ?? $coordinates?->getLongitude();
+
+  $summary_parts = array_filter([$address_line1, $locality, $administrative_area, $postal_code]);
+
+  return [
+    'summary' => $summary_parts ? implode(', ', $summary_parts) : t('(no address, coordinates only)')->render(),
+    'address' => [
+      'country_code' => $country_code,
+      'address_line1' => $address_line1,
+      'locality' => $locality,
+      'administrative_area' => $administrative_area,
+      'postal_code' => $postal_code,
+    ],
+    'geofield_value' => ($lat !== NULL && $lon !== NULL)
+      ? Json::encode(['type' => 'Point', 'coordinates' => [$lon, $lat]])
+      : '',
+  ];
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_calendar_event_form (add).
+ *
+ * @see _apc_calendar_calendar_event_form_alter()
+ */
+function apc_calendar_form_node_calendar_event_form_alter(array &$form, FormStateInterface $form_state): void {
+  _apc_calendar_calendar_event_form_alter($form, $form_state);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_calendar_event_edit_form.
+ *
+ * ContentEntityForm::getFormId() appends the operation to the form ID unless
+ * it is 'default', and Node's 'edit' form handler is registered under its
+ * own 'edit' key (not reusing 'default') -- so the add form is
+ * node_calendar_event_form but the edit form is
+ * node_calendar_event_edit_form, a genuinely different hook_form_FORM_ID_alter()
+ * target. Without this second implementation, everything in
+ * _apc_calendar_calendar_event_form_alter() -- including the "Suggest tags"
+ * button -- silently never ran on edit.
+ *
+ * @see _apc_calendar_calendar_event_form_alter()
+ */
+function apc_calendar_form_node_calendar_event_edit_form_alter(array &$form, FormStateInterface $form_state): void {
+  _apc_calendar_calendar_event_form_alter($form, $form_state);
+}
+
+/**
+ * Shared implementation for the calendar_event add and edit forms.
+ *
+ * Anonymous submitters cannot view their own unpublished node (core blocks
+ * "view own unpublished content" for anonymous — every anonymous node is owned
+ * by uid 0, so the permission would expose the entire moderation queue). Core's
+ * NodeForm::save() therefore falls back to redirecting them to the front page
+ * with a "has been created" message that reads as though the event is live.
+ *
+ * Send them to a dedicated thank-you page with an accurate message instead.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see apc_calendar_form_node_calendar_event_edit_form_alter()
+ */
+function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterface $form_state): void {
+  $account = \Drupal::currentUser();
+
+  // The confirmation redirect is anonymous-only — authenticated submitters can
+  // view their own unpublished node, so core's default behaviour is correct
+  // for them.
+  if ($account->isAnonymous()) {
+    // Append after ::save so this redirect wins over the one NodeForm sets.
+    $form['actions']['submit']['#submit'][] = 'apc_calendar_event_submit_confirmation';
+
+    // Hide the revision controls. ContentEntityForm::addRevisionableFormFields()
+    // adds these programmatically rather than through the form display, which is
+    // why they cannot simply be dragged to Disabled in Manage Form Display —
+    // and why they show to a visitor who has no idea what a revision is.
+    foreach (['revision', 'revision_log', 'revision_information'] as $element) {
+      if (isset($form[$element])) {
+        $form[$element]['#access'] = FALSE;
+      }
+    }
+
+    // Hide the body summary. The "Edit summary" toggle and its textarea are a
+    // teaser-preview authoring affordance that means nothing to a visitor
+    // filling out a public submission form. #access rather than turning off
+    // display_summary in the field config, which would remove it for admins
+    // too.
+    if (isset($form['body']['widget'][0]['summary'])) {
+      $form['body']['widget'][0]['summary']['#access'] = FALSE;
+    }
+  }
+
+  // The add-location affordance is for everyone who may create a location,
+  // gated on the same permission the route requires so the link can never lead
+  // to a 403. Keeping this outside the anonymous branch matters: it carries the
+  // library attachment for the autocomplete enhancement as well as the link.
+  if ($account->hasPermission('create terms in locations')) {
+    apc_calendar_attach_add_location_link($form);
+  }
+
+  // "Suggest tags" — everyone gets it, anonymous included, same as the
+  // add-location affordance above. #limit_validation_errors => [] is what
+  // keeps a half-filled form (e.g. no location yet) from raising every other
+  // field's validation errors just because this button was clicked; this is
+  // not a real submission.
+  if (isset($form['field_tags'])) {
+    $form['field_tags']['apc_tag_suggestions'] = [
+      '#type' => 'container',
+      '#attributes' => ['id' => 'apc-tag-suggestions'],
+      '#weight' => 10,
+    ];
+
+    // Stashed in $form_state by apc_calendar_tag_suggest_submit() and
+    // survives the rebuild; rebuilt fresh here (not in the submit handler)
+    // because $form itself does not persist across a rebuild, only
+    // $form_state does. All checked by default -- unchecking is the
+    // deliberate act, per the design. NULL (button never clicked this
+    // request) is distinct from an empty array (clicked, nothing matched) --
+    // only the latter gets a "nothing found" message, so the container stays
+    // silent until the submitter has actually asked.
+    //
+    // $suggestions is [tid => label] (see TagSuggester::suggest()) --
+    // #options already wants that shape directly, and #default_value wants
+    // just the keys (the tids) to check.
+    $suggestions = $form_state->get('apc_tag_suggestions');
+    if ($suggestions) {
+      $form['field_tags']['apc_tag_suggestions']['tags'] = [
+        '#type' => 'checkboxes',
+        '#title' => t('Suggested tags'),
+        '#options' => $suggestions,
+        '#default_value' => array_keys($suggestions),
+        // Explicit rather than left to default computation: $form['field_tags']
+        // (the field widget's own outer wrapper) is not #tree, so an element
+        // nested under it with no #parents of its own does not land where its
+        // render-array position suggests -- it flattens to a bare top-level
+        // 'tags' key in $form_state->getValues(), same depth as 'title' or
+        // 'body'. Fixing the read site to match that incidental flattening
+        // would work today but silently break the moment this element's
+        // position in the render array changes; naming the parents directly
+        // removes the dependency on that behaviour entirely.
+        '#parents' => ['apc_tag_suggestions_checked'],
+      ];
+    }
+    elseif ($suggestions !== NULL) {
+      $form['field_tags']['apc_tag_suggestions']['empty'] = [
+        '#markup' => t('No tag suggestions found for the current title and body.'),
+      ];
+    }
+
+    $form['field_tags']['apc_tag_suggest'] = [
+      '#type' => 'submit',
+      '#value' => t('Suggest tags'),
+      '#limit_validation_errors' => [],
+      '#submit' => ['apc_calendar_tag_suggest_submit'],
+      '#ajax' => [
+        'callback' => 'apc_calendar_tag_suggest_ajax',
+        'wrapper' => 'apc-tag-suggestions',
+      ],
+      '#weight' => 9,
+    ];
+
+    // Insert before whichever handler currently saves the entity, rather
+    // than assuming the array's exact contents -- the anonymous branch above
+    // may or may not have already appended
+    // apc_calendar_event_submit_confirmation, and this must not clobber it
+    // either way. By the time apc_calendar_apply_suggested_tags() runs,
+    // ::submitForm has already built the entity from the widget values, so
+    // it acts on the built node directly rather than the tags widget's own
+    // text string.
+    $submit_handlers = $form['actions']['submit']['#submit'];
+    $save_index = array_search('::save', $submit_handlers, TRUE);
+    if ($save_index !== FALSE) {
+      array_splice($submit_handlers, $save_index, 0, ['apc_calendar_apply_suggested_tags']);
+      $form['actions']['submit']['#submit'] = $submit_handlers;
+    }
+  }
+
+  // The online-only checkbox is available to everyone, anonymous included —
+  // no #access gating. #states below only ever hides these elements in the
+  // browser; it does not stop a POST that includes both a checked box and a
+  // location value. The two things that actually enforce the rule are
+  // apc_calendar_node_presave() (clears field_location when virtual) and the
+  // validate handler added here (requires field_location when not virtual).
+  if (isset($form['field_location']) && isset($form['field_event_url'])) {
+    $form['field_location']['#states'] = [
+      'invisible' => [
+        ':input[name="field_virtual[value]"]' => ['checked' => TRUE],
+      ],
+    ];
+    $form['field_event_url']['#states'] = [
+      'invisible' => [
+        ':input[name="field_virtual[value]"]' => ['checked' => FALSE],
+      ],
+    ];
+    $form['#validate'][] = 'apc_calendar_form_node_calendar_event_form_validate_location';
+  }
+}
+
+/**
+ * Form validation handler: require a location for non-virtual events.
+ *
+ * Form-level only — it does not cover programmatic or REST node creation,
+ * which would need an entity-level constraint instead. That gap is accepted
+ * here: this form is the only path anonymous and typical authenticated
+ * submitters have to create a calendar_event.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see apc_calendar_node_presave()
+ */
+function apc_calendar_form_node_calendar_event_form_validate_location(array &$form, FormStateInterface $form_state): void {
+  // boolean_checkbox is a 'multiple_values' widget (it builds its own element
+  // structure rather than one per delta), so the submitted value sits at
+  // field_virtual[value], not field_virtual[0][value].
+  if ($form_state->getValue(['field_virtual', 'value'])) {
+    return;
+  }
+
+  $location = $form_state->getValue('field_location');
+  if (!empty($location[0]['target_id'])) {
+    return;
+  }
+
+  // Only show "required" when the field was left genuinely blank. If the
+  // submitter typed something that didn't resolve to an existing location,
+  // apc_calendar_validate_location_not_found() already set a more specific
+  // error on the element itself -- piling "Location is required" on top of
+  // that would just be a second, contradictory-sounding message for the
+  // same field.
+  $raw = $form_state->getUserInput()['field_location'][0]['target_id'] ?? '';
+  if (trim((string) $raw) === '') {
+    $form_state->setError($form['field_location'], t('Location is required unless this is an online-only event.'));
+  }
+}
+
+/**
+ * Adds the "add a new location" modal trigger beneath the Location field.
+ *
+ * The autocomplete does the searching; this only covers the case where nothing
+ * matches. Rendered as a plain link with core's dialog attributes rather than a
+ * button, so it stays quiet next to the field it supplements.
+ *
+ * @see \Drupal\apc_calendar\Form\AddLocationForm
+ */
+function apc_calendar_attach_add_location_link(array &$form): void {
+  if (!isset($form['field_location']['widget'][0]['target_id'])) {
+    return;
+  }
+
+  // The modal's AJAX response writes the new location back into this element,
+  // so give it a stable hook that does not depend on Drupal's generated IDs.
+  $form['field_location']['widget'][0]['target_id']['#attributes']['data-apc-location-autocomplete'] = TRUE;
+
+  // Prepended (not appended) so it runs before EntityAutocomplete's own
+  // #element_validate callback. FormState::setErrorByName() only ever keeps
+  // the *first* error set for a given element (see FormState::setErrorByName()),
+  // so claiming that slot first is what replaces core's generic "There are
+  // no Taxonomy terms matching ..." message with one that actually tells the
+  // submitter what to do about it.
+  //
+  // #element_validate is not yet populated with EntityAutocomplete's own
+  // default callback at this point in the form-alter lifecycle (it is merged
+  // in later, from the element's #type defaults) -- '??' supplies it
+  // explicitly rather than assuming it is already present.
+  $form['field_location']['widget'][0]['target_id']['#element_validate'] = array_merge(
+    ['apc_calendar_validate_location_not_found'],
+    $form['field_location']['widget'][0]['target_id']['#element_validate'] ?? [[EntityAutocomplete::class, 'validateEntityAutocomplete']],
+  );
+
+  $form['field_location']['apc_add_location'] = [
+    '#type' => 'link',
+    '#title' => t('Can’t find it? Add a new location'),
+    '#url' => Url::fromRoute('apc_calendar.add_location'),
+    '#attributes' => [
+      'class' => ['use-ajax', 'apc-add-location-link'],
+      'data-dialog-type' => 'modal',
+      'data-dialog-options' => Json::encode([
+        'width' => 520,
+        'title' => t('Add a new location')->render(),
+      ]),
+    ],
+    '#attached' => [
+      'library' => [
+        'core/drupal.dialog.ajax',
+        // Adds "＋ Add a new venue…" to the autocomplete results, which is the
+        // only affordance visible in the zero-results case. The link above is
+        // the no-JavaScript fallback and stays regardless.
+        'apc_calendar/add_location_autocomplete',
+      ],
+    ],
+    '#weight' => 10,
+  ];
+}
+
+/**
+ * Element validate callback: clear "location not found" feedback.
+ *
+ * Runs before EntityAutocomplete::validateEntityAutocomplete() (prepended
+ * onto the same element in apc_calendar_attach_add_location_link()) so that
+ * when the submitter's typed text doesn't resolve to an existing location,
+ * this message wins instead of core's generic "There are no Taxonomy terms
+ * matching ..." -- which never mentioned "location" and gave no hint that
+ * the "Add a new location" link right below the field is how to fix it.
+ *
+ * Does nothing (lets core's own validator run as normal) for an empty value
+ * or one that already carries a valid "(tid)" suffix -- i.e. something
+ * actually selected from the autocomplete dropdown, or handed back by
+ * AddLocationForm after adding a new location.
+ *
+ * @see apc_calendar_attach_add_location_link()
+ * @see \Drupal\apc_calendar\Form\AddLocationForm
+ */
+function apc_calendar_validate_location_not_found(array &$element, FormStateInterface $form_state, array &$complete_form): void {
+  $input = trim((string) ($element['#value'] ?? ''));
+  if ($input === '' || EntityAutocomplete::extractEntityIdFromAutocompleteInput($input) !== NULL) {
+    return;
+  }
+
+  $options = ($element['#selection_settings'] ?? []) + [
+    'target_type' => $element['#target_type'],
+    'handler' => $element['#selection_handler'],
+  ];
+  $handler = \Drupal::service('plugin.manager.entity_reference_selection')->getInstance($options);
+  $matches = $handler->getReferenceableEntities($input, '=', 1);
+
+  if (empty(reset($matches))) {
+    $form_state->setError($element, t('We couldn’t find a location called "%value". Use "Can’t find it? Add a new location" below to add it.', [
+      '%value' => $input,
+    ]));
+  }
+}
+
+/**
+ * Submit handler for the "Suggest tags" button.
+ *
+ * Reads title and body from $form_state (not from the entity -- the node
+ * behind this form is not saved yet), calls TagSuggester, and stashes the
+ * result in $form_state so apc_calendar_form_node_calendar_event_form_alter()
+ * can rebuild the checkbox list on the next pass. Runs before core's own
+ * ::save handler ever fires; nothing here touches the entity.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see apc_calendar_tag_suggest_ajax()
+ */
+function apc_calendar_tag_suggest_submit(array $form, FormStateInterface $form_state): void {
+  // Read from raw user input, not $form_state->getValues() -- with
+  // #limit_validation_errors => [] (an empty array, not FALSE),
+  // FormValidator::handleErrorsWithLimitedValidation() rebuilds the values
+  // array to contain *only* the listed sections, which is none of them
+  // here. title and body would silently come back empty from getValue() even
+  // though the submitter typed them. getUserInput() is the raw POST data and
+  // is not filtered by #limit_validation_errors at all.
+  $input = $form_state->getUserInput();
+  $title = (string) ($input['title'][0]['value'] ?? '');
+  $body = (string) ($input['body'][0]['value'] ?? '');
+
+  $suggestions = \Drupal::service('apc_calendar.tag_suggester')->suggest($title, $body);
+  $form_state->set('apc_tag_suggestions', $suggestions);
+  $form_state->setRebuild(TRUE);
+}
+
+/**
+ * AJAX callback for the "Suggest tags" button.
+ *
+ * Returns only the suggestions container -- the rest of the rebuilt $form is
+ * discarded, never sent to the browser. See the "one real risk" note in
+ * auto-tag-task.md: the server-side rebuild that produces this container is
+ * a full form rebuild (Smart Date, Media Library, focal point and all), even
+ * though only this one piece of it is returned.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see apc_calendar_tag_suggest_submit()
+ */
+function apc_calendar_tag_suggest_ajax(array $form, FormStateInterface $form_state): array {
+  return $form['field_tags']['apc_tag_suggestions'];
+}
+
+/**
+ * Submit handler: applies checked tag suggestions to the entity.
+ *
+ * Spliced in immediately before ::save (see
+ * apc_calendar_form_node_calendar_event_form_alter()), so ::submitForm has
+ * already built the entity from the widget's own values by the time this
+ * runs. Acts on the built node directly -- never touches the tags widget's
+ * text string or its comma-quoting format.
+ *
+ * Unlike the old config-backed map, a suggestion can only ever exist for a
+ * term that already exists -- TagSuggester only matches terms that already
+ * have field_tag_keywords populated (see TagSuggester::suggest()) -- so
+ * there is no "find or create by name" step here any more, just a load by
+ * the tid the checkbox already carries.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see \Drupal\apc_calendar\TagSuggester
+ */
+function apc_calendar_apply_suggested_tags(array $form, FormStateInterface $form_state): void {
+  $checked = array_filter($form_state->getValue('apc_tag_suggestions_checked') ?? []);
+  if (!$checked) {
+    return;
+  }
+
+  $node = $form_state->getFormObject()->getEntity();
+  if (!$node instanceof NodeInterface || !$node->hasField('field_tags')) {
+    return;
+  }
+
+  // Tracked so a suggestion the submitter also typed by hand gets one
+  // reference, not two.
+  $existing_tids = [];
+  foreach ($node->get('field_tags') as $item) {
+    if ($item->target_id) {
+      $existing_tids[(int) $item->target_id] = TRUE;
+    }
+  }
+
+  $storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+  foreach (array_keys($checked) as $tid) {
+    $tid = (int) $tid;
+    // The term could in principle have been deleted between the AJAX
+    // suggestion and this submission; skip rather than create a bare
+    // replacement -- that would silently reintroduce the "find or create"
+    // problem this design specifically avoids.
+    if (isset($existing_tids[$tid]) || !$storage->load($tid)) {
+      continue;
+    }
+    $node->get('field_tags')->appendItem($tid);
+    $existing_tids[$tid] = TRUE;
+  }
+}
+
+/**
+ * Submit handler: redirect anonymous submitters to the thank-you page.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ */
+function apc_calendar_event_submit_confirmation(array $form, FormStateInterface $form_state): void {
+  // Drop NodeForm::save()'s "Calendar Event X has been created." status
+  // message, which implies the event is already live. The confirmation page
+  // renders its own, accurate message.
+  \Drupal::messenger()->deleteByType(MessengerInterface::TYPE_STATUS);
+
+  // Hand the new node's ID to the confirmation controller through the
+  // per-session private tempstore — never through a query parameter, since an
+  // enumerable ?nid= on an unpublished node would expose the pending queue.
+  //
+  // The timestamp travels with it so the controller can enforce its own short
+  // freshness window: tempstore.expire defaults to a week, which would leave a
+  // submission readable to whoever uses the same browser next. That parameter
+  // is shared with Views UI and every other private tempstore consumer, so it
+  // must not be lowered globally to solve a problem local to this page.
+  $node = $form_state->getFormObject()->getEntity();
+  \Drupal::service('tempstore.private')
+    ->get(EventSubmittedController::COLLECTION)
+    ->set(EventSubmittedController::KEY, [
+      'nid' => (int) $node->id(),
+      'time' => \Drupal::time()->getRequestTime(),
+    ]);
+
+  $form_state->setRedirect('apc_calendar.event_submitted');
+}
+
+/**
+ * Implements hook_node_access().
+ *
+ * event_manager has 'edit any calendar_event content' but not 'bypass node
+ * access' or 'view own unpublished content', so without this an event_manager
+ * gets a 403 visiting a pending event's own canonical page and can only act on
+ * it from the /admin/content/pending-events bulk-operations list. Grants view
+ * access to unpublished calendar_event nodes specifically -- not a general
+ * bypass -- to whoever already holds edit access to any calendar_event, so a
+ * reviewer can see the full rendered page (photos, body, location) before
+ * publishing it. Neutral (never forbidden) for every other case, so this
+ * never overrides core's own access decisions.
+ *
+ * @see \Drupal\apc_calendar\Controller\PublishEventAndLocationController
+ */
+function apc_calendar_node_access(NodeInterface $node, string $op, AccountInterface $account): AccessResultInterface {
+  if ($op === 'view' && $node->bundle() === 'calendar_event' && !$node->isPublished()
+    && $account->hasPermission('edit any calendar_event content')) {
+    return AccessResult::allowed()->cachePerPermissions()->addCacheableDependency($node);
+  }
+  return AccessResult::neutral();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for node entities.
+ *
+ * Two unrelated concerns live here because both are calendar_event-only
+ * presave rules and Drupal only calls one hook_ENTITY_TYPE_presave() per
+ * module per entity type:
+ *
+ * - #states hides field_location client-side when field_virtual is checked,
+ *   but that is cosmetic only — it does not stop a POST carrying a location
+ *   value (devtools, a stale cached form, a bot). Clearing it here is what
+ *   actually makes a virtual event location-less, and it is also why the
+ *   display side needs no conditional logic anywhere: an empty field renders
+ *   nothing in any view mode, template, or view.
+ * - calendar_event defaults to unpublished (core.base_field_override.node.
+ *   calendar_event.status.yml), which is the entire moderation mechanic for
+ *   anonymous and ordinary authenticated submitters. A submitter with the
+ *   'publish calendar_event content immediately' permission is trusted to
+ *   skip that queue, so their new nodes are published here instead of
+ *   waiting for review. Presave rather than granting 'administer nodes' (the
+ *   permission that would otherwise be needed to expose the Published
+ *   checkbox on the form) — that permission is much broader than "publish my
+ *   own submissions" and would also let the role edit other administrative
+ *   fields (authoring info, sticky, promote) on *any* content type.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ */
+function apc_calendar_node_presave(NodeInterface $node): void {
+  if ($node->bundle() !== 'calendar_event') {
+    return;
+  }
+
+  if ($node->hasField('field_virtual') && $node->hasField('field_location') && (bool) $node->get('field_virtual')->value) {
+    $node->set('field_location', []);
+  }
+
+  if ($node->isNew() && \Drupal::currentUser()->hasPermission('publish calendar_event content immediately')) {
+    $node->setPublished();
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for node entities.
+ *
+ * Notify the site email address when an anonymous visitor submits an event, so
+ * the pending queue at /admin/content?type=calendar_event&status=2 does not sit
+ * unreviewed simply because nobody knew it had items in it.
+ */
+function apc_calendar_node_insert(NodeInterface $node): void {
+  if ($node->bundle() !== 'calendar_event' || $node->isPublished()) {
+    return;
+  }
+  if (!\Drupal::currentUser()->isAnonymous()) {
+    return;
+  }
+
+  $site_config = \Drupal::config('system.site');
+  $to = \Drupal::state()->get('apc_calendar.notify_email') ?: $site_config->get('mail');
+  if (empty($to)) {
+    \Drupal::logger('apc_calendar')->warning('Pending event @nid submitted but no notification address is configured.', ['@nid' => $node->id()]);
+    return;
+  }
+
+  // toString(TRUE) returns a GeneratedUrl so cacheability metadata is captured
+  // rather than leaking out of an early-rendering context.
+  $params = [
+    'node' => $node,
+    'site_name' => $site_config->get('name'),
+    'edit_url' => $node->toUrl('edit-form', ['absolute' => TRUE])->toString(TRUE)->getGeneratedUrl(),
+    'queue_url' => Url::fromUserInput('/admin/content', [
+      'absolute' => TRUE,
+      'query' => ['type' => 'calendar_event', 'status' => '2'],
+    ])->toString(TRUE)->getGeneratedUrl(),
+  ];
+
+  \Drupal::service('plugin.manager.mail')->mail(
+    'apc_calendar',
+    'event_pending',
+    $to,
+    \Drupal::languageManager()->getDefaultLanguage()->getId(),
+    $params
+  );
+}
+
+/**
+ * Implements hook_mail().
+ */
+function apc_calendar_mail(string $key, array &$message, array $params): void {
+  if ($key !== 'event_pending') {
+    return;
+  }
+
+  /** @var \Drupal\node\NodeInterface $node */
+  $node = $params['node'];
+
+  $message['subject'] = t('[@site] Event pending review: @title', [
+    '@site' => $params['site_name'],
+    '@title' => $node->label(),
+  ]);
+
+  $message['body'][] = t('A visitor submitted a new event. It is unpublished until someone approves it.');
+  $message['body'][] = t('Title: @title', ['@title' => $node->label()]);
+
+  if (!$node->get('field_location')->isEmpty() && $term = $node->get('field_location')->entity) {
+    $message['body'][] = t('Location: @location (@status)', [
+      '@location' => $term->label(),
+      '@status' => $term->isPublished() ? t('existing') : t('NEW - also needs approval'),
+    ]);
+  }
+
+  $message['body'][] = t('Review and publish: @url', ['@url' => $params['edit_url']]);
+  $message['body'][] = t('Full pending queue: @url', ['@url' => $params['queue_url']]);
+}
+
+/**
+ * Implements hook_entity_extra_field_info().
+ *
+ * Exposes "Directions" as a pseudo-field on locations so its placement is
+ * config, not code: it can be positioned, reordered or switched off per view
+ * mode from Manage Display, independently on default, card and compact_card.
+ *
+ * A Twig override would have needed a custom theme, and a Views field rewrite
+ * would only have covered the location page — not the card embedded in event
+ * pages and the calendar popup.
+ */
+function apc_calendar_entity_extra_field_info(): array {
+  $fields = [];
+
+  $fields['taxonomy_term']['locations']['display']['directions'] = [
+    'label' => t('Directions'),
+    'description' => t('Links to OpenStreetMap and Google Maps directions for this location.'),
+    'weight' => 10,
+    'visible' => FALSE,
+  ];
+
+  return $fields;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for taxonomy_term entities.
+ */
+function apc_calendar_taxonomy_term_view(array &$build, TermInterface $term, EntityViewDisplayInterface $display, $view_mode): void {
+  if ($term->bundle() !== 'locations' || !$display->getComponent('directions')) {
+    return;
+  }
+
+  $build['directions'] = apc_calendar_build_directions($term);
+}
+
+/**
+ * Builds the directions links for a location term.
+ *
+ * Coordinates are preferred over the address: they are unambiguous, and they
+ * route correctly even where the address itself cannot be geocoded — which is
+ * common enough here that it is the reason the map is best-effort. The address
+ * is the fallback, and both services will geocode it themselves.
+ *
+ * Renders "No directions available" rather than nothing when a location has
+ * neither, so an editor reviewing the queue can see the location is incomplete
+ * instead of wondering whether the feature is broken.
+ */
+function apc_calendar_build_directions(TermInterface $term): array {
+  $destination = apc_calendar_get_directions_destination($term);
+
+  if ($destination === NULL) {
+    return [
+      '#type' => 'html_tag',
+      '#tag' => 'p',
+      '#attributes' => ['class' => ['apc-directions', 'apc-directions--none']],
+      '#value' => t('No directions available'),
+    ];
+  }
+
+  $encoded = rawurlencode($destination);
+
+  $services = [
+    'osm' => [
+      'title' => t('OpenStreetMap'),
+      'url' => 'https://www.openstreetmap.org/directions?to=' . $encoded,
+    ],
+    'google' => [
+      'title' => t('Google Maps'),
+      'url' => 'https://www.google.com/maps/dir/?api=1&destination=' . $encoded,
+    ],
+  ];
+
+  $build = [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['apc-directions']],
+    'label' => [
+      '#type' => 'html_tag',
+      '#tag' => 'span',
+      '#attributes' => ['class' => ['apc-directions__label']],
+      '#value' => t('Directions:'),
+    ],
+  ];
+
+  foreach ($services as $key => $service) {
+    $build[$key] = [
+      '#type' => 'link',
+      '#title' => $service['title'],
+      '#url' => Url::fromUri($service['url']),
+      '#attributes' => [
+        'class' => ['apc-directions__link', 'apc-directions__link--' . $key],
+        'target' => '_blank',
+        // Without noopener the opened page gets a handle on this window.
+        'rel' => 'noopener noreferrer',
+      ],
+    ];
+  }
+
+  return $build;
+}
+
+/**
+ * Resolves the best available directions destination for a location term.
+ *
+ * Split out of apc_calendar_build_directions() so a single-link, single-
+ * service consumer (the event detail page's "Get directions" button) can
+ * reuse the same coordinates-preferred-over-address resolution without
+ * duplicating it.
+ *
+ * @see apc_calendar_build_directions()
+ */
+function apc_calendar_get_directions_destination(TermInterface $term): ?string {
+  if ($term->hasField('field_geofield') && !$term->get('field_geofield')->isEmpty()) {
+    $geo = $term->get('field_geofield')->first();
+    $lat = $geo->get('lat')->getValue();
+    $lon = $geo->get('lon')->getValue();
+    if ($lat !== NULL && $lon !== NULL) {
+      return $lat . ',' . $lon;
+    }
+  }
+
+  return apc_calendar_format_address($term);
+}
+
+/**
+ * Builds a single Google Maps directions URL for a location term.
+ *
+ * For contexts that want one "Get directions" action (the event detail
+ * page) rather than the full OSM+Google choice apc_calendar_build_directions()
+ * renders on the location page itself.
+ */
+function apc_calendar_get_directions_url(TermInterface $term): ?string {
+  $destination = apc_calendar_get_directions_destination($term);
+  if ($destination === NULL) {
+    return NULL;
+  }
+
+  return 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($destination);
+}
+
+/**
+ * Formats a location's address as a single line for a map service query.
+ *
+ * Returns NULL when there is nothing usable, so callers can distinguish "no
+ * address" from an address that happens to be sparse.
+ */
+function apc_calendar_format_address(TermInterface $term): ?string {
+  if (!$term->hasField('field_address') || $term->get('field_address')->isEmpty()) {
+    return NULL;
+  }
+
+  $address = $term->get('field_address')->first();
+  $parts = array_filter([
+    $address->get('address_line1')->getValue(),
+    $address->get('address_line2')->getValue(),
+    $address->get('locality')->getValue(),
+    trim(implode(' ', array_filter([
+      $address->get('administrative_area')->getValue(),
+      $address->get('postal_code')->getValue(),
+    ]))),
+  ], static fn ($part) => is_string($part) && trim($part) !== '');
+
+  return $parts ? implode(', ', $parts) : NULL;
+}
+
+/**
+ * Implements hook_library_info_alter().
+ *
+ * Point Moment and RRule at their real composer-installed paths. The npm
+ * package layouts don't match the locations fullcalendar_view expects, so
+ * without this its own alter finds nothing on disk and silently falls back to
+ * loading them from jsdelivr/unpkg.
+ *
+ * Hook order does not matter here. fullcalendar_view's alter only substitutes
+ * a CDN URL when file_exists() fails on the path it finds — so if it runs after
+ * this, its check passes and it leaves these alone; if it runs before, this
+ * simply overwrites its CDN substitution.
+ */
+function apc_calendar_library_info_alter(array &$libraries, string $module): void {
+  if ($module !== 'fullcalendar_view') {
+    return;
+  }
+  $paths = [
+    'libraries.moment' => '/libraries/moment/min/moment.min.js',
+    'libraries.rrule' => '/libraries/rrule/dist/es5/rrule.min.js',
+  ];
+  foreach ($paths as $library => $path) {
+    if (isset($libraries[$library]['js'])) {
+      $libraries[$library]['js'] = [$path => ['minified' => TRUE]];
+    }
+  }
+}
+
+

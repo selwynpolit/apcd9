@@ -1,0 +1,11 @@
+uuid: ef7e972b-8186-41dc-a667-5b3dea2e88f0
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+id: node.submission_confirmation
+label: 'Submission confirmation'
+description: ''
+targetEntityType: node
+cache: true

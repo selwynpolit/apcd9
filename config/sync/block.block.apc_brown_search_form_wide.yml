@@ -1,0 +1,23 @@
+uuid: 210c0107-9a94-429f-afd7-7f5f831e7bb0
+langcode: en
+status: true
+dependencies:
+  module:
+    - search
+  theme:
+    - apc_brown
+_core:
+  default_config_hash: imMyHD6LYci0gtXq56qr9ZKGHzbEG9uFydrN5EhKtSU
+id: apc_brown_search_form_wide
+theme: apc_brown
+region: secondary_menu
+weight: -5
+provider: null
+plugin: search_form_block
+settings:
+  id: search_form_block
+  label: 'Search form (wide)'
+  label_display: '0'
+  provider: search
+  page_id: ''
+visibility: {  }

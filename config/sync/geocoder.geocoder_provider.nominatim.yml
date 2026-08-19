@@ -1,0 +1,16 @@
+uuid: a77699d5-588a-4b6f-8108-282fef52319e
+langcode: en
+status: true
+dependencies: {  }
+id: nominatim
+label: Nominatim
+plugin: nominatim
+configuration:
+  throttle:
+    period: 2
+    limit: 1
+  geocoder:
+    locale: ''
+  rootUrl: 'https://nominatim.openstreetmap.org'
+  userAgent: d9.austinprogressivecalendar.com
+  referer: d9.austinprogressivecalendar.com
