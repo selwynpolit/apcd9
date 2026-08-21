@@ -910,6 +910,74 @@ $settings['migrate_node_migrate_type_classic'] = FALSE;
  */
 $settings['container_yamls'][] = $app_root . '/' . $site_path . '/services.yml';
 
+/**
+ * Environment detection: drives both Config Split activation and the
+ * Environment Indicator's label/color.
+ *
+ * dev and prod are separate GreenGeeks docroots (~/www/apcdev/web and
+ * ~/www/d9/web), not a shared codebase with an env var, so detection is by
+ * filesystem path -- this works identically for web requests and drush,
+ * regardless of --uri. Local (DDEV) is detected via the IS_DDEV_PROJECT env
+ * var DDEV itself sets, same signal the ddev settings include below already
+ * relies on.
+ *
+ * Production is deliberately the "no branch matched" case: config/sync IS
+ * the production baseline, so it needs no split activated and no indicator
+ * override beyond what's already in config/sync (which environment_indicator
+ * ships with no default -- see environment_indicator.indicator's schema --
+ * so this file is the only place any of the three colors are actually set).
+ *
+ * "dev" forces its split active here because nobody sits at that box's
+ * admin UI day to day. "local" deliberately does NOT -- see the comment
+ * inside the IS_DDEV_PROJECT branch below for why, and how to activate it.
+ */
+if (getenv('IS_DDEV_PROJECT') == 'true') {
+  $config['environment_indicator.indicator']['name'] = 'LOCAL';
+  $config['environment_indicator.indicator']['bg_color'] = '#2ecc71';
+  $config['environment_indicator.indicator']['fg_color'] = '#000000';
+
+  // The "local" split is deliberately NOT forced active here (unlike "dev"
+  // below). config_split's own admin list
+  // (/admin/config/development/configuration/config-split) hides a split's
+  // Activate/Deactivate operations whenever its status is enforced by a
+  // settings.php $config override -- so forcing it here would remove the
+  // one thing this setup exists to preserve: the ability to flip the split
+  // off to preview how the site behaves with production's real config,
+  // e.g. its system.performance override (aggregation off, page cache off;
+  // see config_split.patch.system.performance.yml in the split's own
+  // folder, which is what config/sync's production-appropriate
+  // aggregation-on, 1-hour-page-cache values get replaced with while the
+  // split is active).
+  //
+  // Activate it once per fresh environment with
+  // `ddev drush config-split:activate local` (or the "Activate" link on
+  // that admin page), then toggle it off/on any time after with
+  // `ddev drush config-split:deactivate local` / `config-split:activate
+  // local` (or the page's Deactivate/Activate links) -- no file edit
+  // needed. This does rewrite active config, so re-activate before your
+  // next `cex` or the split's overrides won't be captured; a plain `cim`
+  // afterward reloads config/sync's committed (inactive) default.
+
+  // config/sync's userAgent/referer are prod's domain (Nominatim's usage
+  // policy wants a valid, identifying value) -- local should identify as
+  // itself rather than claim to be production traffic.
+  $config['geocoder.geocoder_provider.nominatim']['configuration']['userAgent'] = 'apc3.ddev.site';
+  $config['geocoder.geocoder_provider.nominatim']['configuration']['referer'] = 'apc3.ddev.site';
+}
+elseif (str_contains($app_root, '/apcdev/')) {
+  $config['config_split.config_split.dev']['status'] = TRUE;
+  $config['environment_indicator.indicator']['name'] = 'DEV';
+  $config['environment_indicator.indicator']['bg_color'] = '#e67e22';
+  $config['environment_indicator.indicator']['fg_color'] = '#000000';
+
+  $config['geocoder.geocoder_provider.nominatim']['configuration']['userAgent'] = 'dev.austinprogressivecalendar.com';
+  $config['geocoder.geocoder_provider.nominatim']['configuration']['referer'] = 'dev.austinprogressivecalendar.com';
+}
+elseif (str_contains($app_root, '/d9/')) {
+  $config['environment_indicator.indicator']['name'] = 'PRODUCTION';
+  $config['environment_indicator.indicator']['bg_color'] = '#c0392b';
+  $config['environment_indicator.indicator']['fg_color'] = '#ffffff';
+}
 
 
 

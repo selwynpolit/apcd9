@@ -1,0 +1,24 @@
+uuid: bf4f07b4-7c49-4021-88a0-45ae5c7fa6c2
+langcode: en
+status: false
+dependencies: {  }
+id: local
+label: Local
+description: ''
+weight: 0
+stackable: false
+no_patching: false
+storage: folder
+folder: ../config/split/local
+module:
+  devel: 0
+  devel_generate: 0
+  stage_file_proxy: 0
+theme: {  }
+complete_list:
+  - stage_file_proxy.settings
+  - devel.settings
+  - system.menu.devel
+  - devel.toolbar.settings
+partial_list:
+  - system.performance

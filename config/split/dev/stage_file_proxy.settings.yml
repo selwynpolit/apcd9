@@ -1,7 +1,7 @@
 _core:
   default_config_hash: LqXuXXQCTd1NWw7dGLef0PCi3_aEEWQuogAblo4hHaE
 hotlink: false
-origin: 'https://www.austinprogressivecalendar.com'
+origin: 'https://d9.austinprogressivecalendar.com'
 origin_dir: sites/default/files
 proxy_headers: ''
 use_imagecache_root: true

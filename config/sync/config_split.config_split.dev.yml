@@ -1,0 +1,18 @@
+uuid: fca91dcc-500f-40cd-a981-bf0254c854c5
+langcode: en
+status: false
+dependencies: {  }
+id: dev
+label: Dev
+description: ''
+weight: 0
+stackable: false
+no_patching: false
+storage: folder
+folder: ../config/split/dev
+module:
+  stage_file_proxy: 0
+theme: {  }
+complete_list:
+  - stage_file_proxy.settings
+partial_list: {  }
