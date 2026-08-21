@@ -43,6 +43,25 @@ The `@apc.prod` Drush alias is defined in `drush/sites/apc.site.yml`.
 
 DB dump files (`*.sql`, `*.sql.gz`) and `.idea/` are gitignored — don't add them to commits.
 
+### Config split: local vs. production behavior
+
+Environment (dev/local/prod) is auto-detected in `settings.php` and used to activate the matching
+`config_split.config_split.*` split. `local` (devel/devel_generate/stage_file_proxy modules, plus a
+`system.performance` override that disables CSS/JS aggregation and page caching) is deliberately
+**not** forced active via a `$config[...]` override in `settings.php` the way `dev`'s split is — a
+settings.php override always out-ranks the config-split admin UI's Activate/Deactivate links, which
+would make it impossible to turn off locally to see how the site actually behaves in production
+(aggregation on, real page cache).
+
+- First-time setup, after `ddev composer install`: `ddev drush config-split:activate local` — this
+  needs redoing (or the equivalent "Activate" link at
+  `/admin/config/development/configuration/config-split`) any time you've run a plain `ddev drush
+  cim`, since that reloads config/sync's committed (inactive) default for this split.
+- To preview production's real behavior locally: `ddev drush config-split:deactivate local` (or the
+  page's "Deactivate" link), then reload. `ddev drush config-split:activate local` to switch back.
+- Do **not** run `ddev drush cex` while deliberately testing with the split deactivated — see the
+  `cst`-before-`cex` rule below.
+
 ## Common commands
 
 Run everything through `ddev` (or `ddev ssh` first) so PHP/MySQL versions match the container.
