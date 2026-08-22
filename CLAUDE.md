@@ -4,15 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Drupal 10 site for the Austin Progressive Calendar (austinprogressivecalendar.com). This is a
-"vanilla" Drupal build: with 1 custom module one custom theme. The site's behavior is defined almost entirely through
+Drupal 10 site for the Austin Progressive Calendar (austinprogressivecalendar.com).
+This is a Drupal build: with 1 custom module one custom theme. The site's behavior is defined mostly through
 **configuration** (`config/sync/*.yml`, exported/imported with Drush) plus a curated set of
 contrib modules declared in `composer.json`. Default admin theme is Claro; default frontend theme
 is APC brown (see `config/sync/system.theme.yml`).
 
 Site is hosted on GreenGeeks (`chi204.greengeeks.net`, path `/home/austinpr/public_html/d9`,
-domain `d9.austinprogressivecalendar.com`). There is also a legacy Drupal 7 site running in
+domain `www.austinprogressivecalendar.com`). There is also a legacy Drupal 7 site running in
 parallel (`d7.austinprogressivecalendar.com`) — not part of this repo.
+
+A staging copy of this same codebase runs on the same GreenGeeks host at path `~/www/apcdev/web`,
+domain `dev.austinprogressivecalendar.com` — this is the environment `settings.php`'s
+`str_contains($app_root, '/apcdev/')` branch detects and the `dev` config split targets (see
+[Config split: local vs. production behavior](#config-split-local-vs-production-behavior)). Useful
+for checking a change against something closer to production without touching prod itself.
+
+New features sometimes will have .md files created in the project.  Once these have been implemented the .md files are moved to the assets directory.
+
 
 ## Local environment (DDEV)
 
@@ -424,6 +433,19 @@ there. Do them as one change, not three.
       know before touching it:** deleting a rejected import causes it to be re-imported forever,
       because the dedupe state lives in `feeds_item` on the node. Rejection is a flag, never a
       delete. Depends on F for the publish action.
+- [ ] **I. "Suggest tags" button for `calendar_event`.** Full design in `auto-tag-task.md`. Status:
+      designed, not started. A curated keyword map (`apc_calendar.tag_map` config) suggests existing
+      `tags` terms via an AJAX "Suggest tags" button below `field_tags`, all checked by default —
+      cutting near-duplicate tag fragmentation without gating free-typed tags the way `locations` is
+      gated (see `Event Calendar Plan.md` §3e). Deliberately **on-request, not automatic on save** —
+      the doc's "Rejected approaches" section records an earlier automatic-tagging design and the
+      substantial JS/flag machinery it required just to stay safe against a user disagreeing with it.
+      **The one thing to know before touching it:** step 1 of the doc's Sequence is to smoke-test a
+      bare AJAX button's full-form rebuild against Smart Date, Media Library, and the focal-point
+      widget on the running site before building anything else — everything else in the design depends
+      on that rebuild being safe. Item H's importer reuses the `TagSuggester` service built here (see
+      that doc's own "Collisions" section), so this task's service should exist before wiring tags into
+      H's import path.
 
 ### Group 5 — Needs a decision before any implementation
 
