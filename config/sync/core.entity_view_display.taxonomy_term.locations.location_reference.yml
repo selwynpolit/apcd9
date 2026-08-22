@@ -73,9 +73,6 @@ content:
         minZoom: 1
         maxZoom: 18
         zoomFiner: 0
-      zoom: 17
-      minZoom: 1
-      maxZoom: 18
       weight: '0'
       icon:
         iconType: marker
@@ -130,6 +127,9 @@ content:
           options: ''
       map_lazy_load:
         lazy_load: false
+      zoom: 17
+      minZoom: 1
+      maxZoom: 18
     third_party_settings: {  }
     weight: 2
     region: content
