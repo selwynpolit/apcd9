@@ -39,9 +39,15 @@
   margin-block-end: var(--sp1);
 }
 
+/* Matches the site header's own wordmark (.site-branding__name -- Figtree
+   700) rather than the site's default Caprasimo heading font (bold,
+   rounded, playful), just a step larger than the header's 2rem. Scoped to
+   this one title rather than changing --font-heading site-wide. */
 .apc-detail__title {
   margin-block-end: var(--sp0-5, 0.5625rem);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 2.25rem;
 }
 
 .apc-detail__meta {
@@ -198,104 +204,28 @@
   white-space: nowrap;
 }
 
-/* Location page only: gallery and map side by side on desktop. */
+/* Location page only: gallery, then map, stacked full-width. Previously
+   forced side by side at desktop width (grid-template-columns: 1fr 1fr),
+   which squeezed both the gallery (already competing with its own hero/thumb
+   split) and the map into a cramped ~1/3-page column each -- the map in
+   particular read as "tiny", independent of its own zoom level. Full width
+   for each, stacked, is the same treatment the event page's gallery already
+   gets on its own. */
 .apc-detail__media {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--sp1);
-}
-
-@media (min-width: 62.5rem) {
-  .apc-detail__media {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
+  gap: var(--sp1-5, 1.6875rem);
 }
 
 .apc-detail__map .leaflet-container {
   border-radius: var(--border-radius);
 }
 
-/* Gallery: hero image with a scrollable thumbnail rail. */
-.apc-gallery {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp0-5, 0.5625rem);
-}
-
-/* Thumbnails beside the hero at desktop width -- location page only
-   (its gallery sits inside .apc-detail__media next to the map). The event
-   page's gallery is used standalone and always keeps thumbnails below the
-   hero, full width, matching its own design. */
-@media (min-width: 62.5rem) {
-  .apc-detail__media .apc-gallery {
-    flex-direction: row;
-  }
-}
-
-.apc-gallery__hero {
-  display: block;
-  order: -1;
-  overflow: hidden;
-  border-radius: var(--border-radius);
-  aspect-ratio: 4 / 3;
-}
-
-@media (min-width: 62.5rem) {
-  .apc-detail__media .apc-gallery__hero {
-    order: 0;
-    flex: 1 1 auto;
-    aspect-ratio: 3 / 2;
-  }
-}
-
-.apc-gallery__hero img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.apc-gallery__thumbs {
-  display: flex;
-  gap: var(--sp0-5, 0.5625rem);
-  overflow-x: auto;
-  padding-block-end: 0.25rem;
-}
-
-@media (min-width: 62.5rem) {
-  .apc-detail__media .apc-gallery__thumbs {
-    flex-direction: column;
-    flex: 0 0 5.5rem;
-    overflow-x: visible;
-    overflow-y: auto;
-    max-height: 22.5rem;
-  }
-}
-
-.apc-gallery__thumb {
-  flex: 0 0 auto;
-  width: 5.5rem;
-  height: 5.5rem;
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: var(--border-radius);
-  background: none;
-  cursor: pointer;
-  overflow: hidden;
-}
-
-.apc-gallery__thumb img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.apc-gallery__thumb.is-active,
-.apc-gallery__thumb:hover,
-.apc-gallery__thumb:focus {
-  border-color: var(--color--primary-50);
-}
+/* Gallery rules (.apc-gallery*) live in css/components/gallery.css --
+   apc_brown/gallery, a standalone library shared with the event popup
+   dialog (see field--field-event-image--calendar-item.html.twig), not just
+   this page. Both the event and location pages now use it plain, full
+   width, stacked -- no page-specific override needed here any more. */
 
 /* Info cards in the sidebar. */
 .apc-info-card {
@@ -390,31 +320,10 @@
   background: var(--color--gray-95);
 }
 
-.apc-location-card__photos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-block: var(--sp1);
-  padding: 0;
-  list-style: none;
-}
-
-.apc-location-card__photo {
-  width: 4rem;
-  height: 4rem;
-  padding: 0;
-  border: none;
-  border-radius: var(--border-radius);
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.apc-location-card__photo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+/* .apc-location-card__photos/__photo (thumbnail row that opens the
+   lightbox) live in css/components/gallery.css -- apc_brown/gallery, shared
+   with the event popup's own location card (see
+   field--field-location-image--compact-card.html.twig). */
 
 .apc-location-card__note {
   margin: 0 0 0.5rem;

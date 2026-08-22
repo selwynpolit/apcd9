@@ -310,6 +310,17 @@ detail-page:
   css:
     theme:
       css/components/detail-page.css: {}
+  dependencies:
+    - apc_brown/gallery
+
+# Click-to-swap hero + thumbnail rail. Shared by the event/location detail
+# pages (via detail-page's dependency) and the calendar event popup dialog
+# (attached directly from field--field-event-image--calendar-item.html.twig).
+gallery:
+  version: VERSION
+  css:
+    theme:
+      css/components/gallery.css: {}
   js:
     js/gallery.js: {}
   dependencies:

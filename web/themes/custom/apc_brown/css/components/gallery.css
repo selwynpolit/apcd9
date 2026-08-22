@@ -1,0 +1,94 @@
+/**
+ * @file
+ * Click-to-swap image gallery: hero image with a scrollable thumbnail rail.
+ *
+ * Base component styling only -- shared by the event and location detail
+ * pages (js/gallery.js + this file, via apc_brown/gallery) and the calendar
+ * event popup dialog (field--field-event-image--calendar-item.html.twig).
+ * Page-specific layout overrides (e.g. thumbnails beside the hero at desktop
+ * width on the location page, or the smaller .apc-gallery--popup sizing in
+ * the dialog) live alongside their own page's CSS, not here.
+ */
+
+.apc-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp0-5, 0.5625rem);
+}
+
+.apc-gallery__hero {
+  display: block;
+  order: -1;
+  overflow: hidden;
+  border-radius: var(--border-radius);
+  aspect-ratio: 4 / 3;
+}
+
+.apc-gallery__hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.apc-gallery__thumbs {
+  display: flex;
+  gap: var(--sp0-5, 0.5625rem);
+  overflow-x: auto;
+  padding-block-end: 0.25rem;
+}
+
+.apc-gallery__thumb {
+  flex: 0 0 auto;
+  width: 5.5rem;
+  height: 5.5rem;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--border-radius);
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.apc-gallery__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.apc-gallery__thumb.is-active,
+.apc-gallery__thumb:hover,
+.apc-gallery__thumb:focus {
+  border-color: var(--color--primary-50);
+}
+
+/* Compact photo row (opens apc_brown/lightbox on click) for photos embedded
+   in a smaller card alongside other content -- the event page's location
+   card and the calendar popup's own location card both use this instead of
+   the hero+thumb-rail gallery above, which needs more room than a nested
+   card has to spare. */
+.apc-location-card__photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: var(--sp1, 1.125rem);
+  padding: 0;
+  list-style: none;
+}
+
+.apc-location-card__photo {
+  width: 4rem;
+  height: 4rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.apc-location-card__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
