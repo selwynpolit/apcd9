@@ -25,6 +25,15 @@ function apc_brown_preprocess_html(&$variables) {
     $variables['attributes']['class'][] = 'is-always-mobile-nav';
   }
 
+  // Lets the calendar grid claim more of the content column -- see the
+  // .page-calendar override in css/theme/apc.css. There's no sidebar
+  // content on this page to make room for either way (confirmed: no
+  // block.block.apc_brown_* is placed in the sidebar region), so widening
+  // it has nothing to collide with.
+  if (\Drupal::routeMatch()->getRouteName() === 'view.calendar.page_1') {
+    $variables['attributes']['class'][] = 'page-calendar';
+  }
+
   // Convert custom hex to hsl so we can use the hue value
   $brand_color_hex = theme_get_setting('base_primary_color') ?? '#1b9ae4';
   [$h, $s, $l] = _apc_brown_hex_to_hsl($brand_color_hex);

@@ -9,6 +9,22 @@ more_popover_dialog:
     - core/drupal.ajax
     - core/drupal.dialog.ajax
 
+event_hover:
+  version: 1.x
+  js:
+    js/event-hover.js: {}
+  dependencies:
+    - core/jquery
+    - core/once
+    - core/drupal
+    - core/drupalSettings
+    # Doesn't guarantee drupalSettings.calendar[] exists yet by attach time --
+    # fullcalendar_view.js builds it via a document.readyState poll, not
+    # Drupal.behaviors, so this library's own JS polls for it too (see the
+    # comment in event-hover.js). This dependency is just what makes
+    # FullCalendar's globals and calendar_options settings available at all.
+    - fullcalendar_view/fullcalendar
+
 add_location_autocomplete:
   version: 1.x
   js:
