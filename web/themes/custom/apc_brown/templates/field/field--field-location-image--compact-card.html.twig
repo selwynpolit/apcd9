@@ -1,0 +1,32 @@
+{#
+/**
+ * @file
+ * Location image field override for the calendar popup's location card.
+ *
+ * Same problem as the event image (bare 100x100 thumbnails, worse stacked),
+ * same fix in spirit -- but rendered as the same compact photo row + click-
+ * to-lightbox treatment the full event page's location card already uses
+ * (.apc-location-card__photos, apc_brown/lightbox), not the bigger hero +
+ * thumbnail-rail gallery: this card sits underneath the event's own hero
+ * gallery in the same dialog, so it stays visually secondary rather than
+ * competing with it. `gallery` is built in
+ * apc_brown_preprocess_field__field_location_image__compact_card().
+ *
+ * Only invoked at all when the field has values (Drupal skips field.html.twig
+ * entirely for an empty field), so no empty-gallery guard is needed here.
+ *
+ * @see apc_brown_theme_suggestions_field_alter()
+ * @see apc_brown_preprocess_field__field_location_image__compact_card()
+ */
+#}
+{{ attach_library('apc_brown/gallery') }}
+{{ attach_library('apc_brown/lightbox') }}
+<ul class="apc-location-card__photos">
+  {% for item in gallery %}
+    <li>
+      <button type="button" class="apc-location-card__photo" data-apc-lightbox-trigger data-full="{{ item.full }}" data-alt="{{ item.alt }}">
+        <img src="{{ item.thumb }}" alt="{{ item.alt }}">
+      </button>
+    </li>
+  {% endfor %}
+</ul>

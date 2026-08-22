@@ -5,6 +5,11 @@
  * @see \Drupal\apc_calendar\Controller\EventPopupController
  */
 
+/* Positioning root for .apc-event-popup__actions below. */
+.apc-event-popup {
+  position: relative;
+}
+
 .apc-popup-badge {
   display: inline-flex;
   align-items: center;
@@ -19,4 +24,91 @@
 
 .apc-popup-badge__icon {
   flex-shrink: 0;
+}
+
+/*
+ * Gallery (field--field-event-image--calendar-item.html.twig): the base
+ * .apc-gallery* rules come from apc_brown/gallery, the same component the
+ * full event page uses. This just sizes it down to fit the ~520px dialog --
+ * a wider, shorter hero than the full page's 4:3 (there's no room here for
+ * that much height), and smaller thumbnails so a full set of them sits on
+ * one row without scrolling.
+ */
+.apc-gallery--popup {
+  margin-block-end: var(--sp1, 1.125rem);
+}
+
+.apc-gallery--popup .apc-gallery__hero {
+  aspect-ratio: 16 / 9;
+  max-height: 15rem;
+}
+
+.apc-gallery--popup .apc-gallery__thumb {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+/*
+ * Pinned to the top-right corner of the dialog (over the gallery hero,
+ * whatever else is at the top) instead of sitting at the bottom of the
+ * popup where a viewer might not scroll far enough to find it. Smaller and
+ * shadowed so it reads as a floating badge over a photo, not a full-width
+ * button competing with it.
+ */
+.apc-event-popup__actions {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  margin: 0;
+}
+
+.apc-event-popup__actions .button--primary {
+  padding: 0.375rem 0.9375rem;
+  font-size: var(--font-size-s, 0.875rem);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 25%);
+
+  /*
+   * jQuery UI's own theme.css (loaded for the modal dialog) sets
+   * `.ui-widget-content a { color: #333 }`, which outranks `.button--primary`
+   * alone (one class vs. two) and was winning here, leaving black text on
+   * this button's brown background.
+   */
+  color: var(--color--white);
+}
+
+/*
+ * Location card heading (compact_card view mode's own title, from the
+ * default taxonomy-term.html.twig -- see field--field-location-image--
+ * compact-card.html.twig for the photos in this same card): default markup
+ * renders it as a full h2 with the site's usual link underline, which reads
+ * oversized and heavy-handed for a label inside an already-titled popup.
+ * Smaller, no underline by default -- still a real link, so it keeps the
+ * underline back on hover/focus as the interactive affordance.
+ */
+.field--name-field-location h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.field--name-field-location h2 a {
+  text-decoration: none;
+}
+
+.field--name-field-location h2 a:hover,
+.field--name-field-location h2 a:focus {
+  text-decoration: underline;
+}
+
+/*
+ * The mailto link in the event body inherits Caprasimo -- .text-content
+ * (core, do-not-edit) sets the whole rich-text field to --font-serif, which
+ * this theme maps to the display/heading font. Fine for body copy, but a
+ * plain contact email reads better in the same simple, thinner font as the
+ * rest of the UI.
+ */
+.mailto {
+  font-family: var(--font-sans);
+  font-weight: 400;
 }

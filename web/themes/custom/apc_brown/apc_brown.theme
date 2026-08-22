@@ -547,6 +547,23 @@ function apc_brown_preprocess_radios(&$variables) {
 }
 
 /**
+ * Implements hook_theme_suggestions_HOOK_alter() for field.html.twig.
+ *
+ * Targets only field_event_image on the calendar popup's own view mode --
+ * the same field on the full event page keeps rendering through the normal
+ * formatter/template chain untouched.
+ */
+function apc_brown_theme_suggestions_field_alter(array &$suggestions, array $variables): void {
+  $element = $variables['element'];
+  if ($element['#field_name'] === 'field_event_image' && ($element['#view_mode'] ?? '') === 'calendar_item') {
+    $suggestions[] = 'field__field_event_image__calendar_item';
+  }
+  if ($element['#field_name'] === 'field_location_image' && ($element['#view_mode'] ?? '') === 'compact_card') {
+    $suggestions[] = 'field__field_location_image__compact_card';
+  }
+}
+
+/**
  * Implements hook_preprocess_HOOK().
  */
 function apc_brown_preprocess_field(&$variables) {
@@ -559,6 +576,42 @@ function apc_brown_preprocess_field(&$variables) {
   if ($variables['field_type'] == 'image' && $variables['element']['#view_mode'] == 'full' && !$variables["element"]["#is_multiple"] && $variables['field_name'] !== 'user_picture') {
     $variables['attributes']['class'][] = 'wide-content';
   }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for
+ * field--field-event-image--calendar-item.html.twig.
+ *
+ * Builds the same hero/thumbnail gallery data the full event page uses
+ * (_apc_brown_build_gallery(), shared rather than duplicated) from the
+ * entity being rendered -- #object is set on every field render element by
+ * FormatterBase::view(), so this works regardless of what the field's own
+ * configured formatter is.
+ *
+ * @see _apc_brown_build_gallery()
+ * @see \Drupal\apc_calendar\Controller\EventPopupController::popup()
+ */
+function apc_brown_preprocess_field__field_event_image__calendar_item(&$variables) {
+  /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
+  $entity = $variables['element']['#object'];
+  $variables['gallery'] = _apc_brown_build_gallery($entity, 'field_event_image');
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for
+ * field--field-location-image--compact-card.html.twig.
+ *
+ * The compact_card view mode is only ever used embedded in the calendar
+ * event popup (field_location on core.entity_view_display.node.
+ * calendar_event.calendar_item.yml) -- same reasoning as the event image
+ * override above, just for the location term instead of the node.
+ *
+ * @see _apc_brown_build_gallery()
+ */
+function apc_brown_preprocess_field__field_location_image__compact_card(&$variables) {
+  /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
+  $entity = $variables['element']['#object'];
+  $variables['gallery'] = _apc_brown_build_gallery($entity, 'field_location_image');
 }
 
 /**

@@ -4,6 +4,11 @@
  *
  * Replaces Olivero's local Metropolis and Lora @font-face declarations with the
  * typefaces the design specifies: Caprasimo for headings, Figtree for body.
+ * The event/location detail pages' own <h1> also uses Figtree, at 700 --
+ * matching the site header's wordmark (.site-branding__name) rather than
+ * the site's default Caprasimo heading font; see .apc-detail__title in
+ * detail-page.css. No extra weight needed here since 700 is already loaded
+ * below for the header.
  *
  * NOTE: loaded from Google Fonts, which is a third-party request on every page
  * view. This project deliberately pulled its JavaScript libraries local for

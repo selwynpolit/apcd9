@@ -83,8 +83,27 @@ final class EventPopupController extends ControllerBase {
       $build['#cache']['keys'][] = (string) $delta;
     }
 
+    // #type container (not a bare array) so .apc-event-popup can be a
+    // positioning root -- 'actions' below is pinned to its top-right corner,
+    // over the gallery, rather than sitting at the bottom of the dialog.
     $result = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['apc-event-popup']],
       '#attached' => ['library' => ['apc_brown/event-popup']],
+    ];
+
+    // Placed first in the render array -- not just visually pinned to the
+    // corner via CSS, but first in DOM/tab order too, matching where a
+    // keyboard or screen-reader user actually encounters it.
+    $result['actions'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['apc-event-popup__actions']],
+      'full' => [
+        '#type' => 'link',
+        '#title' => $this->t('View full event'),
+        '#url' => $node->toUrl(),
+        '#attributes' => ['class' => ['button', 'button--primary']],
+      ],
     ];
 
     // Virtual/online badge, matching the one on the full event page --
@@ -110,16 +129,6 @@ final class EventPopupController extends ControllerBase {
     }
 
     $result['event'] = $build;
-    $result['actions'] = [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['apc-event-popup__actions']],
-      'full' => [
-        '#type' => 'link',
-        '#title' => $this->t('View full event'),
-        '#url' => $node->toUrl(),
-        '#attributes' => ['class' => ['button', 'button--primary']],
-      ],
-    ];
 
     return $result;
   }

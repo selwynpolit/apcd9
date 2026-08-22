@@ -6,7 +6,12 @@
 .apc-lightbox {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  /* Above the jQuery UI modal dialog's own z-index (1260, see ui-dialog.css)
+     -- this lightbox can now be triggered from inside the calendar event
+     popup's location card too, not just the full event/location pages, and
+     it's appended straight to <body> so it isn't a descendant the dialog's
+     stacking context would otherwise raise for free. */
+  z-index: 1300;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,0 +1,38 @@
+{#
+/**
+ * @file
+ * Event image field override for the calendar popup dialog.
+ *
+ * Replaces the formatter's own plain stack of thumbnail-style images
+ * (barely visible at 100x100, and no better with several of them stacked
+ * vertically) with the same click-to-swap hero + thumbnail-rail gallery the
+ * full event page uses -- .apc-gallery--popup just sizes it to fit the
+ * dialog. `gallery` is built in
+ * apc_brown_preprocess_field__field_event_image__calendar_item(), which
+ * reuses _apc_brown_build_gallery() rather than anything from `items`.
+ *
+ * Only invoked at all when the field has values (Drupal skips field.html.twig
+ * entirely for an empty field), so no empty-gallery guard is needed here.
+ *
+ * @see apc_brown_theme_suggestions_field_alter()
+ * @see apc_brown_preprocess_field__field_event_image__calendar_item()
+ */
+#}
+{{ attach_library('apc_brown/gallery') }}
+<div class="apc-gallery apc-gallery--popup" data-apc-gallery>
+  <picture class="apc-gallery__hero" data-apc-gallery-hero>
+    {% if gallery|length > 1 %}
+      <source media="(min-width: 62.5rem)" srcset="{{ gallery.0.hero_desktop }}" data-apc-gallery-source-desktop>
+    {% endif %}
+    <img src="{{ gallery.0.hero_mobile }}" alt="{{ gallery.0.alt }}" data-apc-gallery-img>
+  </picture>
+  {% if gallery|length > 1 %}
+    <div class="apc-gallery__thumbs" data-apc-gallery-thumbs>
+      {% for item in gallery %}
+        <button type="button" class="apc-gallery__thumb{{ loop.first ? ' is-active' }}" data-apc-gallery-thumb data-hero-mobile="{{ item.hero_mobile }}" data-hero-desktop="{{ item.hero_desktop }}" data-alt="{{ item.alt }}">
+          <img src="{{ item.thumb }}" alt="">
+        </button>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
