@@ -32,6 +32,8 @@ use Drupal\fullcalendar_view\Plugin\FullcalendarViewProcessorBase;
  */
 class EventPopupProcessor extends FullcalendarViewProcessorBase {
 
+  use EventEntryNidTrait;
+
   /**
    * {@inheritdoc}
    */
@@ -90,24 +92,6 @@ class EventPopupProcessor extends FullcalendarViewProcessorBase {
     // Attached here rather than in the view so it always travels with the URL
     // rewriting above — the two are only useful together.
     $variables['#attached']['library'][] = 'apc_calendar/more_popover_dialog';
-  }
-
-  /**
-   * Reads the node ID from an entry.
-   *
-   * `eid` is the entity ID as Fullcalendar View sets it, but SmartDateProcessor
-   * may already have rewritten it to "<nid>-D-<delta>" or
-   * "<nid>-R-<rule>-I-<index>". Processor plugins run in discovery order with no
-   * weight control, so both forms have to be handled.
-   */
-  private function extractNid(array $entry): ?int {
-    if (!isset($entry['eid'])) {
-      return NULL;
-    }
-
-    return preg_match('/^(\d+)/', (string) $entry['eid'], $matches)
-      ? (int) $matches[1]
-      : NULL;
   }
 
   /**

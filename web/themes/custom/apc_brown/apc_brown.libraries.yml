@@ -343,3 +343,9 @@ event-popup:
   css:
     theme:
       css/components/event-popup.css: {}
+
+event-hover:
+  version: VERSION
+  css:
+    theme:
+      css/components/event-hover.css: {}

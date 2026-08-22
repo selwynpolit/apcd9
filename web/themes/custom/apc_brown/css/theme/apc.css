@@ -290,6 +290,23 @@
    FullCalendar v4 ships its own greys and blues; bring them onto the palette.
    Event fill colour itself comes from the view's color_bundle setting. */
 
+/* Widen the content column on this one page (there's no sidebar here to
+   make room for -- see apc_brown_preprocess_html()) so the grid has more
+   room to actually show event titles. Reuses the same column span
+   .layout--content-medium already uses at the narrower 43.75rem breakpoint,
+   rather than inventing a new one, so this stays inside the theme's
+   existing grid vocabulary instead of an arbitrary width. */
+@media (min-width: 62.5rem) {
+  /* Olivero's own region--content.html.twig wraps the content region in
+     .layout--pass--content-medium, not .layout--content-medium -- the sizing
+     rule in layout-content-medium.css (core, do not edit) actually targets
+     ">.*" children of that wrapper. Matching that selector shape, not the
+     class name alone, is what makes this rule apply to anything. */
+  body.page-calendar .layout--pass--content-medium > * {
+    grid-column: 2 / 14;
+  }
+}
+
 .fc-toolbar h2 {
   font-family: var(--font-heading);
   font-size: 26px;
