@@ -1,0 +1,87 @@
+/**
+ * @file
+ * "Add to calendar" disclosure — a native <details>/<summary> whose summary is
+ * styled as one of the theme's pill buttons and whose panel is a small menu of
+ * provider links (Google / Apple / Outlook / Yahoo).
+ *
+ * Built by \Drupal\apc_calendar\AddToCalendar::build(). Used on the full event
+ * page (.apc-detail__actions) and inside the /calendar popup dialog. A native
+ * <details> is used deliberately: it expands in normal flow, so it is never
+ * clipped by the scrollable popup dialog, and it needs no JavaScript.
+ */
+
+.apc-addtocal {
+  display: inline-block;
+}
+
+/*
+ * Summary is styled as a pill button. It carries the .apc-pill-button class
+ * too (for the full event page), but that class lives in detail-page.css,
+ * which the /calendar popup does NOT load -- so the pill styling is repeated
+ * here (same values) to keep the toggle self-contained everywhere. Also
+ * suppress the default disclosure marker and add our own caret.
+ */
+.apc-addtocal__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp0-5, 0.5625rem) var(--sp1-5, 1.6875rem);
+  border: 2px solid var(--color--primary-50);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-primary-medium);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.apc-addtocal__toggle:hover,
+.apc-addtocal__toggle:focus {
+  color: var(--color-text-primary-loud);
+  border-color: currentColor;
+}
+
+.apc-addtocal__toggle::-webkit-details-marker {
+  display: none;
+}
+
+.apc-addtocal__toggle::after {
+  content: "▾";
+  margin-inline-start: 0.4em;
+  font-size: 0.8em;
+  line-height: 1;
+}
+
+.apc-addtocal[open] .apc-addtocal__toggle::after {
+  content: "▴";
+}
+
+.apc-addtocal__menu {
+  min-width: 14rem;
+  margin-block-start: 0.5rem;
+  padding: 0.375rem;
+  border: 1px solid var(--color--gray-90);
+  border-radius: 0.75rem;
+  background: var(--color--gray-100, #f5ead8);
+  box-shadow:
+    0 4px 6px rgb(0 0 0 / 8%),
+    0 12px 28px rgb(0 0 0 / 16%);
+}
+
+.apc-addtocal__item {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--color-text-neutral-medium);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.apc-addtocal__item:hover,
+.apc-addtocal__item:focus {
+  background: var(--color-surface, #ebddc5);
+  color: var(--color-text-neutral-loud);
+  text-decoration: none;
+}

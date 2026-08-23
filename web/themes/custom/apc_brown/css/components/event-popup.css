@@ -5,6 +5,35 @@
  * @see \Drupal\apc_calendar\Controller\EventPopupController
  */
 
+/*
+ * Slick dialog surface. jQuery UI's own theme paints this box a cold #fff,
+ * which reads as "stark" against the theme's warm cream page (--color--white
+ * is remapped to #f5ead8 site-wide, so the dialog was the one true-white
+ * surface on the page). Warm it to the page's ground, give it a hairline
+ * border, a generous radius and a layered shadow so it reads as a card
+ * floating over the page rather than a plain rectangle.
+ *
+ * Scoped with :has(.apc-event-popup) so ONLY this popup is restyled -- every
+ * other jQuery UI dialog on the site (Add location, etc.) keeps core's look.
+ * No overflow:hidden here: the "Add to calendar" <details> expands in flow and
+ * must not be clipped.
+ */
+.ui-dialog:has(.apc-event-popup) {
+  border: 1px solid var(--color--gray-90);
+  border-radius: 1rem;
+  background: var(--color--gray-100, #f5ead8);
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 8%),
+    0 18px 48px rgb(0 0 0 / 24%);
+}
+
+/* Let the warm dialog background show through the content and titlebar, which
+   jQuery UI otherwise paints its own (square-cornered, cold) background on. */
+.ui-dialog:has(.apc-event-popup) .ui-dialog-content,
+.ui-dialog:has(.apc-event-popup) .ui-dialog-titlebar {
+  background: transparent;
+}
+
 /* Positioning root for .apc-event-popup__actions below. */
 .apc-event-popup {
   position: relative;

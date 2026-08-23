@@ -3,7 +3,7 @@
  * @file
  * Event detail page (full view mode of a calendar_event node).
  *
- * gallery, add_to_calendar_url, publish_event_url, is_unpublished,
+ * gallery, add_to_calendar, publish_event_url, is_unpublished,
  * location_gallery, location_url and location_pending are built in
  * apc_brown_preprocess_node().
  *
@@ -19,26 +19,29 @@
 {{ attach_library('apc_brown/detail-page') }}
 {% if location_gallery %}{{ attach_library('apc_brown/lightbox') }}{% endif %}
 <article{{ attributes.addClass('apc-detail') }}>
-  <div class="apc-detail__breadcrumb">
-    <a href="/calendar">{{ 'Calendar'|t }}</a> / {{ label }}
-  </div>
-
   {% if is_unpublished %}
     <div class="apc-unpublished-banner" role="status">{{ 'Unpublished — pending review'|t }}</div>
   {% endif %}
 
   <h1 class="apc-detail__title">{{ label }}</h1>
 
-  <div class="apc-detail__meta">
-    {{ content.field_event_date }}
+  <div class="apc-detail__datebar">
+    <div class="apc-detail__meta">
+      {{ content.field_event_date }}
+    </div>
+    {% if add_to_calendar %}
+      {{ add_to_calendar }}
+    {% endif %}
   </div>
 
+  {% if publish_event_url or unpublish_event_url or node.field_virtual.value %}
   <div class="apc-detail__actions">
     {% if publish_event_url %}
       <a class="apc-pill-button apc-pill-button--primary" href="{{ publish_event_url }}">{{ 'Publish event & location'|t }}</a>
     {% endif %}
-    {% if add_to_calendar_url %}
-      <a class="apc-pill-button" href="{{ add_to_calendar_url }}" target="_blank" rel="noopener noreferrer">{{ 'Add to your Google Calendar'|t }}</a>
+    {% if unpublish_event_url %}
+      <a class="apc-pill-button" href="{{ unpublish_event_url }}">{{ 'Unpublish event'|t }}</a>
+      <a class="apc-pill-button" href="{{ unpublish_all_url }}">{{ 'Unpublish event & location'|t }}</a>
     {% endif %}
     {% if node.field_virtual.value %}
       <div class="apc-online-badge">
@@ -54,6 +57,7 @@
       </div>
     {% endif %}
   </div>
+  {% endif %}
 
   {% if gallery %}
     <div class="apc-gallery" data-apc-gallery>
