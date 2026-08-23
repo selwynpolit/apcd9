@@ -1,0 +1,54 @@
+/**
+ * @file
+ * The calendar view toggle button (CalendarViewToggleBlock).
+ *
+ * The block plugin's #attributes land on the block WRAPPER div (Drupal hoists a
+ * block build's top-level attributes there), so .apc-calendar-toggle is on the
+ * wrapper and the actual <a> inside is class-less -- hence the descendant
+ * selector. !important beats the content region's own link colour/underline.
+ */
+
+.apc-calendar-toggle a {
+  display: inline-block;
+  margin-block-end: var(--sp1, 1.125rem);
+  padding: 0.5rem 1.25rem !important;
+  border-radius: 999px !important;
+  background: var(--color--primary-50) !important;
+  color: #fff !important;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  text-decoration: none !important;
+}
+
+.apc-calendar-toggle a:hover,
+.apc-calendar-toggle a:focus {
+  background: var(--color--primary-40) !important;
+  color: #fff !important;
+  text-decoration: underline !important;
+}
+
+/* Pull the toggle to the top-right so it sits beside the centered "Add
+   Calendar Event" button rather than adding a full row above the calendar.
+   The content_above region is a CSS grid (floats are ignored), so the toggle
+   is taken out of flow with position:absolute -- the region then reserves no
+   height and the calendar keeps its vertical position. Only above the mobile
+   breakpoint; on narrow screens it stacks normally in flow. */
+@media (min-width: 48rem) {
+  .region--content-above {
+    position: relative;
+  }
+
+  #block-apc-brown-calendar-toggle {
+    position: absolute;
+    top: 0.25rem;
+    inset-inline-end: 0;
+    /* Shrink to the pill so inset-inline-end:0 right-aligns it instead of a
+       full-width absolute box leaving the pill on the left. */
+    width: max-content;
+    z-index: 2;
+  }
+
+  #block-apc-brown-calendar-toggle a {
+    margin-block-end: 0;
+  }
+}

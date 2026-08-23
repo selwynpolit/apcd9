@@ -68,6 +68,14 @@ class EventPopupProcessor extends FullcalendarViewProcessorBase {
       : [];
 
     foreach ($calendar_options['events'] as &$entry) {
+      // Drop Fullcalendar View's built-in tooltip payload (event.des). It is
+      // only read by the module's jsFrame dialog, which this site disables
+      // (dialogWindow: 0) in favour of the AJAX popup the url below points at,
+      // so it is dead weight in drupalSettings on every calendar page. The
+      // view's field_event_date is also capped to one delta (delta_limit: 1)
+      // so building des stays cheap; this strip removes what remains.
+      unset($entry['des']);
+
       $nid = $this->extractNid($entry);
       if ($nid === NULL) {
         continue;

@@ -1,0 +1,22 @@
+/**
+ * @file
+ * Manage calendar (calendar:page_manage) — style unpublished/pending events.
+ *
+ * EventPendingProcessor adds the .apc-event--pending class to each unpublished
+ * event; FullCalendar renders it on the event element. Muted fill + dashed
+ * border + italic title so a reviewer spots pending events at a glance. The
+ * "** " title prefix the processor also adds is the fallback if this CSS is
+ * ever missing. !important overrides FullCalendar's inline per-bundle color.
+ */
+
+.fc .apc-event--pending {
+  background-color: #9a8c7a !important;
+  border-color: #6f6252 !important;
+  border-style: dashed !important;
+  opacity: 0.92;
+}
+
+.fc .apc-event--pending .fc-event-title,
+.fc .apc-event--pending .fc-list-event-title {
+  font-style: italic;
+}
