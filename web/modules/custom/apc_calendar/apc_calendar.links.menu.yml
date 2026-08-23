@@ -1,0 +1,29 @@
+# Footer menu links, defined in code so they deploy with the module rather than
+# living only as content (menu_link_content) that would have to be recreated per
+# environment.
+apc_calendar.footer.calendar:
+  title: 'Calendar'
+  description: 'Browse upcoming progressive events'
+  menu_name: footer
+  url: 'internal:/calendar'
+  weight: 0
+
+apc_calendar.footer.add_event:
+  title: 'Add your event'
+  description: 'Submit an event to the calendar'
+  menu_name: footer
+  url: 'internal:/node/add/calendar_event'
+  weight: 1
+
+apc_calendar.footer.blog:
+  title: 'Blog'
+  description: 'Notes on Drupal and the site'
+  menu_name: footer
+  url: 'internal:/blog'
+  weight: 2
+
+apc_calendar.footer.home:
+  title: 'Home'
+  menu_name: footer
+  url: 'internal:/'
+  weight: 3
