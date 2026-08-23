@@ -1,0 +1,171 @@
+/**
+ * @file
+ * Slick layout for the footer_top region.
+ *
+ * Explicit named grid areas, keyed to each block's own wrapper ID (not the
+ * inner markup each block renders) -- CSS Grid placement only applies to
+ * DIRECT children of the grid container, and each block's own template
+ * output (e.g. .apc-about) is nested one level deeper inside Drupal's own
+ * "#block-<id>" wrapper div, which IS the actual grid item. Named areas also
+ * decouple visual placement from block weight, needed here because "Powered
+ * by Drupal" must sit directly under "Green Website" (same column, second
+ * row) while Explore/Follow along stay single-row beside it, and the About
+ * blurb spans the full width below all of them:
+ *
+ *   [ green    ] [ explore ] [ follow  ]
+ *   [ powered  ] [         ] [         ]
+ *   [ about        about      about    ]
+ *
+ * apc.css (theme/apc.css) deliberately overrides core's dark .site-footer to
+ * a light background (--color-neutral-100, #f9f4ed) with dark text -- this
+ * file's own colours match that convention (accent-700/900 links,
+ * neutral-800 text) rather than the light-on-dark colours core's footer.css
+ * (and apc_brown's own do-not-edit powered-by-block.css, which paints
+ * --color--white -- cream -- assuming the old dark footer) would suggest,
+ * both of which read as low-contrast/near-invisible on this light ground.
+ */
+
+.site-footer {
+  margin-block-start: var(--sp4, 5.25rem);
+  padding-block: var(--sp3, 3.9rem) var(--sp2, 2.25rem);
+}
+
+.region--footer_top__inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp1, 1.125rem);
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--container-padding, 1.5rem);
+}
+
+@media (min-width: 48rem) {
+  .region--footer_top__inner {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-areas:
+      "green   explore follow"
+      "powered .       ."
+      "about   about   about";
+    gap: var(--sp2, 2.25rem) var(--sp3, 3.9rem);
+    align-items: start;
+  }
+}
+
+#block-apc-brown-greenwebsite {
+  grid-area: green;
+}
+
+#block-apc-brown-powered {
+  grid-area: powered;
+}
+
+#block-apc-brown-footer-menu {
+  grid-area: explore;
+}
+
+#block-apc-brown-syndicate {
+  grid-area: follow;
+}
+
+/* Full-width band for the About blurb -- spans all 3 columns instead of
+   sitting in one of them. Separated from the row above with a rule. */
+#block-apc-brown-about-site {
+  grid-area: about;
+  margin-block-start: var(--sp1, 1.125rem);
+  padding-block-start: var(--sp2, 2.25rem);
+  border-block-start: 1px solid var(--color-divider);
+}
+
+/* Section headings: the block labels ("Explore", "Follow along", "Green
+   Website") and the about blurb's own title. Darker than the body's
+   --color-neutral-800 for more separation against the light footer ground. */
+.region--footer-top .block > h2,
+.apc-about__title {
+  margin: 0 0 var(--sp1, 1.125rem);
+  color: var(--color-accent-900, #3e2d1f);
+  font-family: var(--font-sans);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* About body: the three paragraphs, laid out side by side on wide viewports
+   -- reads as a horizontal band rather than a single stacked column. */
+.apc-about__body p {
+  margin: 0 0 var(--sp1, 1.125rem);
+  line-height: 1.65;
+}
+
+.apc-about__body p:last-child {
+  margin-block-end: 0;
+}
+
+@media (min-width: 60rem) {
+  .apc-about__body {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp2, 2.25rem);
+  }
+
+  .apc-about__body p {
+    margin-block-end: 0;
+  }
+}
+
+/* Footer menu list. */
+.region--footer-top nav ul.menu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.region--footer-top nav ul.menu li {
+  margin-block-end: var(--sp0-5, 0.5625rem);
+}
+
+.region--footer-top a {
+  color: var(--color-accent-700, #634329);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.region--footer-top a:hover,
+.region--footer-top a:focus {
+  color: var(--color-accent-900, #3e2d1f);
+  text-decoration: underline;
+}
+
+/* RSS / syndicate feed. */
+.region--footer-top .feed-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/*
+ * "Powered by Drupal" contrast fix. apc_brown's own do-not-edit
+ * powered-by-block.css paints this link/icon --color--white (cream, #f5ead8
+ * in this theme) for the footer, matching core's dark .site-footer
+ * background -- but apc.css overrides that background to light
+ * (--color-neutral-100), leaving cream-on-cream: nearly invisible. Both
+ * files load in the 'theme' CSS aggregation category with equal-specificity
+ * selectors, so this needs one extra class of specificity (not source order)
+ * to reliably win.
+ */
+.site-footer .region--footer-top .block-system-powered-by-block a {
+  color: var(--color-accent-700, #634329);
+}
+
+.site-footer .region--footer-top .block-system-powered-by-block svg path {
+  fill: var(--color-accent-700, #634329);
+}
+
+.site-footer .region--footer-top .block-system-powered-by-block a:hover,
+.site-footer .region--footer-top .block-system-powered-by-block a:focus {
+  color: var(--color-accent-900, #3e2d1f);
+}
+
+.site-footer .region--footer-top .block-system-powered-by-block a:hover svg path,
+.site-footer .region--footer-top .block-system-powered-by-block a:focus svg path {
+  fill: var(--color-accent-900, #3e2d1f);
+}

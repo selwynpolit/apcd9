@@ -1,0 +1,55 @@
+/**
+ * @file
+ * Media Library grid layout for the front theme.
+ *
+ * The Media Library "grid" display is laid out by the Claro admin theme, which
+ * admins get for the dialog. Anonymous submitters get this front theme instead,
+ * where the grid otherwise stacks into a single column. This mirrors the flex
+ * grid from claro/css/theme/media-library.css so anonymous users see a real
+ * grid too. Loaded by extending media_library/view + media_library/widget (see
+ * apc_brown.info.yml). Table view is unaffected.
+ */
+
+.media-library-views-form__rows {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  margin: 0 -0.5rem;
+}
+
+.media-library-item--grid {
+  width: 100%;
+}
+
+@media screen and (min-width: 45em) {
+  .media-library-item--grid {
+    width: 33.3%;
+  }
+
+  .media-library-widget-modal .media-library-item--grid,
+  .media-library-selection .media-library-item--grid {
+    width: 50%;
+  }
+}
+
+@media screen and (min-width: 60em) {
+  .media-library-item--grid {
+    width: 25%;
+  }
+
+  .media-library-widget-modal .media-library-item--grid,
+  .media-library-selection .media-library-item--grid {
+    width: 33.3%;
+  }
+}
+
+@media screen and (min-width: 77em) {
+  .media-library-item--grid {
+    width: 16.6%;
+  }
+
+  .media-library-widget-modal .media-library-item--grid,
+  .media-library-selection .media-library-item--grid {
+    width: 25%;
+  }
+}

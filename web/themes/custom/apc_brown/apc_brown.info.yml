@@ -55,6 +55,14 @@ libraries-extend:
     - apc_brown/details
   core/drupal.dialog:
     - apc_brown/drupal.dialog
+  # Media Library grid layout. Admins get the dialog in Claro (which styles the
+  # grid); anonymous submitters get this front theme, where the grid otherwise
+  # collapses to one column -- so extend the core media_library libraries with
+  # our own grid CSS.
+  media_library/view:
+    - apc_brown/media-library
+  media_library/widget:
+    - apc_brown/media-library
   core/drupal.progress:
     - apc_brown/progress
   core/drupal.tabledrag:

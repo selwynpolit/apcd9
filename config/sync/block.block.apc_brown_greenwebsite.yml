@@ -10,7 +10,7 @@ dependencies:
     - apc_brown
 id: apc_brown_greenwebsite
 theme: apc_brown
-region: footer_bottom
+region: footer_top
 weight: 0
 provider: null
 plugin: 'block_content:63c57167-713f-4b45-a24b-dc8518271559'

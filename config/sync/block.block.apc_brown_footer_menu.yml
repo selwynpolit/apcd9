@@ -1,0 +1,25 @@
+uuid: 3f8a1c2d-5e6b-4a90-b1c3-7d9e0f2a4b60
+langcode: en
+status: true
+dependencies:
+  config:
+    - system.menu.footer
+  module:
+    - system
+  theme:
+    - apc_brown
+id: apc_brown_footer_menu
+theme: apc_brown
+region: footer_top
+weight: 2
+provider: null
+plugin: 'system_menu_block:footer'
+settings:
+  id: 'system_menu_block:footer'
+  label: Explore
+  label_display: visible
+  provider: system
+  level: 1
+  depth: 1
+  expand_all_items: false
+visibility: {  }
