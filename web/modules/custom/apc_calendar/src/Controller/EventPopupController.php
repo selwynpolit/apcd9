@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Drupal\apc_calendar\Controller;
 
+use Drupal\apc_calendar\AddToCalendar;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Render\Markup;
+use Drupal\Core\Url;
 use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -28,13 +31,17 @@ final class EventPopupController extends ControllerBase {
 
   public function __construct(
     protected readonly EntityDisplayRepositoryInterface $entityDisplayRepository,
+    protected readonly RequestStack $requestStack,
   ) {}
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container): self {
-    return new self($container->get('entity_display.repository'));
+    return new self(
+      $container->get('entity_display.repository'),
+      $container->get('request_stack'),
+    );
   }
 
   /**
@@ -71,9 +78,8 @@ final class EventPopupController extends ControllerBase {
     }
     $occurrence->set('field_event_date', [$values[$delta]]);
 
-    $build = $this->entityTypeManager()
-      ->getViewBuilder('node')
-      ->view($occurrence, $view_mode);
+    $view_builder = $this->entityTypeManager()->getViewBuilder('node');
+    $build = $view_builder->view($occurrence, $view_mode);
 
     // EntityViewBuilder keys the render cache on entity ID and view mode only,
     // so without this every occurrence of a recurring event would serve the
@@ -82,6 +88,16 @@ final class EventPopupController extends ControllerBase {
       $build['#cache']['keys'][] = 'apc_delta';
       $build['#cache']['keys'][] = (string) $delta;
     }
+
+    // ::view() normally defers building the actual field components
+    // (field_event_date, body, etc.) to a #pre_render callback that only runs
+    // when Drupal's renderer processes the array -- so $build['field_event_date']
+    // does not exist yet at this point. Force it to build now instead, so the
+    // date field can be pulled out and restructured below (see 'apc_datebar').
+    // The #pre_render entry ::view() added is removed afterward so the
+    // renderer does not run this same build step a second time later.
+    $build = $view_builder->build($build);
+    unset($build['#pre_render']);
 
     // #type container (not a bare array) so .apc-event-popup can be a
     // positioning root -- 'actions' below is pinned to its top-right corner,
@@ -128,7 +144,123 @@ final class EventPopupController extends ControllerBase {
       ];
     }
 
+    // "Add to your calendar" for the clicked occurrence, placed beside the
+    // date/time rather than below the fold at the bottom of the scrollable
+    // dialog. field_event_date is pulled out of the entity view builder's
+    // render array and re-inserted (same weight: 1, right after the weight-0
+    // gallery) as a flex row alongside the control -- see
+    // .apc-event-popup__datebar in event-popup.css. Keyed to $delta so a
+    // recurring event adds the occurrence that was actually clicked.
+    $add_to_calendar = AddToCalendar::build($node, $delta);
+    if ($add_to_calendar) {
+      $addtocal_component = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['apc-event-popup__addtocal']],
+        'control' => $add_to_calendar,
+      ];
+      if (!empty($build['field_event_date'])) {
+        $date_field = $build['field_event_date'];
+        unset($build['field_event_date']);
+        // The field carries its own #weight (1, from the calendar_item view
+        // mode's component ordering) from when EntityViewBuilder assigned it
+        // -- left in place, that would sort it AFTER addtocal (default weight
+        // 0) as a sibling here, landing the date on the right and the button
+        // on the left. Force explicit weights so 'date' always renders first
+        // (left) and 'addtocal' second (right), regardless of what the field
+        // carried in from the view mode.
+        $date_field['#weight'] = 0;
+        $addtocal_component['#weight'] = 1;
+        $build['apc_datebar'] = [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['apc-event-popup__datebar']],
+          '#weight' => 1,
+          'date' => $date_field,
+          'addtocal' => $addtocal_component,
+        ];
+      }
+      else {
+        // No date field on this view mode (unexpected, but degrade gracefully
+        // rather than silently dropping the control): append it on its own.
+        $build['apc_add_to_calendar'] = $addtocal_component + ['#weight' => 1.5];
+      }
+    }
+
     $result['event'] = $build;
+
+    // Manager actions: publish an unpublished event + its pending location in
+    // one click, and jump to the edit form. Gated on node.update access, the
+    // exact gate the full event page uses (apc_brown_preprocess_node()) and
+    // the same access apc_calendar_node_access() ties unpublished-event view
+    // to -- so these only appear for event_manager/administrator, and only
+    // where the underlying routes would not 403. This is what makes the
+    // /calendar/manage popup a one-click approval surface.
+    if ($node->access('update')) {
+      // When the popup was opened from the /calendar/manage view (tagged by
+      // EventPopupProcessor with ?from=manage on the popup link itself),
+      // send the publish/unpublish action links back there instead of the
+      // node's own page -- core's RedirectResponseSubscriber honours a
+      // 'destination' query parameter on any link whose target issues a
+      // redirect, overriding whatever URL the controller redirects to.
+      $return_options = $this->requestStack->getCurrentRequest()->query->get('from') === 'manage'
+        ? ['query' => ['destination' => '/calendar/manage']]
+        : [];
+
+      $manage = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['apc-event-popup__manage']],
+      ];
+      if (!$node->isPublished()) {
+        $manage['publish'] = [
+          '#type' => 'link',
+          '#title' => $this->t('Publish event & location'),
+          // The route carries a _csrf_token requirement; RouteProcessorCsrf
+          // adds the token to this URL automatically on generation.
+          '#url' => Url::fromRoute('apc_calendar.publish_event_and_location', ['node' => $node->id()], $return_options),
+          '#attributes' => ['class' => ['button', 'button--primary']],
+        ];
+      }
+      else {
+        $manage['unpublish'] = [
+          '#type' => 'link',
+          '#title' => $this->t('Unpublish event'),
+          '#url' => Url::fromRoute('apc_calendar.unpublish_event', ['node' => $node->id()], $return_options),
+          '#attributes' => ['class' => ['button']],
+        ];
+        $manage['unpublish_all'] = [
+          '#type' => 'link',
+          '#title' => $this->t('Unpublish event & location'),
+          '#url' => Url::fromRoute('apc_calendar.unpublish_event_and_location', ['node' => $node->id()], $return_options),
+          '#attributes' => ['class' => ['button']],
+        ];
+      }
+      $manage['edit'] = [
+        '#type' => 'link',
+        '#title' => $this->t('Edit'),
+        '#url' => $node->toUrl('edit-form'),
+        '#attributes' => ['class' => ['button']],
+      ];
+      $result['manage_actions'] = $manage;
+
+      // The buttons vary by viewer, and the publish URL embeds a per-session
+      // CSRF token, so this render must not be shared across users/sessions.
+      // The 'from' query arg also changes the baked-in destination above, so
+      // it must vary the cache too -- otherwise a manager opening this same
+      // occurrence's popup once from /calendar and once from /calendar/manage
+      // could be served the other page's cached redirect target.
+      $result['#cache']['contexts'][] = 'user.permissions';
+      $result['#cache']['contexts'][] = 'session';
+      $result['#cache']['contexts'][] = 'url.query_args:from';
+    }
+
+    // Plain-language close hint for non-technical visitors -- the dialog's own
+    // close control is just an unlabeled "✕" icon in the corner. Rendered last
+    // so it sits at the foot of the popup.
+    $result['close_hint'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'p',
+      '#value' => $this->t('To close this window, click the ✕ in the top-right corner or press the Esc key.'),
+      '#attributes' => ['class' => ['apc-event-popup__close-hint']],
+    ];
 
     return $result;
   }

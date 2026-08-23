@@ -48,4 +48,39 @@ final class PublishEventAndLocationController extends ControllerBase {
     return $this->redirect('entity.node.canonical', ['node' => $node->id()]);
   }
 
+  /**
+   * Unpublishes just the event, then redirects back.
+   */
+  public function unpublishEvent(NodeInterface $node): RedirectResponse {
+    if ($node->bundle() === 'calendar_event' && $node->isPublished()) {
+      $node->setUnpublished()->save();
+      $this->messenger()->addStatus($this->t('Unpublished "@title".', ['@title' => $node->label()]));
+    }
+    return $this->redirect('entity.node.canonical', ['node' => $node->id()]);
+  }
+
+  /**
+   * Unpublishes the event and its referenced location term, then redirects back.
+   */
+  public function unpublishEventAndLocation(NodeInterface $node): RedirectResponse {
+    if ($node->bundle() !== 'calendar_event') {
+      return $this->redirect('entity.node.canonical', ['node' => $node->id()]);
+    }
+
+    if ($node->isPublished()) {
+      $node->setUnpublished()->save();
+      $this->messenger()->addStatus($this->t('Unpublished "@title".', ['@title' => $node->label()]));
+    }
+
+    if ($node->hasField('field_location') && !$node->get('field_location')->isEmpty()) {
+      $term = $node->get('field_location')->entity;
+      if ($term !== NULL && $term->isPublished()) {
+        $term->setUnpublished()->save();
+        $this->messenger()->addStatus($this->t('Unpublished location "@loc".', ['@loc' => $term->label()]));
+      }
+    }
+
+    return $this->redirect('entity.node.canonical', ['node' => $node->id()]);
+  }
+
 }
