@@ -13,7 +13,7 @@ third_party_settings:
     method: geocode
     weight: 0
     field: field_address
-    skip_not_empty_value: false
+    skip_not_empty_value: true
     disabled: false
     hidden: false
     providers:
@@ -22,7 +22,7 @@ third_party_settings:
     delta_handling: default
     failure:
       handling: preserve
-      status_message: true
+      status_message: false
       log: true
 id: taxonomy_term.locations.field_geofield
 field_name: field_geofield
