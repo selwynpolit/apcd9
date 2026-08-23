@@ -2,12 +2,18 @@
  * @file
  * Media Library grid layout for the front theme.
  *
- * The Media Library "grid" display is laid out by the Claro admin theme, which
- * admins get for the dialog. Anonymous submitters get this front theme instead,
- * where the grid otherwise stacks into a single column. This mirrors the flex
- * grid from claro/css/theme/media-library.css so anonymous users see a real
- * grid too. Loaded by extending media_library/view + media_library/widget (see
- * apc_brown.info.yml). Table view is unaffected.
+ * The classed markup this CSS targets (.media-library-views-form__rows,
+ * .media-library-item--grid, .media-library-item__*) is added by Claro's own
+ * template overrides -- core/themes/claro/templates/media-library/*.html.twig
+ * and templates/classy/media-library/media-library-item.html.twig -- which
+ * only apply when Claro is the active theme. Anonymous submitters get this
+ * front theme instead, where core falls back to the generic views/media
+ * templates that never add these classes at all, so the grid collapsed to a
+ * single column no matter what CSS was written here. The actual fix is the
+ * three ported templates in templates/media-library/ (verbatim copies of
+ * Claro's, since they're theme-agnostic Twig); this file just supplies the
+ * layout Claro's own media-library.css would otherwise provide. Table view
+ * is unaffected -- it doesn't use any of these hooks.
  */
 
 .media-library-views-form__rows {
@@ -17,8 +23,16 @@
   margin: 0 -0.5rem;
 }
 
+.media-library-item,
+.media-library-item__preview-wrapper {
+  position: relative;
+}
+
 .media-library-item--grid {
+  box-sizing: border-box;
   width: 100%;
+  padding: 0.5rem;
+  vertical-align: top;
 }
 
 @media screen and (min-width: 45em) {
@@ -52,4 +66,47 @@
   .media-library-selection .media-library-item--grid {
     width: 25%;
   }
+}
+
+/* Item card: thumbnail + filename label, from media--media-library.html.twig. */
+.media-library-item__preview {
+  padding-bottom: 2.125rem;
+}
+
+.media-library-item__status {
+  position: absolute;
+  top: 2.5rem;
+  left: 0.3125rem;
+  padding: 0.3125rem 0.625rem;
+  pointer-events: none;
+  color: #e4e4e4;
+  background: #666;
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.media-library-item__attributes {
+  position: absolute;
+  bottom: 0;
+  display: block;
+  overflow: hidden;
+  max-width: calc(100% - 0.625rem);
+  max-height: calc(100% - 3.125rem);
+  padding: 0.3125rem;
+  background: var(--color--gray-100, #f5ead8);
+}
+
+.media-library-item__name {
+  display: block;
+  overflow: hidden;
+  margin: 0.25rem 0.5rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.media-library-item__attributes:hover .media-library-item__name,
+.media-library-item--grid.is-focus .media-library-item__name,
+.media-library-item--grid.checked .media-library-item__name {
+  white-space: normal;
 }
