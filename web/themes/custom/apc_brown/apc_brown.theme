@@ -164,6 +164,18 @@ function apc_brown_preprocess_node(&$variables) {
       $variables['#cache']['contexts'][] = 'user.permissions';
       $variables['#cache']['contexts'][] = 'session';
     }
+    // Reviewer unpublish controls on an already-published event -- same gate,
+    // CSRF token and cache contexts as the publish button above.
+    elseif ($variables['node']->isPublished() && $variables['node']->access('update')) {
+      $variables['unpublish_event_url'] = Url::fromRoute('apc_calendar.unpublish_event', [
+        'node' => $variables['node']->id(),
+      ])->toString();
+      $variables['unpublish_all_url'] = Url::fromRoute('apc_calendar.unpublish_event_and_location', [
+        'node' => $variables['node']->id(),
+      ])->toString();
+      $variables['#cache']['contexts'][] = 'user.permissions';
+      $variables['#cache']['contexts'][] = 'session';
+    }
 
     // Address, map and directions all now come from content.field_location
     // itself -- the location_reference view mode gained a 'directions'

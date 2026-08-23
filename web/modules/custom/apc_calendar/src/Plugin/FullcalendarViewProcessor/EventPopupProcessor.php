@@ -59,6 +59,14 @@ class EventPopupProcessor extends FullcalendarViewProcessorBase {
       return;
     }
 
+    // Tag popup links opened from the manage display so
+    // EventPopupController knows to send its Publish/Unpublish action links
+    // back to /calendar/manage instead of the event's own page (see
+    // EventPopupController::popup() and its 'from' query parameter).
+    $url_options = ($view->current_display ?? '') === 'page_manage'
+      ? ['query' => ['from' => 'manage']]
+      : [];
+
     foreach ($calendar_options['events'] as &$entry) {
       $nid = $this->extractNid($entry);
       if ($nid === NULL) {
@@ -68,7 +76,7 @@ class EventPopupProcessor extends FullcalendarViewProcessorBase {
       $entry['url'] = Url::fromRoute('apc_calendar.event_popup', [
         'node' => $nid,
         'delta' => $this->extractDelta($entry),
-      ])->toString();
+      ], $url_options)->toString();
     }
     unset($entry);
 

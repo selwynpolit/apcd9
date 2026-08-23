@@ -56,6 +56,32 @@ apc_calendar.publish_event_and_location:
       node:
         type: 'entity:node'
 
+apc_calendar.unpublish_event:
+  path: '/calendar/event/{node}/unpublish'
+  defaults:
+    _controller: '\Drupal\apc_calendar\Controller\PublishEventAndLocationController::unpublishEvent'
+  requirements:
+    _entity_access: 'node.update'
+    node: \d+
+    _csrf_token: 'TRUE'
+  options:
+    parameters:
+      node:
+        type: 'entity:node'
+
+apc_calendar.unpublish_event_and_location:
+  path: '/calendar/event/{node}/unpublish-all'
+  defaults:
+    _controller: '\Drupal\apc_calendar\Controller\PublishEventAndLocationController::unpublishEventAndLocation'
+  requirements:
+    _entity_access: 'node.update'
+    node: \d+
+    _csrf_token: 'TRUE'
+  options:
+    parameters:
+      node:
+        type: 'entity:node'
+
 apc_calendar.add_location:
   path: '/calendar/location/add'
   defaults:

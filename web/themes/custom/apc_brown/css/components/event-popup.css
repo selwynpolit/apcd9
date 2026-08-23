@@ -39,6 +39,51 @@
   position: relative;
 }
 
+/* Date/time on the left, "Add to your calendar" on the right, on one row --
+   mirrors .apc-detail__datebar on the full event page. Wraps on narrow
+   dialogs rather than overflowing. */
+.apc-event-popup__datebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp1, 1.125rem);
+  margin-block-end: var(--sp1, 1.125rem);
+}
+
+/* Breathing room when the control has no date field to sit beside and falls
+   back to its own block (see EventPopupController::popup()). */
+.apc-event-popup__addtocal {
+  margin-block-start: var(--sp1, 1.125rem);
+}
+
+.apc-event-popup__datebar .apc-event-popup__addtocal {
+  margin-block-start: 0;
+}
+
+/* Plain-language "how to close this" hint at the foot of the popup. Muted and
+   separated with a top rule so it reads as a helper note, not event content. */
+.apc-event-popup__close-hint {
+  margin-block-start: var(--sp1-5, 1.6875rem);
+  padding-block-start: var(--sp1, 1.125rem);
+  border-block-start: 1px solid var(--color--gray-90);
+  color: var(--color-text-neutral-soft);
+  font-size: var(--font-size-s, 0.875rem);
+  text-align: center;
+}
+
+/* Manager-only action bar (Publish event & location / Edit), shown in the
+   popup for event_manager/administrator. Separated from the event content with
+   a top rule so it reads as a distinct reviewer toolbar. */
+.apc-event-popup__manage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-start: var(--sp1, 1.125rem);
+  padding-block-start: var(--sp1, 1.125rem);
+  border-block-start: 1px solid var(--color--gray-90);
+}
+
 .apc-popup-badge {
   display: inline-flex;
   align-items: center;
