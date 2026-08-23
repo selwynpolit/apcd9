@@ -1,0 +1,27 @@
+uuid: 2a1e6c5f-9d4b-4a7e-bf2c-8e3a1d6b4c90
+langcode: en
+status: true
+dependencies:
+  module:
+    - apc_calendar
+  theme:
+    - apc_brown
+id: apc_brown_calendar_toggle
+theme: apc_brown
+region: content_above
+weight: -10
+provider: null
+plugin: apc_calendar_view_toggle
+settings:
+  id: apc_calendar_view_toggle
+  label: 'Calendar view toggle'
+  label_display: '0'
+  provider: apc_calendar
+visibility:
+  request_path:
+    id: request_path
+    negate: false
+    context_mapping: {  }
+    pages: |-
+      /calendar
+      /calendar/manage
