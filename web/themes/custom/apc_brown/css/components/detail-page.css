@@ -10,12 +10,6 @@
   padding-inline: var(--container-padding);
 }
 
-.apc-detail__breadcrumb {
-  margin-block-end: var(--sp1);
-  font-size: var(--font-size-s);
-  color: var(--color-text-neutral-soft);
-}
-
 /* Unpublished banner on the event/location detail pages -- only ever seen by
    a reviewer (event_manager/administrator), since node/term access itself
    keeps everyone else off this page for pending content. Gold matches core's
@@ -50,9 +44,24 @@
   font-size: 2.25rem;
 }
 
+/* Date on the left, "Add to your calendar" on the right, on one row -- so the
+   button doesn't push the event content down. Wraps on narrow screens. */
+.apc-detail__datebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp1);
+  margin-block-end: var(--sp2);
+}
+
 .apc-detail__meta {
   margin-block-end: var(--sp2);
   color: var(--color-text-neutral-medium);
+}
+
+.apc-detail__datebar .apc-detail__meta {
+  margin-block-end: 0;
 }
 
 .apc-detail__actions {

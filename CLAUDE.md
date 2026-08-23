@@ -54,22 +54,31 @@ DB dump files (`*.sql`, `*.sql.gz`) and `.idea/` are gitignored — don't add th
 
 ### Config split: local vs. production behavior
 
-Environment (dev/local/prod) is auto-detected in `settings.php` and used to activate the matching
-`config_split.config_split.*` split. `local` (devel/devel_generate/stage_file_proxy modules, plus a
-`system.performance` override that disables CSS/JS aggregation and page caching) is deliberately
-**not** forced active via a `$config[...]` override in `settings.php` the way `dev`'s split is — a
-settings.php override always out-ranks the config-split admin UI's Activate/Deactivate links, which
-would make it impossible to turn off locally to see how the site actually behaves in production
-(aggregation on, real page cache).
+The `local` split (devel/devel_generate/stage_file_proxy modules, plus a `system.performance`
+override that disables CSS/JS aggregation and page caching) is activated via a **`$config[...]`
+override in `web/sites/default/settings.local.php`**, the same mechanism `dev` uses:
 
-- First-time setup, after `ddev composer install`: `ddev drush config-split:activate local` — this
-  needs redoing (or the equivalent "Activate" link at
-  `/admin/config/development/configuration/config-split`) any time you've run a plain `ddev drush
-  cim`, since that reloads config/sync's committed (inactive) default for this split.
-- To preview production's real behavior locally: `ddev drush config-split:deactivate local` (or the
-  page's "Deactivate" link), then reload. `ddev drush config-split:activate local` to switch back.
-- Do **not** run `ddev drush cex` while deliberately testing with the split deactivated — see the
-  `cst`-before-`cex` rule below.
+```php
+$config['config_split.config_split.local']['status'] = TRUE;
+// $config['config_split.config_split.dev']['status'] = TRUE;   // use ONE at a time, not both
+```
+
+This is deliberately a **runtime override, not stored config** — the key property is that a
+`$config[...]` override is *never captured by `cex`*, so `cim`/`cex` stay clean: the committed
+`config_split.config_split.*.yml` files stay at `status: false`, they match the DB, and `cst` shows
+no drift. `cst` is empty in this state, and `cex` never rewrites the split file.
+
+- **Do NOT** use the `config-split:activate`/`deactivate` drush commands or the admin UI
+  Activate/Deactivate links for `local`/`dev`. They write `status: true` into *stored* config, which
+  then reappears on every `cex` as a phantom `config_split.config_split.local.yml` change you have to
+  `git checkout` away. The settings.local.php override avoids this entirely. (This reverses an earlier
+  decision in this repo that used command activation specifically to keep the UI toggle working; the
+  clean-`cex` property won out.)
+- Enable only one split at a time — `local` and `dev` both list `stage_file_proxy.settings`.
+- To preview production's real behavior locally: comment out the override line and `ddev drush cr`.
+  Uncomment + `cr` to switch back.
+- Verify current mode: `ddev drush cst` (empty = prod baseline) or
+  `ddev drush ev 'var_dump((bool) \Drupal::config("config_split.config_split.local")->get("status"));'`.
 
 ## Common commands
 
@@ -148,6 +157,11 @@ been tried and rejected.
 2. Verify against the running site, not against exported YAML. A theming bug in this repo took
    several rounds to find because it was diagnosed from `config/sync` and from a `grep` run while
    CSS aggregation was on. Neither reflected reality.
+   - **To *view* the running site in a browser, use the real Chrome via the `mcp__claude-in-chrome__*`
+     tools, NOT the in-app Browser pane (`mcp__Claude_Browser__*`).** The in-app pane blocks this
+     ddev host's individual (aggregation-off) stylesheets with `ERR_BLOCKED_BY_CLIENT`, so every
+     page renders unstyled there and screenshots are useless for visual/CSS checks. The real Chrome
+     (already logged in as admin) renders the site correctly.
 
 Items are ordered by dependency, not by importance. **A, B, C are independent and can be done in any
 order; D depends on A; F depends on E.**

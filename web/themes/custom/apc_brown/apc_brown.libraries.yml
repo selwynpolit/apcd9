@@ -344,6 +344,31 @@ event-popup:
     theme:
       css/components/event-popup.css: {}
 
+# Media Library grid for the front theme (anonymous submitters). Attached by
+# libraries-extend on media_library/view + media_library/widget.
+media-library:
+  version: VERSION
+  css:
+    component:
+      css/components/media-library.css: {}
+
+# Slick footer layout. Attached by the module's AboutSiteBlock, which sits in
+# the footer on every page, so the footer styling loads site-wide.
+site-footer:
+  version: VERSION
+  css:
+    theme:
+      css/components/site-footer.css: {}
+
+# "Add to calendar" disclosure (native <details>, no JS). Attached by the
+# module's AddToCalendar::build() -- used on the full event page and the
+# calendar popup.
+add-to-calendar:
+  version: VERSION
+  css:
+    theme:
+      css/components/add-to-calendar.css: {}
+
 event-hover:
   version: VERSION
   css:

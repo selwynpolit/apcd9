@@ -104,54 +104,40 @@ timezone: America/Chicago
 
 ## Config Split
 
-DON'T use the UI to "Deactivate"/"Activate" links at /admin/config/development/configuration/config-split.
+Two splits: `local` (devel tools, aggregation off) and `dev` (mirrors the GreenGeeks dev box:
+stage_file_proxy on, no devel, prod-level aggregation). Prod is the base — no split active.
 
-Note.
-- It sticks until you reverse it (another activate) or run a plain cim (which reloads whatever's committed — currently false, i.e. inactive, since that's local's safe default for every environment).
-- Don't run cex while deactivated if you're mid-edit on local-only config — you'd be exporting the "no split" state and could lose track of what's local-only vs. base. It's safe to cex while deactivated if nothing's actually changed.
+**Enable a split via `web/sites/default/settings.local.php`.** This is a runtime override; it is
+NOT exported, so `cim`/`cex` stay clean:
 
-Prod isn't a split (it's the base with nothing active) and dev is a real split:
+```php
+$config['config_split.config_split.local']['status'] = TRUE;
+// $config['config_split.config_split.dev']['status'] = TRUE;   // use ONE at a time, not both
+```
 
-* Local: dev-friendly — devel tools, aggregation off:
-ddev drush config-split:deactivate dev -y   # only needed if dev was active
-ddev drush config-split:activate local -y
-ddev drush cr
+Enable only one at a time (both list `stage_file_proxy.settings`). Leave the committed
+`config_split.config_split.*.yml` files at `status: false`.
 
-See https://apc3.ddev.site/admin/config/development/configuration/config-split
-Current status will show inactive for dev, active for local.
+To confirm which split is active, the only way is to look at https://apc3.ddev.site/admin/config/development/configuration/config-split under Current Status.  You will see "active(settings.php)" for the currently active split.  The other will show "inactive".
 
-* Dev (mirrors the GreenGeeks dev box — just stage_file_proxy on, no devel, prod-level aggregation):
-ddev drush config-split:deactivate local -y
-ddev drush config-split:activate dev -y
-ddev drush cr
-See https://apc3.ddev.site/admin/config/development/configuration/config-split
-Current status will show active for dev, inactive for local.
 
-* Prod (the real production baseline — nothing active):
-ddev drush config-split:deactivate local -y  # no-op/safe if already inactive
-ddev drush config-split:deactivate dev -y     # no-op/safe if already inactive
-ddev drush cr
+Day-to-day (local enabled via the override):
+1. Make the change in the Drupal UI.
+2. `ddev drush cst` — check what changed.
+3. `ddev drush cex -y` — clean; the override never leaks into the export.
+4. `git diff config/sync/` and commit.
 
 Notes:
-- Verify which mode you're in any time with ddev drush config:get config_split.config_split.local status / ...dev status, or ddev drush cst (clean diff = you're in prod mode).
-- local and dev both list stage_file_proxy.settings in their complete lists, but under different module-enable states — don't try to activate both at once, deactivate one before activating the other, as shown above.
-- These rewrite active DB config immediately (see the mechanics I walked through last message) — they don't touch config/sync on disk unless you follow up with cex.
-
-Normal day-to-day flow:
-1. Leave local active — that's just your standing dev state, same as it's always been.
-2. Make the change in the Drupal UI (add a field, edit a view, whatever).
-3. ddev drush cst — check what's about to change (your existing standing rule, still applies).
-4. ddev drush cex -y — safe to run with local active.
-5. git diff on config/sync/ to see exactly what's shipping. Commit.
-
-You never need to deactivate local for this — it's already routing the local-only stuff to the right place.
-
-The only time you'd touch dev (or add to local's lists) is when you're deliberately changing something inside that split itself — e.g., tweaking stage_file_proxy's settings for the dev box, or deciding a new module/setting should be local-only or dev-only:
-1. Deactivate local, Activate dev
-3. Make the change via UI/settings form.
-4. cex — lands in config/split/dev/, not config/sync/.
-5. ddev drush config-split:deactivate dev && ddev drush config-split:activate local to get back to normal.
-6. Commit both config/sync (if the split's complete/partial list changed) and config/split/dev/.
+- **Do NOT** use the config-split `activate`/`deactivate` drush commands or the admin UI links.
+  They write `status: true` into stored config, which then dirties every `cex`
+  (`config_split.config_split.local.yml` keeps flipping to `true` — the phantom-diff problem).
+  The settings.local.php override avoids this entirely.
+- Preview production locally: comment out the override line + `ddev drush cr`. Uncomment + `cr` to
+  return.
+- Check current mode: `ddev drush cst` (clean = prod baseline), or
+  `ddev drush ev 'var_dump((bool) \Drupal::config("config_split.config_split.local")->get("status"));'`.
+- Changing what's *inside* a split (e.g. a new dev-only module/setting): enable that split via the
+  override, make the change, `cex` (it lands in `config/split/<name>/`), commit that dir.
 
 
 ## Setup on Greengeeks

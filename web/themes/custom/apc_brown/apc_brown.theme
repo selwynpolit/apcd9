@@ -132,7 +132,12 @@ function apc_brown_preprocess_node(&$variables) {
   // expose.
   if ($variables['node']->bundle() === 'calendar_event' && $variables['view_mode'] === 'full') {
     $variables['gallery'] = _apc_brown_build_gallery($variables['node'], 'field_event_image');
-    $variables['add_to_calendar_url'] = _apc_brown_google_calendar_url($variables['node']);
+    // Multi-provider "Add to calendar" control (Google/Apple/Outlook/Yahoo),
+    // built by the apc_calendar module so the full page, the popup and the
+    // .ics route all share one implementation. Delta 0 = first/next occurrence
+    // (the full page has no clicked occurrence). Empty array when undated, so
+    // the template's {% if add_to_calendar %} drops it cleanly.
+    $variables['add_to_calendar'] = \Drupal\apc_calendar\AddToCalendar::build($variables['node']);
 
     // Visual "unpublished" banner. Shown to anyone who can reach this page at
     // all (event_manager and administrator, per apc_calendar_node_access())
@@ -191,43 +196,6 @@ function apc_brown_preprocess_node(&$variables) {
       }
     }
   }
-}
-
-/**
- * Builds a "Add to calendar" Google Calendar link for an event node.
- *
- * No ICS generation service exists in this codebase or its dependencies, and
- * adding one is out of scope here. Google Calendar's "render" endpoint
- * accepts a fully pre-filled event as a plain URL, so this needs no new
- * module and no backend route -- it degrades gracefully to NULL (button
- * omitted) if the event has no date.
- */
-function _apc_brown_google_calendar_url(\Drupal\node\NodeInterface $node): ?string {
-  if (!$node->hasField('field_event_date') || $node->get('field_event_date')->isEmpty()) {
-    return NULL;
-  }
-
-  $item = $node->get('field_event_date')->first();
-  $start = $item->get('value')->getValue();
-  $end = $item->get('end_value')->getValue();
-  if (empty($start) || empty($end)) {
-    return NULL;
-  }
-
-  $params = [
-    'action' => 'TEMPLATE',
-    'text' => $node->label(),
-    'dates' => gmdate('Ymd\THis\Z', $start) . '/' . gmdate('Ymd\THis\Z', $end),
-  ];
-
-  if ($node->hasField('field_location') && !$node->get('field_location')->isEmpty()) {
-    $term = $node->get('field_location')->entity;
-    if ($term !== NULL) {
-      $params['location'] = $term->label();
-    }
-  }
-
-  return 'https://calendar.google.com/calendar/render?' . http_build_query($params);
 }
 
 /**

@@ -26,6 +26,21 @@ apc_calendar.event_popup:
       node:
         type: 'entity:node'
 
+apc_calendar.event_ics:
+  path: '/calendar/event/{node}/{delta}/ics'
+  defaults:
+    _controller: '\Drupal\apc_calendar\Controller\EventIcsController::ics'
+  requirements:
+    # Same node-access gate as the popup route -- this must not become a way to
+    # download a pending/unpublished event.
+    _entity_access: 'node.view'
+    node: \d+
+    delta: \d+
+  options:
+    parameters:
+      node:
+        type: 'entity:node'
+
 apc_calendar.publish_event_and_location:
   path: '/calendar/event/{node}/publish'
   defaults:
