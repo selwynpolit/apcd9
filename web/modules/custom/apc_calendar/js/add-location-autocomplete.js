@@ -59,12 +59,17 @@
 
         // Distinct rendering for the "Add a new venue" row, so it reads as a
         // different kind of thing from a real matched venue rather than
-        // blending into the list. $.ui.autocomplete.prototype._renderItem is
-        // the actual base implementation (not a hand-copied guess at it), so
-        // ordinary rows keep rendering exactly as core would render them.
+        // blending into the list.
+        //
+        // Ordinary rows are rendered with .html(), matching Drupal core's own
+        // autocomplete (core/misc/autocomplete.js). The entity autocomplete
+        // matcher HTML-escapes each label, so a venue named "Jill's House"
+        // arrives as "Jill&#039;s House" and must be decoded by .html().
+        // jQuery UI's base _renderItem uses .text() instead, which rendered the
+        // raw &#039; entity -- the bug this replaces. .html() is safe here: the
+        // label is already server-escaped, exactly as core relies on.
         const instance = $input.autocomplete('instance');
         if (instance) {
-          const baseRenderItem = $.ui.autocomplete.prototype._renderItem;
           instance._renderItem = function (ul, item) {
             if (item.apcAddNew) {
               return $('<li>')
@@ -72,7 +77,9 @@
                 .append($('<div>').text(item.label))
                 .appendTo(ul);
             }
-            return baseRenderItem.call(this, ul, item);
+            return $('<li>')
+              .append($('<a>').html(item.label))
+              .appendTo(ul);
           };
         }
 
