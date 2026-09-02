@@ -532,6 +532,10 @@ function _apc_calendar_ensure_anonymous_session(): void {
  * @see \Drupal\apc_calendar\Controller\PhotoSubmittedController
  */
 function _apc_calendar_community_photo_form_alter(array &$form, FormStateInterface $form_state): void {
+  // Media Library dialog scroll fix applies to every submitter, not just
+  // anonymous ones -- keep this above the early return below.
+  $form['#attached']['library'][] = 'apc_calendar/media_dialog_scroll_top';
+
   if (!\Drupal::currentUser()->isAnonymous()) {
     return;
   }
@@ -564,6 +568,10 @@ function _apc_calendar_community_photo_form_alter(array &$form, FormStateInterfa
  */
 function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterface $form_state): void {
   $account = \Drupal::currentUser();
+
+  // Media Library dialog scroll fix -- affects anonymous and authenticated
+  // submitters alike, so it's attached unconditionally here.
+  $form['#attached']['library'][] = 'apc_calendar/media_dialog_scroll_top';
 
   // The confirmation redirect is anonymous-only — authenticated submitters can
   // view their own unpublished node, so core's default behaviour is correct
