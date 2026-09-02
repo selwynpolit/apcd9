@@ -1,0 +1,29 @@
+uuid: 09b63fde-5e99-4ae2-b3a6-d43455ff570b
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_photo_tags
+    - node.type.community_photo
+    - taxonomy.vocabulary.photo_categories
+id: node.community_photo.field_photo_tags
+field_name: field_photo_tags
+entity_type: node
+bundle: community_photo
+label: Categories
+description: 'Enter a comma-separated list. For example: Rally, Tabling.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:filter_existing_terms'
+  handler_settings:
+    target_bundles:
+      photo_categories: photo_categories
+    sort:
+      field: _none
+      direction: asc
+    auto_create: true
+    auto_create_bundle: ''
+field_type: entity_reference

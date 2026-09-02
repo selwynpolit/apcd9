@@ -1,0 +1,29 @@
+uuid: 84ea0d5e-07fa-463b-b784-bf23e7ae1bec
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_photo_image
+    - media.type.image
+    - node.type.community_photo
+id: node.community_photo.field_photo_image
+field_name: field_photo_image
+entity_type: node
+bundle: community_photo
+label: Photo
+description: 'The photo itself.'
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:media'
+  handler_settings:
+    target_bundles:
+      image: image
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

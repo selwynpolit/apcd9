@@ -1,0 +1,20 @@
+uuid: 8746ca5a-ce2f-4b84-b06f-838c90cd3b27
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+    - taxonomy
+id: node.field_photo_tags
+field_name: field_photo_tags
+entity_type: node
+type: entity_reference
+settings:
+  target_type: taxonomy_term
+module: core
+locked: false
+cardinality: -1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

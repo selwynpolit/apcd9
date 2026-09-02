@@ -1,0 +1,9 @@
+uuid: 8f3c2a91-6d4b-4e17-9a2c-1b5d8e6f4a03
+langcode: en
+status: true
+dependencies: {  }
+name: 'Photo Categories'
+vid: photo_categories
+description: 'Open topic tags for community_photo submissions (Rally, Tabling, ...). Separate from Tags (event topics) so each vocabulary keeps its own moderation rule -- see photo-gallery-specs.md, "Why not reuse tags".'
+weight: 0
+new_revision: false

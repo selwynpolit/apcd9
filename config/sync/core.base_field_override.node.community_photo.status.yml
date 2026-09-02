@@ -1,0 +1,22 @@
+uuid: cfea9b70-9228-4921-9623-5d2832be8796
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.community_photo
+id: node.community_photo.status
+field_name: status
+entity_type: node
+bundle: community_photo
+label: Published
+description: ''
+required: false
+translatable: true
+default_value:
+  -
+    value: 0
+default_value_callback: ''
+settings:
+  on_label: 'On'
+  off_label: 'Off'
+field_type: boolean

@@ -1,0 +1,19 @@
+uuid: c05f07c5-f097-4dd3-8a3e-ba63813eb75d
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_caption
+    - node.type.community_photo
+id: node.community_photo.field_caption
+field_name: field_caption
+entity_type: node
+bundle: community_photo
+label: Caption
+description: 'Shown under the photo. Leave blank if the photo speaks for itself.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long
