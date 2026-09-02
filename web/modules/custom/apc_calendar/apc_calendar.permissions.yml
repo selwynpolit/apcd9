@@ -7,3 +7,13 @@ bypass location approval:
   title: 'Bypass location approval'
   description: 'New locations (taxonomy terms in the Locations vocabulary) created by this user publish immediately instead of waiting for review. See apc_calendar_taxonomy_term_presave().'
   restrict access: true
+
+bypass photo category approval:
+  title: 'Bypass photo category approval'
+  description: 'New photo categories (taxonomy terms in the Photo Categories vocabulary) created by this user publish immediately instead of waiting for review. See apc_calendar_taxonomy_term_presave().'
+  restrict access: true
+
+publish community_photo content immediately:
+  title: 'Publish own Community Photo content immediately'
+  description: 'Bypasses the moderation queue: new community_photo nodes created by this user publish on save instead of defaulting to unpublished. See apc_calendar_node_presave().'
+  restrict access: true

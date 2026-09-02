@@ -6,10 +6,13 @@ dependencies:
     - filter.format.restricted_html
     - media.type.image
     - node.type.calendar_event
+    - node.type.community_photo
     - taxonomy.vocabulary.locations
+    - taxonomy.vocabulary.photo_categories
   module:
     - comment
     - contact
+    - dropzonejs
     - filter
     - media
     - node
@@ -28,8 +31,11 @@ permissions:
   - 'access content'
   - 'access site-wide contact form'
   - 'create calendar_event content'
+  - 'create community_photo content'
   - 'create image media'
   - 'create terms in locations'
+  - 'create terms in photo_categories'
+  - 'dropzone upload files'
   - 'make smart dates recur'
   - 'search content'
   - 'use text format restricted_html'
