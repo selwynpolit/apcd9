@@ -1,0 +1,15 @@
+uuid: 14342456-ac4c-4c82-840a-2782d38af7c6
+langcode: en
+status: true
+dependencies: {  }
+name: photo_detail
+label: 'Photo Detail'
+effects:
+  4a0f0187-5c17-424c-b83d-a9f2561d8e99:
+    uuid: 4a0f0187-5c17-424c-b83d-a9f2561d8e99
+    id: image_scale
+    weight: 1
+    data:
+      width: 1200
+      height: 1200
+      upscale: false

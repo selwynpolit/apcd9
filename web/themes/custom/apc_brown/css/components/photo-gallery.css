@@ -1,0 +1,380 @@
+/**
+ * @file
+ * Photo Gallery view (views.view.photo_gallery): grid layout for the browse
+ * page (page_1) plus the shuffle-and-cycle carousel treatment for its block
+ * displays (block_protest_signs, block_community_photos). Carousel behavior
+ * is apc_brown/photo-carousel. field_photo_image renders via the
+ * photo_gallery_card media view mode (image.style.photo_gallery_card) and
+ * links straight to the node -- see photo-carousel.js for why.
+ */
+
+.view-photo-gallery .view-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--sp1);
+}
+
+/* "Share a photo or sign" CTA in the /photos page header (Views header area).
+   Centered, standing above the category filter, so the submission entry point
+   is the first thing on the browse page. */
+.apc-photo-submit-cta {
+  margin-block-end: var(--sp1-5);
+  text-align: center;
+}
+
+/* Framed like a small mounted print: a surface-colour mat plus the same
+   elevated-card shadow the site branding logo and location card already
+   use (--radius-md/--shadow-lg, defined above) -- reused rather than a
+   one-off value so this reads as the same design language, not a new one. */
+.apc-photo-gallery__photo {
+  display: block;
+  width: 100%;
+  padding: 0.375rem;
+  border: none;
+  background: var(--color-surface);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.apc-photo-gallery__photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: calc(var(--radius-md) - 0.375rem);
+  transition: transform 0.2s ease;
+}
+
+.apc-photo-gallery__photo:hover img,
+.apc-photo-gallery__photo:focus-visible img {
+  transform: scale(1.03);
+}
+
+.apc-photo-gallery__caption {
+  margin-block-start: var(--sp0-5);
+  font-size: 0.9rem;
+  color: var(--color-text-neutral-medium);
+}
+
+.apc-photo-gallery__caption a {
+  color: inherit;
+}
+
+/* Admin-only "View node / Edit node" row (apc_brown_preprocess_views_view_
+   fields), rendered under the caption on the /photos grid for reviewers. A
+   quiet accent-tinted pill pair so it reads as a management affordance,
+   distinct from the caption text above it. Anonymous visitors never receive
+   this markup at all. */
+.apc-photo-gallery__admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp0-5);
+  margin: var(--sp0-25) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.apc-photo-gallery__admin a {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-accent-100);
+  color: var(--color-accent-800);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.apc-photo-gallery__admin a:hover,
+.apc-photo-gallery__admin a:focus-visible {
+  background: var(--color-accent-200);
+}
+
+/* On the /photos browse grid, don't clip the card: an admin's contextual-
+   links pencil (and its dropdown) is rendered by core *inside* this link
+   wrapper, so overflow:hidden would swallow the menu. The hover zoom is a
+   safe ~3% and the 0.375rem mat around the image absorbs it at grid image
+   sizes, so nothing visibly spills without the clip. The carousels keep
+   overflow:hidden (above) -- their images are large enough that the same
+   hover zoom would otherwise poke past the frame. Photo clicks there open
+   the lightbox anyway, so the pencil isn't the interaction that matters. */
+[data-apc-photo-grid] .apc-photo-gallery__photo {
+  overflow: visible;
+}
+
+/* Lift the hovered/focused card (and therefore its contextual menu) above
+   its grid neighbours so the dropdown isn't painted under the next card. */
+[data-apc-photo-grid] .apc-photo-gallery__photo:hover,
+[data-apc-photo-grid] .apc-photo-gallery__photo:focus-within {
+  position: relative;
+  z-index: 1;
+}
+
+/* Carousel blocks only -- one slide visible at a time. */
+[data-apc-photo-carousel] .view-content {
+  display: block;
+  position: relative;
+}
+
+[data-apc-photo-carousel] .apc-photo-gallery__item {
+  display: none;
+}
+
+[data-apc-photo-carousel] .apc-photo-gallery__item.is-active {
+  display: block;
+}
+
+/* Overlaid on the photo itself, not a below-image row -- photo-carousel.js
+   moves this into the active slide's .apc-photo-gallery__image on every
+   show(), so it always tracks whichever photo is currently visible. */
+[data-apc-photo-carousel] .apc-photo-gallery__image {
+  position: relative;
+}
+
+[data-apc-photo-carousel] .apc-photo-gallery__controls {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline: 0;
+  display: flex;
+  justify-content: space-between;
+  padding-inline: 0.5rem;
+  transform: translateY(-50%);
+  /* The row spans the full image width so prev/next sit at opposite edges,
+     but only the buttons themselves should intercept clicks -- otherwise
+     this would block the photo-to-node link running underneath it. */
+  pointer-events: none;
+}
+
+[data-apc-photo-carousel] .apc-photo-gallery__prev,
+[data-apc-photo-carousel] .apc-photo-gallery__next {
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 45%);
+  color: var(--color--white);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+[data-apc-photo-carousel] .apc-photo-gallery__prev:hover,
+[data-apc-photo-carousel] .apc-photo-gallery__next:hover,
+[data-apc-photo-carousel] .apc-photo-gallery__prev:focus-visible,
+[data-apc-photo-carousel] .apc-photo-gallery__next:focus-visible {
+  background: rgb(0 0 0 / 70%);
+}
+
+/* ══ Calendar page mini galleries (/calendar) ═════════════════════════════
+   block.block.apc_brown_calendar_protest_signs_mini and
+   ..._community_photos_mini, both placed in content_above. Positioned to
+   flank the view's "Add Calendar Event" row rather than add a row above it
+   -- same out-of-flow technique apc_calendar's calendar-toggle.css already
+   uses for the "Pending / manage view" button, reproduced independently
+   here (not relied on) because that CSS only loads when the toggle block
+   itself renders, i.e. never for anonymous visitors.
+
+   content_above reserves no flow height (its children are all absolutely
+   positioned), so the calendar's own toolbar row starts right where the
+   button row visually is -- these blocks have to fit inside that same
+   ~140px band or they'll run into the toolbar underneath. That's why the
+   mini card is smaller and caption-less, not just a narrower version of
+   the homepage/full-size card. */
+body.page-calendar .region--content-above {
+  position: relative;
+}
+
+/* Compact block-title heading over each mini gallery ("Protest Signs" /
+   "Community Photos"). The default h2 is far too tall for the ~140px band
+   these blocks live in, so it's shrunk to a small uppercase label with tight
+   margins; the mini image is narrowed to 8rem to make the vertical room the
+   heading needs without the block running into the calendar toolbar below. */
+body.page-calendar #block-apc-brown-calendar-protest-signs-mini > h2,
+body.page-calendar #block-apc-brown-calendar-community-photos-mini > h2 {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-heading);
+  /* Kept to a single line: "Community Photos" wraps at the 8rem width and
+     the second line pushes the block into the calendar toolbar below. */
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-text-neutral-soft);
+}
+
+@media (min-width: 48rem) {
+  body.page-calendar #block-apc-brown-calendar-protest-signs-mini,
+  body.page-calendar #block-apc-brown-calendar-community-photos-mini {
+    position: absolute;
+    inset-block-start: 0.25rem;
+    width: 8rem;
+    z-index: 2;
+  }
+
+  body.page-calendar #block-apc-brown-calendar-protest-signs-mini {
+    inset-inline-start: 0;
+  }
+
+  body.page-calendar #block-apc-brown-calendar-community-photos-mini {
+    inset-inline-end: 0;
+  }
+
+  /* Avoid colliding with "Pending / manage view" (shown to managers only,
+     top-right of this same region) -- give the mini gallery room to its
+     left instead of sitting underneath the toggle pill. */
+  body.page-calendar .region--content-above:has(.apc-calendar-toggle)
+    #block-apc-brown-calendar-community-photos-mini {
+    inset-inline-end: 16rem;
+  }
+
+  body.page-calendar #block-apc-brown-calendar-protest-signs-mini .apc-photo-gallery__caption,
+  body.page-calendar #block-apc-brown-calendar-community-photos-mini .apc-photo-gallery__caption {
+    display: none;
+  }
+
+  body.page-calendar #block-apc-brown-calendar-protest-signs-mini .apc-photo-gallery__prev,
+  body.page-calendar #block-apc-brown-calendar-protest-signs-mini .apc-photo-gallery__next,
+  body.page-calendar #block-apc-brown-calendar-community-photos-mini .apc-photo-gallery__prev,
+  body.page-calendar #block-apc-brown-calendar-community-photos-mini .apc-photo-gallery__next {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  body.page-calendar #block-apc-brown-calendar-protest-signs-mini,
+  body.page-calendar #block-apc-brown-calendar-community-photos-mini {
+    max-width: 14rem;
+    margin-inline: auto;
+    margin-block-end: var(--sp1);
+  }
+}
+
+/* ══ Community photo / sign detail page ══════════════════════════════════
+   node--community-photo--full.html.twig, built by
+   _apc_brown_preprocess_community_photo(). A hero image (opens the shared
+   photo-lightbox on click) with caption/credit/tags, a related-photos
+   sidebar, and a closing submit CTA. Hero and related thumbs both carry the
+   .apc-photo-gallery__photo frame, so the mat + shadow styling above applies
+   to them unchanged. */
+.apc-photo-detail-page__title {
+  margin-block: 0 var(--sp1);
+}
+
+.apc-photo-detail-page__pending {
+  display: inline-block;
+  margin-block-end: var(--sp1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--color-accent-2-100);
+  color: var(--color-accent-2-800);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.apc-photo-detail {
+  display: grid;
+  gap: var(--sp2);
+}
+
+@media (min-width: 62.5rem) {
+  .apc-photo-detail {
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    align-items: start;
+  }
+}
+
+.apc-photo-detail__hero {
+  display: block;
+}
+
+.apc-photo-detail__hero .apc-photo-gallery__photo img {
+  /* Hero is a scaled (uncropped) image -- let it keep its own aspect ratio,
+     unlike the fixed 4:3 grid/carousel cards. */
+  aspect-ratio: auto;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.apc-photo-detail__meta {
+  margin-block-start: var(--sp1);
+}
+
+.apc-photo-detail__caption {
+  margin: 0 0 var(--sp0-5);
+  font-size: 1.15rem;
+  color: var(--color-text);
+}
+
+.apc-photo-detail__credit {
+  margin: 0 0 var(--sp1);
+  color: var(--color-neutral-700);
+  font-style: italic;
+}
+
+.apc-photo-detail__related-title {
+  margin-block: 0 var(--sp1);
+  font-size: 1.1rem;
+}
+
+.apc-photo-detail__related-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp0-75);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 62.5rem) {
+  .apc-photo-detail__related-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.apc-photo-detail__related .apc-photo-gallery__photo img {
+  aspect-ratio: 1 / 1;
+}
+
+.apc-photo-detail__cta {
+  margin-block-start: var(--sp3);
+  padding-block-start: var(--sp2);
+  border-block-start: 1px solid var(--color-divider);
+  text-align: center;
+}
+
+.apc-photo-detail__cta p {
+  margin-block: 0 var(--sp1);
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+}
+
+/* Category tags on the detail page: inline pills rather than a stacked list. */
+.apc-photo-detail__tags .field__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp0-5);
+}
+
+.apc-photo-detail__tags .field__item a {
+  display: inline-block;
+  padding: 0.15rem 0.7rem;
+  border-radius: 999px;
+  background: var(--color-accent-100);
+  color: var(--color-accent-800);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.apc-photo-detail__tags .field__item a:hover,
+.apc-photo-detail__tags .field__item a:focus-visible {
+  background: var(--color-accent-200);
+}

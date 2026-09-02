@@ -1,0 +1,183 @@
+/**
+ * @file
+ * Full-size, zoomable lightbox for photo_gallery carousel blocks. Separate
+ * component from lightbox.css's simple img-only overlay (event/location
+ * photos) -- this one has a caption/credit panel, zoom controls and
+ * prev/next navigation. See photo-lightbox.js.
+ */
+
+.apc-photo-lightbox {
+  position: fixed;
+  inset: 0;
+  /* Same layer as apc_brown/lightbox -- above the jQuery UI dialog
+     (z-index 1260, see ui-dialog.css). The two never show at once. */
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp2);
+  background: rgb(0 0 0 / 85%);
+}
+
+.apc-photo-lightbox[hidden] {
+  display: none;
+}
+
+.apc-photo-lightbox__stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp0-5);
+  width: 100%;
+  max-width: 56rem;
+  padding: var(--sp1);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.apc-photo-lightbox__viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 65vh;
+  overflow: auto;
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-900);
+}
+
+/* Chrome/Safari: styling ::-webkit-scrollbar with an explicit size opts this
+   element out of macOS overlay (auto-hiding) scrollbars, so once a zoomed
+   image overflows the bars stay drawn -- matching the side-to-side scroll
+   that already works on a trackpad, just now visible. Deliberately NOT
+   pairing this with the standard scrollbar-width/scrollbar-color: setting
+   those makes current Chrome ignore ::-webkit-scrollbar entirely and fall
+   back to the auto-hiding overlay bar, defeating the point. Firefox keeps
+   its own default scrollbar, which is fine. */
+.apc-photo-lightbox__viewport::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.apc-photo-lightbox__viewport::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+}
+
+.apc-photo-lightbox__viewport::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 55%);
+  background-clip: content-box;
+}
+
+.apc-photo-lightbox__viewport::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 75%);
+  background-clip: content-box;
+}
+
+.apc-photo-lightbox__img {
+  display: block;
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+}
+
+/* Close and prev/next sit on the dark backdrop, not the (lighter) card, so
+   contrast holds regardless of what's in the photo underneath them. */
+.apc-photo-lightbox__close,
+.apc-photo-lightbox__nav {
+  position: fixed;
+  border: none;
+  border-radius: 999px;
+  background: var(--color--white);
+  color: var(--color--gray-5);
+  cursor: pointer;
+}
+
+.apc-photo-lightbox__close:hover,
+.apc-photo-lightbox__nav:hover,
+.apc-photo-lightbox__close:focus-visible,
+.apc-photo-lightbox__nav:focus-visible {
+  background: var(--color--gray-90);
+}
+
+.apc-photo-lightbox__close {
+  top: var(--sp1);
+  right: var(--sp1);
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.apc-photo-lightbox__nav {
+  top: 50%;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.75rem;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.apc-photo-lightbox__nav--prev {
+  left: var(--sp1);
+}
+
+.apc-photo-lightbox__nav--next {
+  right: var(--sp1);
+}
+
+.apc-photo-lightbox__zoom {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp0-5);
+}
+
+.apc-photo-lightbox__zoom button {
+  min-width: 2.5rem;
+  height: 2.25rem;
+  padding-inline: 0.75rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-accent-100);
+  color: var(--color-accent-800);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.apc-photo-lightbox__zoom button:hover,
+.apc-photo-lightbox__zoom button:focus-visible {
+  background: var(--color-accent-200);
+}
+
+.apc-photo-lightbox__info {
+  text-align: center;
+}
+
+.apc-photo-lightbox__caption {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.apc-photo-lightbox__caption[hidden],
+.apc-photo-lightbox__credit[hidden] {
+  display: none;
+}
+
+.apc-photo-lightbox__credit {
+  margin: 0.25rem 0 0;
+  color: var(--color-neutral-700);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+@media (max-width: 47.99rem) {
+  .apc-photo-lightbox__nav {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.25rem;
+  }
+}

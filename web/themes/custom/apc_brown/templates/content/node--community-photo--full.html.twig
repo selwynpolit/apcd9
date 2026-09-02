@@ -1,0 +1,72 @@
+{#
+/**
+ * @file
+ * Community photo / sign detail page.
+ *
+ * All the data comes from _apc_brown_preprocess_community_photo(): a large
+ * hero image that opens the full-size zoomable lightbox on click, its
+ * caption / credit / category tags, and a sidebar of related photos. Hero and
+ * related thumbnails share the [data-apc-photo-grid] wrapper so the one
+ * apc_brown/photo-lightbox behavior drives all of them (click any, prev/next
+ * steps through the set).
+ *
+ * @see _apc_brown_preprocess_community_photo()
+ */
+#}
+{#
+  No <h1> here on purpose: the theme's site-wide "Page title" block already
+  renders it above this region. The event/location detail pages instead hide
+  that block and print their own title, but those have path aliases to target
+  in the block's visibility rules; a community_photo lives at /node/N, which
+  can't be excluded without hiding the title on every node. So this page uses
+  the block's title and adds only its own body below.
+#}
+<article{{ attributes.addClass('apc-photo-detail-page') }}>
+  {% if is_unpublished %}
+    <div class="apc-photo-detail-page__pending">{{ 'Pending review — not yet public.'|t }}</div>
+  {% endif %}
+
+  <div class="apc-photo-detail" data-apc-photo-grid>
+    <div class="apc-photo-detail__main">
+      {% if photo_hero %}
+        <div class="apc-photo-gallery__item apc-photo-detail__hero">
+          <a class="apc-photo-gallery__photo" href="/node/{{ photo_hero.nid }}" aria-label="{{ 'View full size'|t }}">
+            <img src="{{ photo_hero.hero }}" alt="{{ photo_hero.alt }}">
+          </a>
+        </div>
+      {% endif %}
+
+      <div class="apc-photo-detail__meta">
+        {% if photo_caption %}
+          <p class="apc-photo-detail__caption">{{ photo_caption }}</p>
+        {% endif %}
+        {% if photo_credit %}
+          <p class="apc-photo-detail__credit">{{ 'Photo by @name'|t({'@name': photo_credit}) }}</p>
+        {% endif %}
+        {% if photo_tags %}
+          <div class="apc-photo-detail__tags">{{ photo_tags }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if photo_related %}
+      <aside class="apc-photo-detail__related">
+        <h2 class="apc-photo-detail__related-title">{{ 'More photos & signs'|t }}</h2>
+        <ul class="apc-photo-detail__related-list">
+          {% for item in photo_related %}
+            <li class="apc-photo-gallery__item">
+              <a class="apc-photo-gallery__photo" href="/node/{{ item.nid }}" aria-label="{{ 'View full size'|t }}">
+                <img src="{{ item.thumb }}" alt="{{ item.alt }}" loading="lazy">
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </aside>
+    {% endif %}
+  </div>
+
+  <div class="apc-photo-detail__cta">
+    <p>{{ 'Have a photo or sign of your own?'|t }}</p>
+    <a href="{{ photo_submit_url }}" class="button button--primary">{{ 'Share a photo or sign'|t }}</a>
+  </div>
+</article>
