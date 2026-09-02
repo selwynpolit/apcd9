@@ -19,6 +19,7 @@ form_settings:
   node_article_form: false
   node_blog_entry_form: false
   node_calendar_event_form: true
+  node_community_photo_form: true
   node_my_work_form: false
   node_page_form: false
   comment_comment_form: false

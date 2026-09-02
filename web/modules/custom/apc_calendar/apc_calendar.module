@@ -6,7 +6,9 @@
  */
 
 use Drupal\apc_calendar\Controller\EventSubmittedController;
+use Drupal\apc_calendar\Controller\PhotoSubmittedController;
 use Drupal\apc_calendar\UsStates;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Access\AccessResult;
@@ -17,6 +19,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
+use Drupal\file\FileInterface;
 use Drupal\node\NodeInterface;
 use Drupal\taxonomy\TermInterface;
 
@@ -56,12 +59,21 @@ function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
     }
   }
 
-  // Set unpublished for anonymous users.
+  // Set unpublished for anonymous users. Photo Categories uses the same
+  // gate as Locations (a new term anyone can type, but only trusted roles
+  // skip the review queue) -- see photo-gallery-specs.md, "Why not reuse
+  // tags": the vocabularies share this moderation shape but stay separate so
+  // an event-tag admin screen never picks up photo-only terms or vice versa.
   if ($term->isNew() && $term->bundle() === 'locations') {
     if (!\Drupal::currentUser()->hasPermission('bypass location approval')) {
       $term->setUnpublished();
     }
    }
+  if ($term->isNew() && $term->bundle() === 'photo_categories') {
+    if (!\Drupal::currentUser()->hasPermission('bypass photo category approval')) {
+      $term->setUnpublished();
+    }
+  }
 
   // Strip stray leading/trailing whitespace and force an initial capital on
   // the term name. The trim matters beyond cosmetics: a leading space sorts
@@ -70,7 +82,7 @@ function apc_calendar_taxonomy_term_presave(TermInterface $term): void {
   // of what letter its name actually starts with (see the Tag Keywords view
   // and apc_calendar_update_10004(), which cleans up names that predate
   // this guard).
-  if (in_array($term->bundle(), ['locations', 'tags'], TRUE)) {
+  if (in_array($term->bundle(), ['locations', 'tags', 'photo_categories'], TRUE)) {
     $name = trim((string) $term->getName());
     if ($name !== '') {
       $term->setName(Unicode::ucfirst($name));
@@ -444,6 +456,99 @@ function apc_calendar_form_node_calendar_event_edit_form_alter(array &$form, For
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter() for node_community_photo_form.
+ *
+ * @see _apc_calendar_community_photo_form_alter()
+ */
+function apc_calendar_form_node_community_photo_form_alter(array &$form, FormStateInterface $form_state): void {
+  _apc_calendar_community_photo_form_alter($form, $form_state);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_community_photo_edit_form.
+ *
+ * @see _apc_calendar_community_photo_form_alter()
+ */
+function apc_calendar_form_node_community_photo_edit_form_alter(array &$form, FormStateInterface $form_state): void {
+  _apc_calendar_community_photo_form_alter($form, $form_state);
+}
+
+/**
+ * Forces the anonymous visitor's PHP session to actually start and persist.
+ *
+ * Both the calendar_event and community_photo forms have a Media Library
+ * image field, and dropzonejs (enabled for its drag-and-drop uploader)
+ * unconditionally takes over that field's "Add media" upload for every user,
+ * anonymous included. Its upload endpoint (dropzonejs.upload) is protected by
+ * a route-level `_csrf_token: 'TRUE'` requirement, and that CSRF token is
+ * bound to the PHP session -- so for a visitor with no pre-existing session,
+ * something has to make that session real before the token is generated.
+ *
+ * `\Drupal::service('session_manager')->start()` on its own does NOT do
+ * that, confirmed by instrumenting SessionManager directly: it only performs
+ * a *lazy* start (session_id() stays empty, isStarted() stays FALSE) unless a
+ * session cookie already exists. A real session only gets persisted later, in
+ * SessionManager::save(), and only if the session contains data that counts
+ * -- and per SessionManager::getSessionDataMask(), the CSRF token seed
+ * (stored in the *metadata* bag) is explicitly excluded from that count. This
+ * is deliberate: Drupal doesn't want merely generating a CSRF token on a page
+ * (a routine, incidental thing) to force a session and break anonymous
+ * page-cache hit rates. The practical effect is that dropzonejs's element
+ * generates a token against a seed that's created but never survives to the
+ * next request -- every anonymous upload 403's, without exception. Not a
+ * caching or environment quirk; the module just never writes anything that
+ * Drupal considers "real" session data.
+ *
+ * The fix is to write something that *does* count -- any ordinary session
+ * attribute, not the metadata bag -- which is what actually flips
+ * getSessionDataMask() and makes SessionManager::save() persist a real
+ * session and issue a cookie. Doing this on the initial form render (before
+ * "Add media" is ever clicked) means the browser already carries that cookie
+ * into the later "Add media" AJAX request (where the token is generated) and
+ * the upload POST (where it's validated), so the seed survives the round
+ * trip the same way it would for an authenticated user, whose session
+ * already exists by definition.
+ *
+ * @see _apc_calendar_community_photo_form_alter()
+ * @see _apc_calendar_calendar_event_form_alter()
+ */
+function _apc_calendar_ensure_anonymous_session(): void {
+  \Drupal::request()->getSession()->set('apc_calendar_anonymous_submission', TRUE);
+}
+
+/**
+ * Shared implementation for the community_photo add and edit forms.
+ *
+ * The anonymous-submitter handling is the same problem, and the same fix, as
+ * the calendar_event form: an anonymous visitor cannot view their own
+ * unpublished node, so core's NodeForm::save() would bounce them to the front
+ * page with a "has been created" message reading as if the photo is already
+ * live. Redirect them to an accurate thank-you page and hide the
+ * revision-authoring controls that mean nothing to a public submitter.
+ * community_photo has no body/summary field, so that piece of the event
+ * handling has no analogue here.
+ *
+ * @see _apc_calendar_calendar_event_form_alter()
+ * @see \Drupal\apc_calendar\Controller\PhotoSubmittedController
+ */
+function _apc_calendar_community_photo_form_alter(array &$form, FormStateInterface $form_state): void {
+  if (!\Drupal::currentUser()->isAnonymous()) {
+    return;
+  }
+
+  _apc_calendar_ensure_anonymous_session();
+
+  // Append after ::save so this redirect wins over the one NodeForm sets.
+  $form['actions']['submit']['#submit'][] = 'apc_calendar_photo_submit_confirmation';
+
+  foreach (['revision', 'revision_log', 'revision_information'] as $element) {
+    if (isset($form[$element])) {
+      $form[$element]['#access'] = FALSE;
+    }
+  }
+}
+
+/**
  * Shared implementation for the calendar_event add and edit forms.
  *
  * Anonymous submitters cannot view their own unpublished node (core blocks
@@ -464,6 +569,8 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
   // view their own unpublished node, so core's default behaviour is correct
   // for them.
   if ($account->isAnonymous()) {
+    _apc_calendar_ensure_anonymous_session();
+
     // Append after ::save so this redirect wins over the one NodeForm sets.
     $form['actions']['submit']['#submit'][] = 'apc_calendar_event_submit_confirmation';
 
@@ -856,6 +963,30 @@ function apc_calendar_event_submit_confirmation(array $form, FormStateInterface 
 }
 
 /**
+ * Submit handler: redirect anonymous photo submitters to the thank-you page.
+ *
+ * Same tempstore-handoff / status-message-suppression pattern as
+ * apc_calendar_event_submit_confirmation(); see its comments for the why of
+ * each step (no enumerable ?nid=, per-session freshness, dropping the
+ * misleading "has been created" message).
+ *
+ * @see _apc_calendar_community_photo_form_alter()
+ */
+function apc_calendar_photo_submit_confirmation(array $form, FormStateInterface $form_state): void {
+  \Drupal::messenger()->deleteByType(MessengerInterface::TYPE_STATUS);
+
+  $node = $form_state->getFormObject()->getEntity();
+  \Drupal::service('tempstore.private')
+    ->get(PhotoSubmittedController::COLLECTION)
+    ->set(PhotoSubmittedController::KEY, [
+      'nid' => (int) $node->id(),
+      'time' => \Drupal::time()->getRequestTime(),
+    ]);
+
+  $form_state->setRedirect('apc_calendar.photo_submitted');
+}
+
+/**
  * Implements hook_node_access().
  *
  * event_manager has 'edit any calendar_event content' but not 'bypass node
@@ -875,7 +1006,42 @@ function apc_calendar_node_access(NodeInterface $node, string $op, AccountInterf
     && $account->hasPermission('edit any calendar_event content')) {
     return AccessResult::allowed()->cachePerPermissions()->addCacheableDependency($node);
   }
+  // Same reviewer-view grant for pending community_photo submissions, so a
+  // manager can open a pending photo's own page (and the /photos "View node"
+  // link) before publishing it. Gated on edit access to this bundle, not a
+  // general bypass.
+  if ($op === 'view' && $node->bundle() === 'community_photo' && !$node->isPublished()
+    && $account->hasPermission('edit any community_photo content')) {
+    return AccessResult::allowed()->cachePerPermissions()->addCacheableDependency($node);
+  }
   return AccessResult::neutral();
+}
+
+/**
+ * Implements hook_entity_operation().
+ *
+ * Adds a one-click "Publish" operation to each unpublished community_photo,
+ * shown wherever node operations render -- notably the moderation queue at
+ * /admin/content/photos. It links to apc_calendar.publish_photo, which flips
+ * the node published and returns to the list, versus the select-then-apply of
+ * the bulk publish action. Weighted first so it is the dropbutton's primary
+ * (single-click) action. Gated on the same node.update access the route
+ * enforces, so it never appears where following it would 403.
+ */
+function apc_calendar_entity_operation(EntityInterface $entity): array {
+  if ($entity->getEntityTypeId() !== 'node' || $entity->bundle() !== 'community_photo') {
+    return [];
+  }
+  if ($entity->isPublished() || !$entity->access('update')) {
+    return [];
+  }
+  return [
+    'publish_photo' => [
+      'title' => t('Publish'),
+      'weight' => -10,
+      'url' => Url::fromRoute('apc_calendar.publish_photo', ['node' => $entity->id()]),
+    ],
+  ];
 }
 
 /**
@@ -905,16 +1071,25 @@ function apc_calendar_node_access(NodeInterface $node, string $op, AccountInterf
  * @see apc_calendar_form_node_calendar_event_form_alter()
  */
 function apc_calendar_node_presave(NodeInterface $node): void {
-  if ($node->bundle() !== 'calendar_event') {
+  if ($node->bundle() === 'calendar_event') {
+    if ($node->hasField('field_virtual') && $node->hasField('field_location') && (bool) $node->get('field_virtual')->value) {
+      $node->set('field_location', []);
+    }
+
+    if ($node->isNew() && \Drupal::currentUser()->hasPermission('publish calendar_event content immediately')) {
+      $node->setPublished();
+    }
     return;
   }
 
-  if ($node->hasField('field_virtual') && $node->hasField('field_location') && (bool) $node->get('field_virtual')->value) {
-    $node->set('field_location', []);
-  }
-
-  if ($node->isNew() && \Drupal::currentUser()->hasPermission('publish calendar_event content immediately')) {
-    $node->setPublished();
+  // community_photo defaults to unpublished (core.base_field_override.node.
+  // community_photo.status.yml), same moderation mechanic as calendar_event
+  // above -- see photo-gallery-specs.md, "Moderation bypass": no role has
+  // this permission yet, so every submission queues until that's revisited.
+  if ($node->bundle() === 'community_photo') {
+    if ($node->isNew() && \Drupal::currentUser()->hasPermission('publish community_photo content immediately')) {
+      $node->setPublished();
+    }
   }
 }
 
@@ -1181,6 +1356,108 @@ function apc_calendar_library_info_alter(array &$libraries, string $module): voi
       $libraries[$library]['js'] = [$path => ['minified' => TRUE]];
     }
   }
+}
+
+/**
+ * Implements hook_file_insert().
+ *
+ * Strips EXIF/XMP metadata -- most importantly GPS coordinates and a precise
+ * timestamp -- from every uploaded JPEG by re-encoding it with GD, which does
+ * not carry EXIF forward. This runs at the single point every upload path
+ * passes through (admin Media Library today; a future Dropzone/public-form
+ * path and a future import later) rather than needing the same logic
+ * duplicated per entry point. See photo-gallery-specs.md, "Privacy and
+ * safety" -- these are potentially protest photos, where GPS/timestamp
+ * metadata is a real de-anonymization risk (home address, exact
+ * location/time), and unlike a resized image style derivative (which already
+ * loses EXIF as a side effect of GD re-encoding), the *original* uploaded
+ * file is what the gallery lightbox deliberately links to for the full-size
+ * view -- so without this, the one place the site exposes the original file
+ * is exactly the place GPS data would otherwise still be sitting in it.
+ *
+ * A phone photo's orientation is stored as an EXIF tag, not baked into the
+ * pixels, so that tag is read and applied as a real rotation/flip BEFORE the
+ * strip -- otherwise a portrait photo would look sideways for any consumer
+ * that isn't also honouring the (now-removed) tag.
+ *
+ * Deliberately GD-only (core's own image toolkit), not shelling out to
+ * exiftool -- avoids depending on a system binary and shell_exec being
+ * available on GreenGeeks' shared hosting, which isn't confirmed either way.
+ * Scoped to JPEG only; PNG/GIF pass through untouched, since GPS EXIF is a
+ * JPEG/TIFF convention, not something those formats carry.
+ */
+function apc_calendar_file_insert(FileInterface $file): void {
+  if ($file->getMimeType() !== 'image/jpeg') {
+    return;
+  }
+
+  $uri = $file->getFileUri();
+  $path = \Drupal::service('file_system')->realpath($uri);
+  if (!$path || !is_readable($path)) {
+    return;
+  }
+
+  // Read the orientation tag before the re-encode below removes it.
+  $orientation = NULL;
+  if (function_exists('exif_read_data')) {
+    $exif = @exif_read_data($path);
+    if (is_array($exif) && !empty($exif['Orientation'])) {
+      $orientation = (int) $exif['Orientation'];
+    }
+  }
+
+  $image = @imagecreatefromjpeg($path);
+  if ($image === FALSE) {
+    // Not a real/decodable JPEG despite the MIME type -- leave the file
+    // alone rather than risk corrupting something imagejpeg() can't recreate.
+    return;
+  }
+
+  // Standard EXIF orientation values -> the GD transform that corrects them.
+  // imagerotate()'s angle is counter-clockwise, so a tag meaning "this image
+  // needs a 90° clockwise turn to be upright" (6) is a *negative* angle here.
+  switch ($orientation) {
+    case 2:
+      imageflip($image, IMG_FLIP_HORIZONTAL);
+      break;
+
+    case 3:
+      $image = imagerotate($image, 180, 0);
+      break;
+
+    case 4:
+      imageflip($image, IMG_FLIP_VERTICAL);
+      break;
+
+    case 5:
+      imageflip($image, IMG_FLIP_VERTICAL);
+      $image = imagerotate($image, -90, 0);
+      break;
+
+    case 6:
+      $image = imagerotate($image, -90, 0);
+      break;
+
+    case 7:
+      imageflip($image, IMG_FLIP_HORIZONTAL);
+      $image = imagerotate($image, -90, 0);
+      break;
+
+    case 8:
+      $image = imagerotate($image, 90, 0);
+      break;
+  }
+
+  // imagejpeg() writes a fresh JPEG from the decoded raster data and does not
+  // carry EXIF/XMP forward -- this re-encode is the strip, not a separate
+  // "remove metadata" step. Quality matches core's own GD toolkit setting so
+  // this doesn't silently change upload quality from what site config
+  // already expects.
+  $quality = (int) (\Drupal::config('system.image.gd')->get('jpeg_quality') ?? 75);
+  imagejpeg($image, $path, $quality);
+  imagedestroy($image);
+
+  clearstatcache(TRUE, $path);
 }
 
 
