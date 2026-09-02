@@ -292,10 +292,11 @@
 
 /* Widen the content column on this one page (there's no sidebar here to
    make room for -- see apc_brown_preprocess_html()) so the grid has more
-   room to actually show event titles. Reuses the same column span
-   .layout--content-medium already uses at the narrower 43.75rem breakpoint,
-   rather than inventing a new one, so this stays inside the theme's
-   existing grid vocabulary instead of an arbitrary width. */
+   room to actually show event titles. Reclaims the full nested 14-column
+   span so the view flushes with .region--content's own edges, leaving no
+   inner gutter -- this also gives the flanking mini photo carousels below
+   (in .region--content-above, same outer width) room to sit beside the
+   "Add Calendar Event" row without crowding it. */
 @media (min-width: 62.5rem) {
   /* Olivero's own region--content.html.twig wraps the content region in
      .layout--pass--content-medium, not .layout--content-medium -- the sizing
@@ -303,7 +304,7 @@
      ">.*" children of that wrapper. Matching that selector shape, not the
      class name alone, is what makes this rule apply to anything. */
   body.page-calendar .layout--pass--content-medium > * {
-    grid-column: 2 / 14;
+    grid-column: 1 / 15;
   }
 }
 

@@ -1,0 +1,26 @@
+uuid: b348c915-afd5-47d9-af71-ab2a3efec9d7
+langcode: en
+status: true
+dependencies:
+  config:
+    - views.view.photo_gallery
+  theme:
+    - apc_brown
+id: apc_brown_photo_gallery_community_photos
+theme: apc_brown
+region: content_below
+weight: 1
+provider: null
+plugin: 'views_block:photo_gallery-block_community_photos'
+settings:
+  id: 'views_block:photo_gallery-block_community_photos'
+  label: 'Community Photos'
+  label_display: visible
+  provider: views
+  views_label: 'Community Photos'
+  items_per_page: none
+visibility:
+  request_path:
+    id: request_path
+    negate: false
+    pages: '<front>'

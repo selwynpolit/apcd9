@@ -1,0 +1,40 @@
+{#
+/**
+ * @file
+ * Fields-row override for the photo_gallery view.
+ *
+ * A faithful copy of core's views-view-fields.html.twig, with one addition:
+ * an admin-only View/Edit action row appended after the fields. `admin_links`
+ * is set only for the /photos browse grid (page_1) and only when the viewer
+ * can edit the node -- see apc_brown_preprocess_views_view_fields(). The
+ * carousel block displays share this template but never receive that
+ * variable, so they render identically to the core template.
+ *
+ * @see apc_brown_theme_suggestions_views_view_fields_alter()
+ * @see apc_brown_preprocess_views_view_fields()
+ */
+#}
+{% for field in fields -%}
+  {{ field.separator }}
+  {%- if field.wrapper_element -%}
+    <{{ field.wrapper_element }}{{ field.wrapper_attributes }}>
+  {%- endif %}
+  {%- if field.label -%}
+    {%- if field.label_element -%}
+      <{{ field.label_element }}{{ field.label_attributes }}>{{ field.label }}{{ field.label_suffix }}</{{ field.label_element }}>
+    {%- else -%}
+      {{ field.label }}{{ field.label_suffix }}
+    {%- endif %}
+  {%- endif %}
+  {%- if field.element_type -%}
+    <{{ field.element_type }}{{ field.element_attributes }}>{{ field.content }}</{{ field.element_type }}>
+  {%- else -%}
+    {{ field.content }}
+  {%- endif %}
+  {%- if field.wrapper_element -%}
+    </{{ field.wrapper_element }}>
+  {%- endif %}
+{%- endfor %}
+{% if admin_links %}
+  {{ admin_links }}
+{% endif %}

@@ -1,0 +1,26 @@
+uuid: ee113459-67fc-40cb-8c38-2eac83b4c38e
+langcode: en
+status: true
+dependencies:
+  config:
+    - views.view.photo_gallery
+  theme:
+    - apc_brown
+id: apc_brown_photo_gallery_protest_signs
+theme: apc_brown
+region: content_below
+weight: 0
+provider: null
+plugin: 'views_block:photo_gallery-block_protest_signs'
+settings:
+  id: 'views_block:photo_gallery-block_protest_signs'
+  label: 'Protest Signs'
+  label_display: visible
+  provider: views
+  views_label: 'Protest Signs'
+  items_per_page: none
+visibility:
+  request_path:
+    id: request_path
+    negate: false
+    pages: '<front>'
