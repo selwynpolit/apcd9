@@ -264,6 +264,13 @@ function apc_calendar_form_taxonomy_term_locations_form_alter(array &$form, Form
       '#value' => $form_state->get('apc_geocode_error'),
     ];
   }
+
+  // Stop the geofield's Leaflet map from swallowing the page scroll. The
+  // leaflet_widget's scroll_zoom_enabled:0 setting does NOT actually disable
+  // wheel zoom -- its JS only wires focus/blur toggling when the setting is
+  // ON, and otherwise leaves Leaflet's built-in default (wheel zoom enabled).
+  // So we disable it client-side instead; the +/- buttons still zoom the map.
+  $form['#attached']['library'][] = 'apc_calendar/leaflet_no_scroll_zoom';
 }
 
 /**

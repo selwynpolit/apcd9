@@ -44,7 +44,7 @@ content:
             lat: 0.0
             lon: 0.0
           zoomControlPosition: topleft
-          zoom: 12
+          zoom: 14
           minZoom: 1
           maxZoom: 18
           zoomFiner: 0
