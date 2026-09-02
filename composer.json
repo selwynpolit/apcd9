@@ -32,6 +32,7 @@
         "drupal/core-composer-scaffold": "^10.0",
         "drupal/core-project-message": "^10.0",
         "drupal/core-recommended": "^10.0",
+        "drupal/dropzonejs": "^2.11",
         "drupal/dynamic_entity_reference": "^4.0@alpha",
         "drupal/editor_advanced_link": "^2.2",
         "drupal/environment_indicator": "^4.0",
@@ -64,8 +65,9 @@
         "drupal/term_merge": "^2.0",
         "drupal/token": "^1.7",
         "drupal/upgrade_status": "^4.0",
-        "drupal/views_bulk_operations": "^4.0",
+        "drupal/views_bulk_operations": "^4.4",
         "drush/drush": "^13.7",
+        "enyo/dropzone": "^5.9",
         "geocoder-php/nominatim-provider": "^5.8",
         "npm-asset/fullcalendar--core": "4.4.2",
         "npm-asset/fullcalendar--daygrid": "4.4.2",
@@ -164,6 +166,19 @@
                 "      composer remove drupal/core-project-message"
             ]
         }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@dropzone-library"
+        ],
+        "post-update-cmd": [
+            "@dropzone-library"
+        ],
+        "dropzone-library": [
+            "mkdir -p web/libraries/dropzone",
+            "cp vendor/enyo/dropzone/dist/min/dropzone.min.js web/libraries/dropzone/dropzone-min.js",
+            "cp vendor/enyo/dropzone/dist/dropzone.css web/libraries/dropzone/dropzone.css"
+        ]
     },
     "require-dev": {
         "drupal/coder": "^9.0",
