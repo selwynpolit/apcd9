@@ -47,3 +47,16 @@ add_location_autocomplete:
     - core/drupal
     - core/drupal.autocomplete
     - core/drupal.dialog.ajax
+
+# Scrolls the "Add or select media" dialog to its own top when it opens --
+# confirmed live that it otherwise lands ~225px pre-scrolled, hiding the
+# Dropzone drop target above the fold, for anonymous and authenticated users
+# alike. Attached by both submission forms' shared form-alter
+# implementations. No jQuery needed: 'dialog:aftercreate' is a plain window
+# CustomEvent core dispatches itself.
+media_dialog_scroll_top:
+  version: 1.x
+  js:
+    js/media-dialog-scroll-top.js: {}
+  dependencies:
+    - core/drupal.dialog
