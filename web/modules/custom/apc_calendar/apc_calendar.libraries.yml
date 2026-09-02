@@ -48,6 +48,20 @@ add_location_autocomplete:
     - core/drupal.autocomplete
     - core/drupal.dialog.ajax
 
+# Disables scroll-wheel zoom on the geofield's Leaflet widget map (location
+# term form), so scrolling the page isn't trapped by the map. Attached by
+# apc_calendar_form_taxonomy_term_locations_form_alter(). Uses jQuery because
+# the leaflet module signals map init via a jQuery 'leaflet.map' event.
+leaflet_no_scroll_zoom:
+  version: 1.x
+  js:
+    js/leaflet-no-scroll-zoom.js: {}
+  dependencies:
+    - core/jquery
+    - core/once
+    - core/drupal
+    - core/drupalSettings
+
 # Scrolls the "Add or select media" dialog to its own top when it opens --
 # confirmed live that it otherwise lands ~225px pre-scrolled, hiding the
 # Dropzone drop target above the fold, for anonymous and authenticated users
