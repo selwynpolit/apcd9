@@ -7,6 +7,7 @@ dependencies:
   module:
     - comment
     - contact
+    - dropzonejs
     - file
     - filter
     - fontawesome
@@ -27,6 +28,7 @@ permissions:
   - 'access shortcuts'
   - 'access site-wide contact form'
   - 'delete own files'
+  - 'dropzone upload files'
   - 'post comments'
   - 'search content'
   - 'skip comment approval'
