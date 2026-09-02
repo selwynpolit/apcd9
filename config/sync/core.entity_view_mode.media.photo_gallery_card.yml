@@ -1,0 +1,11 @@
+uuid: 1f18dc3d-6f85-49a9-8372-98646b428ce7
+langcode: en
+status: true
+dependencies:
+  module:
+    - media
+id: media.photo_gallery_card
+label: 'Photo gallery card'
+description: 'Cropped card image for the photo_gallery view (carousel blocks and browse page) -- see photo-gallery-specs.md.'
+targetEntityType: media
+cache: true

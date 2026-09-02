@@ -1,0 +1,34 @@
+uuid: b2be61bd-8dfe-4f8c-a92c-01ee133fc315
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.media.photo_gallery_card
+    - field.field.media.image.field_media_image
+    - field.field.media.image.rabbit_hole__settings
+    - image.style.photo_gallery_card
+    - media.type.image
+  module:
+    - image
+id: media.image.photo_gallery_card
+targetEntityType: media
+bundle: image
+mode: photo_gallery_card
+content:
+  field_media_image:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: photo_gallery_card
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  created: true
+  name: true
+  rabbit_hole__settings: true
+  thumbnail: true
+  uid: true

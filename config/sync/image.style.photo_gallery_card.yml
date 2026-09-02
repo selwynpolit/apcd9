@@ -1,0 +1,17 @@
+uuid: 85e522ab-7365-4486-abae-fba6c9de615f
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: photo_gallery_card
+label: 'Photo Gallery Card'
+effects:
+  54afb6ef-34f9-4f2d-93cc-f5e3b190cd75:
+    uuid: 54afb6ef-34f9-4f2d-93cc-f5e3b190cd75
+    id: focal_point_scale_and_crop
+    weight: null
+    data:
+      width: 480
+      height: 360
+      crop_type: focal_point
