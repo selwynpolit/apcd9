@@ -374,3 +374,34 @@ event-hover:
   css:
     theme:
       css/components/event-hover.css: {}
+
+# Photo Gallery view (views.view.photo_gallery). Attached automatically on
+# every display by apc_brown_preprocess_views_view(); the card styling also
+# applies to the page_1 browse page since both share this same CSS.
+photo-carousel:
+  version: VERSION
+  css:
+    theme:
+      css/components/photo-gallery.css: {}
+  js:
+    js/photo-carousel.js: {}
+  dependencies:
+    - core/drupal
+    - core/once
+    - core/drupalSettings
+
+# Full-size zoomable lightbox with caption/credit, for photo_gallery carousel
+# blocks only (not the generic apc_brown/lightbox used on event/location
+# photos, and not the /photos browse grid, which still just links to the
+# node). Attached by apc_brown_preprocess_block() on exactly the block
+# placements marked [data-apc-photo-lightbox]; see photo-carousel.js.
+photo-lightbox:
+  version: VERSION
+  css:
+    theme:
+      css/components/photo-lightbox.css: {}
+  js:
+    js/photo-lightbox.js: {}
+  dependencies:
+    - core/drupal
+    - core/once

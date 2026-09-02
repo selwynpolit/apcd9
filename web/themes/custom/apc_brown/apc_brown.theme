@@ -7,12 +7,14 @@
 
 use Drupal\apc_brown\OliveroPreRender;
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
 use Drupal\image\Entity\ImageStyle;
+use Drupal\node\NodeInterface;
 use Drupal\user\UserInterface;
 
 /**
@@ -123,6 +125,10 @@ function apc_brown_preprocess_node(&$variables) {
   // control the layout.
   if ($variables['node']->bundle() === 'article' && $variables['view_mode'] === 'full') {
     $variables['layout'] = 'content-narrow';
+  }
+
+  if ($variables['node']->bundle() === 'community_photo' && $variables['view_mode'] === 'full') {
+    _apc_brown_preprocess_community_photo($variables);
   }
 
   // Build the click-to-swap gallery for the event detail page. Not done via
@@ -295,6 +301,156 @@ function _apc_brown_build_gallery(FieldableEntityInterface $entity, string $fiel
 }
 
 /**
+ * Builds the community_photo detail page (node--community-photo--full).
+ *
+ * Renders a large hero image, caption/credit/tag metadata, and a sidebar of
+ * related photos (shared category first, recent as filler). Hero and related
+ * thumbnails are all wired into apc_brown/photo-lightbox's grid behavior via
+ * the [data-apc-photo-grid] wrapper in the template, so clicking any of them
+ * opens the same full-size, zoomable lightbox the /photos grid uses, and its
+ * prev/next steps through this page's set. drupalSettings.apcPhotoGallery
+ * (keyed by nid, same shape the grid builds) carries each photo's original
+ * image URL + caption + credit for that lightbox.
+ */
+function _apc_brown_preprocess_community_photo(array &$variables): void {
+  /** @var \Drupal\node\NodeInterface $node */
+  $node = $variables['node'];
+
+  $hero_style = ImageStyle::load('photo_detail');
+  $thumb_style = ImageStyle::load('gallery_thumb');
+  $file_url = \Drupal::service('file_url_generator');
+
+  // Pulls the image + lightbox data off a community_photo node. NULL when the
+  // node has no usable image, so callers can skip it.
+  $image_data = static function ($photo_node) use ($hero_style, $thumb_style, $file_url): ?array {
+    if (!$photo_node->hasField('field_photo_image') || $photo_node->get('field_photo_image')->isEmpty()) {
+      return NULL;
+    }
+    $media = $photo_node->get('field_photo_image')->entity;
+    if ($media === NULL || !$media->hasField('field_media_image') || $media->get('field_media_image')->isEmpty()) {
+      return NULL;
+    }
+    $item = $media->get('field_media_image')->first();
+    $file = $item->entity;
+    if ($file === NULL) {
+      return NULL;
+    }
+    $uri = $file->getFileUri();
+    return [
+      'hero' => $hero_style->buildUrl($uri),
+      'thumb' => $thumb_style->buildUrl($uri),
+      'full' => $file_url->generateAbsoluteString($uri),
+      'alt' => $item->get('alt')->getString() ?: $media->label(),
+    ];
+  };
+
+  // Only credit a submitter who opted into public credit -- same gate the
+  // gallery and the submission-confirmation page use.
+  $credit_for = static function ($photo_node): ?string {
+    if ($photo_node->hasField('field_credit_publicly') && $photo_node->get('field_credit_publicly')->value
+      && $photo_node->hasField('field_submitter_name')) {
+      $name = trim((string) $photo_node->get('field_submitter_name')->value);
+      return $name !== '' ? $name : NULL;
+    }
+    return NULL;
+  };
+
+  $lightbox = [];
+  $lightbox_entry = static function ($photo_node, array $image) use ($credit_for): array {
+    $entry = [
+      'full' => $image['full'],
+      'alt' => $image['alt'],
+      'caption' => $photo_node->hasField('field_caption') ? (string) $photo_node->get('field_caption')->value : '',
+    ];
+    $credit = $credit_for($photo_node);
+    if ($credit !== NULL) {
+      $entry['credit'] = $credit;
+    }
+    return $entry;
+  };
+
+  // Hero.
+  $hero = $image_data($node);
+  if ($hero !== NULL) {
+    $variables['photo_hero'] = $hero + ['nid' => $node->id()];
+    $lightbox[$node->id()] = $lightbox_entry($node, $hero);
+  }
+  $variables['photo_caption'] = $node->hasField('field_caption') ? (string) $node->get('field_caption')->value : '';
+  $variables['photo_credit'] = $credit_for($node);
+  if ($node->hasField('field_photo_tags') && !$node->get('field_photo_tags')->isEmpty()) {
+    $variables['photo_tags'] = $node->get('field_photo_tags')->view([
+      'label' => 'hidden',
+      'type' => 'entity_reference_label',
+      'settings' => ['link' => TRUE],
+    ]);
+  }
+
+  // Related: shared category first, then recent as filler, published, not
+  // this node, capped at 6.
+  $storage = \Drupal::entityTypeManager()->getStorage('node');
+  $tids = array_column($node->get('field_photo_tags')->getValue(), 'target_id');
+  $related_ids = [];
+  if ($tids) {
+    $related_ids = $storage->getQuery()
+      ->accessCheck(TRUE)
+      ->condition('type', 'community_photo')
+      ->condition('status', 1)
+      ->condition('nid', $node->id(), '<>')
+      ->condition('field_photo_tags', $tids, 'IN')
+      ->sort('created', 'DESC')
+      ->range(0, 6)
+      ->execute();
+  }
+  $related_ids = array_values($related_ids);
+  if (count($related_ids) < 6) {
+    $exclude = array_merge([$node->id()], $related_ids);
+    $filler = $storage->getQuery()
+      ->accessCheck(TRUE)
+      ->condition('type', 'community_photo')
+      ->condition('status', 1)
+      ->condition('nid', $exclude, 'NOT IN')
+      ->sort('created', 'DESC')
+      ->range(0, 6 - count($related_ids))
+      ->execute();
+    $related_ids = array_merge($related_ids, array_values($filler));
+  }
+
+  $related = [];
+  foreach ($storage->loadMultiple($related_ids) as $rel) {
+    $image = $image_data($rel);
+    if ($image === NULL) {
+      continue;
+    }
+    $related[] = [
+      'nid' => $rel->id(),
+      'thumb' => $image['thumb'],
+      'alt' => $image['alt'],
+    ];
+    $lightbox[$rel->id()] = $lightbox_entry($rel, $image);
+  }
+  $variables['photo_related'] = $related;
+
+  $variables['photo_submit_url'] = Url::fromUri('internal:/node/add/community_photo')->toString();
+  // Reviewer-only "pending" banner (a manager reaches an unpublished photo via
+  // apc_calendar_node_access()); depends only on the node's own status, so its
+  // cache tag already covers it.
+  $variables['is_unpublished'] = !$node->isPublished();
+
+  // photo-carousel carries photo-gallery.css (the .apc-photo-gallery__photo
+  // frame styling and this page's .apc-photo-detail layout); its JS is inert
+  // here since there's no [data-apc-photo-carousel]. photo-lightbox carries
+  // the click-to-open lightbox used by the grid wrapper.
+  $variables['#attached']['library'][] = 'apc_brown/photo-carousel';
+  $variables['#attached']['library'][] = 'apc_brown/photo-lightbox';
+  if ($lightbox) {
+    $variables['#attached']['drupalSettings']['apcPhotoGallery'] = $lightbox;
+  }
+  // Related-list membership and their published state feed this page; a new or
+  // newly published photo should invalidate it.
+  $variables['#cache']['tags'][] = 'node_list:community_photo';
+}
+
+/**
  * Implements hook_preprocess_HOOK() for block.html.twig.
  */
 function apc_brown_preprocess_block(&$variables) {
@@ -336,6 +492,23 @@ function apc_brown_preprocess_block(&$variables) {
   // Add a primary-nav class to main menu navigation block.
   if ($variables['plugin_id'] === 'system_menu_block:main') {
     $variables['attributes']['class'][] = 'primary-nav';
+  }
+
+  // Every photo_gallery carousel block (homepage and calendar-page mini
+  // alike) opens a lightbox on click instead of navigating to the node --
+  // the /photos browse page (page_1, not a block) is the one place that
+  // outbound link is still the intended behavior. Marked at the
+  // block-placement level, not the view/display level all four of these
+  // placements share, since that's the only place a block instance is
+  // distinguishable from the page display. See photo-carousel.js.
+  if (in_array($variables['elements']['#id'] ?? NULL, [
+    'apc_brown_calendar_protest_signs_mini',
+    'apc_brown_calendar_community_photos_mini',
+    'apc_brown_photo_gallery_protest_signs',
+    'apc_brown_photo_gallery_community_photos',
+  ], TRUE)) {
+    $variables['attributes']['data-apc-photo-lightbox'] = TRUE;
+    $variables['#attached']['library'][] = 'apc_brown/photo-lightbox';
   }
 }
 
@@ -855,6 +1028,153 @@ function apc_brown_preprocess_table(&$variables) {
  */
 function apc_brown_form_views_exposed_form_alter(&$form) {
   $form['#attributes']['class'][] = 'form--inline';
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views-view.html.twig.
+ */
+function apc_brown_preprocess_views_view(&$variables) {
+  // Every block display of the photo_gallery view is a shuffle-and-cycle
+  // carousel (see photo-gallery-specs.md, "Why client-side shuffle, not
+  // server-side random") -- matched by display ID prefix rather than an
+  // enumerated list so a future block (e.g. "Volunteer") picks this up with
+  // no code change, just a new block display. The page_1 browse display is
+  // deliberately excluded: it's a plain paged grid, not a carousel.
+  $view = $variables['view'];
+  if ($view->id() === 'photo_gallery') {
+    // Card/grid CSS is shared by every display (including page_1's plain
+    // browse grid); the carousel behavior itself only activates JS-side for
+    // elements carrying the data attribute below, so attaching this on
+    // page_1 too is harmless -- photo-carousel.js finds nothing to do.
+    $variables['#attached']['library'][] = 'apc_brown/photo-carousel';
+    if (str_starts_with($view->current_display, 'block_')) {
+      $variables['attributes']['data-apc-photo-carousel'] = TRUE;
+    }
+    // The /photos browse grid (page_1) opens the same lightbox on click as
+    // the carousels, rather than navigating to the bare node view -- the
+    // grid variant of photo-lightbox.js keys off this attribute.
+    elseif ($view->current_display === 'page_1') {
+      $variables['attributes']['data-apc-photo-grid'] = TRUE;
+      $variables['#attached']['library'][] = 'apc_brown/photo-lightbox';
+    }
+
+    // Per-photo data for the richer lightbox (apc_brown/photo-lightbox):
+    // the original uncropped image, plus caption/credit -- none of which
+    // the Views-rendered card markup exposes. Its own <img> is the cropped
+    // photo_gallery_card style, and entity_reference_entity_view bypasses
+    // field.html.twig entirely (Views' "Rendered entity" field renders the
+    // referenced entity directly), so there's no per-field template hook to
+    // hang data-* attributes off of either. Keyed by nid so photo-carousel.js
+    // can look a slide up from the nid already in its node/[nid] link.
+    // Attached even on page_1 (not lightbox-enabled) -- unused JSON in
+    // drupalSettings, no real cost, and simpler than duplicating this loop
+    // per display.
+    $lightbox_data = [];
+    $cache_tags = [];
+    foreach ($view->result as $row) {
+      $node = $row->_entity ?? NULL;
+      if (!$node instanceof NodeInterface || !$node->hasField('field_photo_image') || $node->get('field_photo_image')->isEmpty()) {
+        continue;
+      }
+      $cache_tags = Cache::mergeTags($cache_tags, $node->getCacheTags());
+
+      $media = $node->get('field_photo_image')->entity;
+      if ($media === NULL || !$media->hasField('field_media_image') || $media->get('field_media_image')->isEmpty()) {
+        continue;
+      }
+      $image_item = $media->get('field_media_image')->first();
+      $file = $image_item->entity;
+      if ($file === NULL) {
+        continue;
+      }
+
+      $entry = [
+        'full' => \Drupal::service('file_url_generator')->generateAbsoluteString($file->getFileUri()),
+        'alt' => $image_item->get('alt')->getString() ?: $media->label(),
+        'caption' => $node->hasField('field_caption') ? (string) $node->get('field_caption')->value : '',
+      ];
+      // Only ever include a name when the submitter opted into public
+      // credit -- field_credit_publicly exists precisely to gate this.
+      if ($node->hasField('field_credit_publicly') && $node->get('field_credit_publicly')->value && $node->hasField('field_submitter_name')) {
+        $submitter = trim((string) $node->get('field_submitter_name')->value);
+        if ($submitter !== '') {
+          $entry['credit'] = $submitter;
+        }
+      }
+      $lightbox_data[$node->id()] = $entry;
+    }
+    if ($lightbox_data) {
+      $variables['#attached']['drupalSettings']['apcPhotoGallery'] = $lightbox_data;
+      $variables['#cache']['tags'] = Cache::mergeTags($variables['#cache']['tags'] ?? [], $cache_tags);
+    }
+  }
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK_alter() for views_view_fields.
+ *
+ * Scopes a fields-row template override to the photo_gallery view, so the
+ * /photos grid can append an admin-only View/Edit row per row without
+ * touching the base views-view-fields template site-wide. The template is
+ * shared by this view's carousel blocks too, but they never get the
+ * admin_links variable (see apc_brown_preprocess_views_view_fields), so they
+ * render exactly as before.
+ */
+function apc_brown_theme_suggestions_views_view_fields_alter(array &$suggestions, array $variables): void {
+  $view = $variables['view'] ?? NULL;
+  if ($view && $view->id() === 'photo_gallery') {
+    $suggestions[] = 'views_view_fields__photo_gallery';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views-view-fields.html.twig.
+ *
+ * Adds an admin-only "View / Edit" action row to each /photos browse-grid
+ * row. Gated on the viewer's node update access -- so it is genuinely
+ * access-controlled, not merely CSS-hidden, and never renders for anonymous
+ * visitors -- and scoped to the page_1 display (the caption/photo already
+ * link out for everyone; this is the reviewer's shortcut to the node itself,
+ * which the media contextual-links pencil doesn't reach). The two link
+ * targets, unlike that pencil, are the community_photo node: its canonical
+ * view and its edit form.
+ */
+function apc_brown_preprocess_views_view_fields(&$variables) {
+  $view = $variables['view'];
+  if ($view->id() !== 'photo_gallery' || $view->current_display !== 'page_1') {
+    return;
+  }
+  $node = $variables['row']->_entity ?? NULL;
+  if (!$node instanceof NodeInterface) {
+    return;
+  }
+
+  // Visibility varies per viewer (edit access), so make that explicit on the
+  // render array -- a row cached for an editor must never be reused for an
+  // anonymous visitor.
+  $variables['#cache']['contexts'][] = 'user.permissions';
+  $variables['#cache']['tags'] = Cache::mergeTags($variables['#cache']['tags'] ?? [], $node->getCacheTags());
+
+  if (!$node->access('update')) {
+    return;
+  }
+
+  // Return to the exact /photos state (filters, page) after an edit.
+  $destination = \Drupal::request()->getRequestUri();
+  $variables['admin_links'] = [
+    '#theme' => 'links',
+    '#attributes' => ['class' => ['apc-photo-gallery__admin']],
+    '#links' => [
+      'view' => [
+        'title' => t('View node'),
+        'url' => $node->toUrl(),
+      ],
+      'edit' => [
+        'title' => t('Edit node'),
+        'url' => $node->toUrl('edit-form', ['query' => ['destination' => $destination]]),
+      ],
+    ],
+  ];
 }
 
 /**
