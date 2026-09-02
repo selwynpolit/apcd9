@@ -1,0 +1,19 @@
+uuid: 66f3b782-b7d8-4f3c-aace-2d21834a9779
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_submitter_name
+    - node.type.community_photo
+id: node.community_photo.field_submitter_name
+field_name: field_submitter_name
+entity_type: node
+bundle: community_photo
+label: 'Submitted by'
+description: "Optional -- your name, if you'd like to be credited."
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

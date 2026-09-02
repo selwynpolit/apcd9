@@ -1,0 +1,27 @@
+uuid: d430d6a8-524a-4f8a-befc-fa8dcecb4f38
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+    - options
+id: node.field_gallery_placement
+field_name: field_gallery_placement
+entity_type: node
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: protest_sign
+      label: 'Protest Sign'
+    -
+      value: community_photo
+      label: 'Community Photo'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: -1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

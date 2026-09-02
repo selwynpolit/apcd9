@@ -1,0 +1,21 @@
+uuid: 19ef60e6-d4ca-4abd-815c-6ac9ef9912b3
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_credit_publicly
+    - node.type.community_photo
+id: node.community_photo.field_credit_publicly
+field_name: field_credit_publicly
+entity_type: node
+bundle: community_photo
+label: 'Credit me publicly'
+description: 'If checked, your name is shown alongside the photo. If unchecked, it is kept for moderation purposes only and never shown publicly.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  on_label: 'Yes'
+  off_label: 'No'
+field_type: boolean

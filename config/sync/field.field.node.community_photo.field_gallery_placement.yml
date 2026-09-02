@@ -1,0 +1,21 @@
+uuid: 8d1946c7-89e9-45d8-b94f-475c6aa8bfe7
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_gallery_placement
+    - node.type.community_photo
+  module:
+    - options
+id: node.community_photo.field_gallery_placement
+field_name: field_gallery_placement
+entity_type: node
+bundle: community_photo
+label: 'Gallery placement'
+description: 'Which gallery block(s) this photo appears in. Choose at least one.'
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: list_string
