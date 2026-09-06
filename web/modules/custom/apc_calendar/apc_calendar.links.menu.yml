@@ -15,15 +15,22 @@ apc_calendar.footer.add_event:
   url: 'internal:/node/add/calendar_event'
   weight: 1
 
+apc_calendar.footer.submit_photo:
+  title: 'Submit a photo or sign'
+  description: 'Upload a community photo or protest sign'
+  menu_name: footer
+  url: 'internal:/node/add/community_photo'
+  weight: 2
+
 apc_calendar.footer.blog:
   title: 'Blog'
   description: 'Notes on Drupal and the site'
   menu_name: footer
   url: 'internal:/blog'
-  weight: 2
+  weight: 3
 
 apc_calendar.footer.home:
   title: 'Home'
   menu_name: footer
   url: 'internal:/'
-  weight: 3
+  weight: 4
