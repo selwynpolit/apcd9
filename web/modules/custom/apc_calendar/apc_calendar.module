@@ -1499,4 +1499,39 @@ function apc_calendar_file_insert(FileInterface $file): void {
   clearstatcache(TRUE, $path);
 }
 
-
+/**
+ * Implements hook_theme().
+ *
+ * Registers a theme hook that ships with contrib module focal_point
+ * (2.1.2) but that its own hook_theme() never declares -- see
+ * focal_point.module, which only registers focal_point_preview_page even
+ * though FocalPointImageWidget::process() unconditionally sets
+ * $element['#theme'] = 'focal_point_media_library_image_widget' whenever the
+ * widget renders inside a Media Library "Add media" form, and the module
+ * ships a matching template (templates/focal-point-media-library-image-
+ * widget.html.twig) for it. Confirmed live: uploading through Media Library
+ * (both the calendar_event and community_photo forms use it, for anonymous
+ * and authenticated users alike) creates the focal-point field and its
+ * hidden coordinate input, but the crosshair indicator overlay -- which
+ * requires this theme hook to render at all -- never appears, so the widget
+ * looks like plain "Alternative text only" with no way to set a focal point.
+ *
+ * Declared here rather than patched into the contrib module so it survives
+ * `composer update drupal/focal_point`. 'base hook' => 'image_widget'
+ * reuses core's template_preprocess_image_widget() (image.field.inc), which
+ * is exactly what the template needs: it consumes the same $attributes and
+ * $data variables that hook builds, just via a different template file.
+ */
+function apc_calendar_theme(): array {
+  return [
+    'focal_point_media_library_image_widget' => [
+      'render element' => 'element',
+      'base hook' => 'image_widget',
+      // The template lives in focal_point's own templates/ directory, not
+      // this module's -- Drupal's default lookup path is the declaring
+      // module's own templates/, so it has to be pointed there explicitly.
+      'path' => \Drupal::service('extension.list.module')->getPath('focal_point') . '/templates',
+      'template' => 'focal-point-media-library-image-widget',
+    ],
+  ];
+}

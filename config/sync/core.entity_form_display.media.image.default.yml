@@ -32,7 +32,7 @@ content:
       progress_indicator: throbber
       preview_image_style: medium
       preview_link: true
-      offsets: '50,50'
+      offsets: '50,25'
     third_party_settings: {  }
   path:
     type: path
