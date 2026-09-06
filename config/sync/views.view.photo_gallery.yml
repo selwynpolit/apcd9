@@ -623,7 +623,7 @@ display:
           empty: true
           content: |
             <div class="apc-photo-submit-cta">
-              <a href="/node/add/community_photo" class="button button--primary">Share a photo or sign</a>
+              <a href="/node/add/community_photo" class="button button--primary">Upload a photo or sign</a>
             </div>
           tokenize: false
       display_extenders: {  }
