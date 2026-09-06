@@ -23,7 +23,7 @@
  */
 
 ((Drupal, once, drupalSettings) => {
-  const ZOOM_STEPS = [1, 1.5, 2, 3];
+  const ZOOM_STEPS = [1, 1.5, 2, 3, 4.5];
 
   once('apc-photo-lightbox', document.body).forEach(() => {
     const overlay = document.createElement('div');

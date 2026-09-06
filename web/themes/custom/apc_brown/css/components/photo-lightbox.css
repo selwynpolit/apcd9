@@ -36,9 +36,13 @@
 }
 
 .apc-photo-lightbox__viewport {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Not flex align-items/justify-content: center -- centering an
+     overflowing child that way makes the content before the centered
+     position unreachable by scrolling (a well-known flexbox+overflow trap),
+     which is exactly what clipped the top of a zoomed-in photo with no way
+     to scroll up to it. margin: auto on the image itself (below) centers it
+     when it fits without that trap, and still lets the scrollable area
+     include the image's full extent once it's zoomed past the viewport. */
   max-height: 65vh;
   overflow: auto;
   border-radius: var(--radius-md);
@@ -79,6 +83,7 @@
   display: block;
   max-width: 100%;
   max-height: 65vh;
+  margin: auto;
   object-fit: contain;
 }
 
