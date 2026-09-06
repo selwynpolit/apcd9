@@ -460,6 +460,34 @@ there. Do them as one change, not three.
       on that rebuild being safe. Item H's importer reuses the `TagSuggester` service built here (see
       that doc's own "Collisions" section), so this task's service should exist before wiring tags into
       H's import path.
+- [ ] **J. Focal point widget's crosshair never appears in the Media Library "Add media" dialog.**
+      Confirmed live on `community_photo` (also affects `calendar_event` — both fields share the same
+      `image` media bundle and widget config). Root cause found, not yet fixed:
+      `FocalPointImageWidget::process()` (`focal_point` 2.1.2) special-cases Media Library rendering
+      with `if ($form['#form_id'] == 'media_library_upload_form' || $form['#form_id'] ==
+      'media_library_add_form')`, but **dropzonejs renames the form to
+      `media_library_add_form_dropzonejs`** (confirmed by temporarily logging `$form['#form_id']` from
+      inside the vendor method, then reverting — dropzonejs is enabled site-wide for its drag-and-drop
+      uploader, see the long comment on `_apc_calendar_ensure_anonymous_session()` in
+      `apc_calendar.module`). The string comparison never matches, so focal_point's Media-Library-
+      specific handling (its own `focal_point_media_library_image_widget` theme override, which
+      `focal_point.module` also never registers via `hook_theme()` — a second, independent contrib
+      bug, fixed separately in `apc_calendar_theme()`) never engages. The focal-point preview *array*
+      still gets built (confirmed: `isset($element['preview'])` is true), so core's fallback
+      `image_widget` theme should still render it in principle — but it doesn't reach the DOM, most
+      likely because dropzonejs's own form-alter or client-side widget replaces the standard preview
+      markup with its own upload UI. Not chased further into dropzonejs internals.
+      **Workaround that exists today, admin/editor only:** the crosshair works correctly on a media
+      item's own standalone edit form (`/media/{id}/edit`) — confirmed live. The community_photo edit
+      form now links straight there ("Edit this photo (crop, alt text, focal point)").
+      **This does not help anonymous submitters** — they have no permission to edit media, so an
+      anonymous upload's focal point is stuck at the sane default (`50,25`, top-center-ish) with no way
+      for that submitter to adjust it. Not a regression: this is the same default the module falls
+      back to when *anyone* skips the crosshair, and a curator can still correct outliers afterward via
+      the edit-media link above. A real fix would mean either patching around dropzonejs's form_id
+      rename (a composer patch or a `hook_form_alter` on the `_dropzonejs`-suffixed form id that
+      re-triggers focal_point's own logic) or reporting/fixing upstream in `focal_point` or
+      `dropzonejs`.
 
 ### Group 5 — Needs a decision before any implementation
 
