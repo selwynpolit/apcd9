@@ -150,7 +150,7 @@ has been built and, importantly, *why several planned approaches were abandoned*
 starting — three of the items below re-enter territory where an obvious-looking approach has already
 been tried and rejected.
 
-**Two standing rules for this codebase, both learned the hard way:**
+**Standing rules for this codebase, all learned the hard way:**
 
 1. Run `ddev drush cst` **before** `ddev drush cex`. An unguarded `cex` has already silently
    discarded hand-edited config that had not yet been imported.
@@ -162,6 +162,15 @@ been tried and rejected.
      ddev host's individual (aggregation-off) stylesheets with `ERR_BLOCKED_BY_CLIENT`, so every
      page renders unstyled there and screenshots are useless for visual/CSS checks. The real Chrome
      (already logged in as admin) renders the site correctly.
+3. **When fixing a bug in a contrib module, check that module's drupal.org issue queue early —
+   before spending time guessing at the root cause from the running site.** Finding item J's real
+   fix (see Group 4) took two long rounds of live debugging guessing at internals before checking
+   the `focal_point` issue queue, which turned up the exact already-diagnosed (if not yet released)
+   bug on the first search. Search the queue as soon as a bug looks like it could be the contrib
+   module's fault, not as a last resort after exhausting other theories.
+4. **Do not commit anything (`git commit`) until the user explicitly says to.** Investigating,
+   editing, and testing changes locally is fine and expected without asking; committing is a
+   separate, explicit step every time, regardless of how routine the change seems.
 
 Items are ordered by dependency, not by importance. **A, B, C are independent and can be done in any
 order; D depends on A; F depends on E.**
@@ -440,13 +449,31 @@ there. Do them as one change, not three.
 
 ### Group 4 — Designed, written up separately
 
-- [ ] **H. Import events from external iCal calendars.** Full design in `event-import-task.md`.
-      First source is the Forward TX Google Calendar, but the design is multi-source from the start:
-      one `ical_event_import` feed type, one feed per calendar, an `event_sources` vocabulary. Import
-      into `calendar_event` unpublished and curate — *not* a staging content type. **The one thing to
-      know before touching it:** deleting a rejected import causes it to be re-imported forever,
-      because the dedupe state lives in `feeds_item` on the node. Rejection is a flag, never a
-      delete. Depends on F for the publish action.
+- [x] **H. Import events from external iCal calendars.** Built and verified locally (2026-09-03);
+      full record, including several real bugs found only by running a live import, in
+      `event-import-task.md`. First source is the Forward TX Google Calendar (permission confirmed
+      by Wendy, its author); the design is multi-source from the start — one `ical_event_import`
+      feed type (parser: Ical, shared across any future iCal/Google source), one feed per calendar,
+      an `event_sources` vocabulary with `field_source_url` for credited attribution. Imports into
+      `calendar_event` unpublished (`field_import_state`: pending/accepted/rejected) and are curated
+      via the new `/imported-events` view — *not* a staging content type. **The one thing to know
+      before touching it:** deleting a rejected import causes it to be re-imported forever, because
+      the dedupe state lives in `feeds_item` on the node. Rejection is a flag
+      (`apc_calendar_reject_imported_event`, a VBO action), never a delete. Built on item F's publish
+      action — `apc_calendar_accept_imported_event` extends `PublishEventAndLocation` and additionally
+      marks `field_import_state = accepted`.
+      **Real bugs found only by running the first live import (not visible from reading the feed or
+      module source alone) — full detail in event-import-task.md's "Bugs found only by running a
+      real import":** the feed-field mapping source works as designed, but needs `reference_by: tid`
+      rather than the default `name`; `apc_calendar_node_presave()`'s auto-publish-on-permission
+      check (built for the human-submission form) also fired during an admin-triggered import,
+      publishing every imported node immediately — fixed by skipping that branch whenever
+      `feeds_item` is non-empty; `feeds_ical` hardcodes UTC as the timezone for bare `VALUE=DATE`
+      all-day entries, shifting them to the previous evening on display — fixed with a narrow,
+      DST-safe presave correction rather than patching the contrib module; Google's DESCRIPTION HTML
+      needs the body mapping's filter format set to `basic_html`, not the default `plain_text`.
+      **Not yet done:** production deployment — everything above was built and verified against the
+      local DDEV site only.
 - [ ] **I. "Suggest tags" button for `calendar_event`.** Full design in `auto-tag-task.md`. Status:
       designed, not started. A curated keyword map (`apc_calendar.tag_map` config) suggests existing
       `tags` terms via an AJAX "Suggest tags" button below `field_tags`, all checked by default —

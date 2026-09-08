@@ -380,6 +380,18 @@
   color: inherit;
 }
 
+/* Attribution line for Feeds-imported events (event-import-task.md). */
+.apc-detail__source {
+  margin-block-start: var(--sp2);
+  font-size: var(--font-size-s);
+  color: var(--color-text-neutral-medium);
+}
+
+.apc-detail__source a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 /* Closing call-to-action. */
 .apc-detail__cta {
   margin-block-start: var(--sp3);

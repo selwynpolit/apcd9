@@ -1,0 +1,19 @@
+uuid: bccc3a85-a5f5-4c7c-ae11-8d1c1140f297
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_import_location_raw
+    - node.type.calendar_event
+id: node.calendar_event.field_import_location_raw
+field_name: field_import_location_raw
+entity_type: node
+bundle: calendar_event
+label: 'Import Location (raw)'
+description: 'Raw LOCATION text from the import feed, for the curator to read while picking the real Location term. Never shown publicly.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

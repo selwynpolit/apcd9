@@ -1,0 +1,23 @@
+uuid: 75a3ea2c-6a9f-4405-afde-e3efe6f3b94c
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.feeds_item
+    - node.type.calendar_event
+  module:
+    - feeds
+id: node.calendar_event.feeds_item
+field_name: feeds_item
+entity_type: node
+bundle: calendar_event
+label: 'Feeds item'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:feeds_feed'
+  handler_settings: {  }
+field_type: feeds_item

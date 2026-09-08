@@ -1,0 +1,30 @@
+uuid: eb8a35ff-ce42-47f4-8eea-9c0fd67165c7
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+    - options
+id: node.field_import_state
+field_name: field_import_state
+entity_type: node
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: pending
+      label: Pending
+    -
+      value: accepted
+      label: Accepted
+    -
+      value: rejected
+      label: Rejected
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

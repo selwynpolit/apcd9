@@ -213,6 +213,23 @@ function apc_brown_preprocess_node(&$variables) {
         $variables['location_url'] = $term->toUrl()->toString();
       }
     }
+
+    // Source attribution for events pulled in via Feeds (event-import-
+    // task.md) -- offering a credited link back is the whole point of
+    // field_source_url on the event_sources term, since it's what a source
+    // org gets in exchange for letting this site aggregate their calendar.
+    // Empty field_event_source is meaningful (a human submission), so this
+    // is silently skipped rather than shown with a placeholder.
+    if ($variables['node']->hasField('field_event_source') && !$variables['node']->get('field_event_source')->isEmpty()) {
+      $source_term = $variables['node']->get('field_event_source')->entity;
+      if ($source_term !== NULL) {
+        $variables['#cache']['tags'] = Cache::mergeTags($variables['#cache']['tags'] ?? [], $source_term->getCacheTags());
+        $variables['event_source_label'] = $source_term->label();
+        if ($source_term->hasField('field_source_url') && !$source_term->get('field_source_url')->isEmpty()) {
+          $variables['event_source_url'] = $source_term->get('field_source_url')->first()->getUrl()->toString();
+        }
+      }
+    }
   }
 }
 

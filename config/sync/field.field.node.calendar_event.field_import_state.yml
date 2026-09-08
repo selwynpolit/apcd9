@@ -1,0 +1,23 @@
+uuid: 868f5b8f-2200-45af-915e-f16b598f525f
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_import_state
+    - node.type.calendar_event
+  module:
+    - options
+id: node.calendar_event.field_import_state
+field_name: field_import_state
+entity_type: node
+bundle: calendar_event
+label: 'Import State'
+description: "Moderation state for imported events. Rejected nodes stay in place (never deleted), so the feed's dedupe record isn't lost."
+required: false
+translatable: false
+default_value:
+  -
+    value: pending
+default_value_callback: ''
+settings: {  }
+field_type: list_string

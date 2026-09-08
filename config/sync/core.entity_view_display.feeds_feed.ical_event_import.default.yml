@@ -1,0 +1,70 @@
+uuid: 29b7a0c2-efba-4c25-bb66-695d5bafe593
+langcode: en
+status: true
+dependencies:
+  config:
+    - feeds.feed_type.ical_event_import
+    - field.field.feeds_feed.ical_event_import.field_event_source
+  module:
+    - feeds
+    - options
+    - user
+id: feeds_feed.ical_event_import.default
+targetEntityType: feeds_feed
+bundle: ical_event_import
+mode: default
+content:
+  field_event_source:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  imported:
+    type: timestamp_ago
+    label: inline
+    settings:
+      future_format: '@interval hence'
+      past_format: '@interval ago'
+      granularity: 2
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  item_count:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  next:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  source:
+    type: feeds_uri_link
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: -3
+    region: content
+hidden: {  }

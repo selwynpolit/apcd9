@@ -1,0 +1,19 @@
+uuid: d575c8f9-9328-4aa2-ba9e-5973904fb18a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_import_recurrence_raw
+    - node.type.calendar_event
+id: node.calendar_event.field_import_recurrence_raw
+field_name: field_import_recurrence_raw
+entity_type: node
+bundle: calendar_event
+label: 'Import Recurrence (raw)'
+description: 'Raw RRULE from the import feed, for the curator to see the recurrence pattern (feeds_ical does not expand it -- recurrence must be set by hand in the Event Date field). Also used to keep recurring series with an old DTSTART visible in the Imported Events queue. Never shown publicly.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

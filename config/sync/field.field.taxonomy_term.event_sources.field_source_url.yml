@@ -1,0 +1,23 @@
+uuid: 7a0bc035-f942-42b5-aace-313fa9eae7f0
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_source_url
+    - taxonomy.vocabulary.event_sources
+  module:
+    - link
+id: taxonomy_term.event_sources.field_source_url
+field_name: field_source_url
+entity_type: taxonomy_term
+bundle: event_sources
+label: 'Source URL'
+description: 'Link to their calendar or site, offered as attribution on published events imported from this source.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  title: 1
+  link_type: 16
+field_type: link

@@ -1,0 +1,35 @@
+uuid: edf9de13-f9ff-4f1b-a7ec-4f6563a2c6f8
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.event_sources.field_source_url
+    - taxonomy.vocabulary.event_sources
+  module:
+    - link
+    - text
+id: taxonomy_term.event_sources.default
+targetEntityType: taxonomy_term
+bundle: event_sources
+mode: default
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_source_url:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden: {  }
