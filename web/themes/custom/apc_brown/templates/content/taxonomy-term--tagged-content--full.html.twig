@@ -1,0 +1,31 @@
+{#
+/**
+ * @file
+ * Detail page shared by the 'tags' and 'photo_categories' vocabularies.
+ *
+ * Prints the term's own fields exactly like core's default
+ * taxonomy-term.html.twig (there's no bespoke design for this one -- it's
+ * just the "Match keywords" field used by the tag-suggestion feature), then
+ * adds the tagged_content view embedded by apc_brown_preprocess_taxonomy_
+ * term(): everything -- events and community photos alike -- that
+ * references this term, which core's own render otherwise omitted entirely.
+ *
+ * @see apc_brown_preprocess_taxonomy_term()
+ * @see apc_brown_theme_suggestions_taxonomy_term_alter()
+ */
+#}
+<div{{ attributes }}>
+  {{ title_prefix }}
+  {% if name and not page %}
+    <h2><a href="{{ url }}">{{ name }}</a></h2>
+  {% endif %}
+  {{ title_suffix }}
+  {{ content }}
+
+  {% if tagged_content %}
+    <div class="apc-tagged-content">
+      <h2 class="apc-tagged-content__title">{{ 'Tagged content'|t }}</h2>
+      {{ tagged_content }}
+    </div>
+  {% endif %}
+</div>
