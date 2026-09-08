@@ -1535,3 +1535,39 @@ function apc_calendar_theme(): array {
     ],
   ];
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter() for media_library_add_form_dropzonejs.
+ *
+ * The real fix for item J's "focal point crosshair never appears in Media
+ * Library" bug -- the hook_theme() registration above (apc_calendar_theme())
+ * turned out to be necessary but not sufficient. The actual mechanism that
+ * makes the crosshair visible lives in
+ * focal_point_form_media_library_add_form_upload_alter() (focal_point.module):
+ * it adds a #process callback, _focal_point_replace_media_library_preview(),
+ * that copies the field widget's own preview (indicator + thumbnail, normally
+ * hidden by Media Library behind #access = FALSE in favor of Media Library's
+ * own static preview) into Media Library's real preview slot at
+ * ['media', $delta, 'preview', 'thumbnail']. That hook is keyed to the exact
+ * form ID media_library_add_form_upload, which is dropzonejs's pre-rename
+ * form ID -- dropzonejs renames it to media_library_add_form_dropzonejs (see
+ * the long comment on _apc_calendar_ensure_anonymous_session() above), so the
+ * hook, and the #process callback it registers, never ran. This is a known,
+ * already-fixed-upstream bug: https://www.drupal.org/project/focal_point/issues/3344369
+ * ("Compatibility with DropzoneJS") was committed to the 2.x branch
+ * 2025-02-27 but has not shipped in a tagged release as of 2.1.2 (the version
+ * this site runs) -- the upstream fix adds exactly this hook, under exactly
+ * this name, calling the same existing alter logic. Implemented here instead
+ * of waiting for a release (or patching the contrib module) so it survives a
+ * `composer update` regardless of when focal_point actually tags one; safe to
+ * delete once an installed release includes it.
+ *
+ * Verified live (2026-09-07): uploading through this exact dialog now shows
+ * the crosshair at the correct default position, and dragging it updates the
+ * hidden focal-point field -- confirmed both by DOM inspection
+ * (.focal-point-indicator present, correctly positioned) and by checking the
+ * field's value changed after a click elsewhere on the image.
+ */
+function apc_calendar_form_media_library_add_form_dropzonejs_alter(array &$form, FormStateInterface $form_state): void {
+  focal_point_form_media_library_add_form_upload_alter($form, $form_state);
+}
