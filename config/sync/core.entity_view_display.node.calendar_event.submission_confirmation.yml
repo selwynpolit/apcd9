@@ -5,9 +5,13 @@ dependencies:
   config:
     - core.entity_view_mode.node.submission_confirmation
     - field.field.node.calendar_event.body
+    - field.field.node.calendar_event.feeds_item
     - field.field.node.calendar_event.field_event_date
     - field.field.node.calendar_event.field_event_image
+    - field.field.node.calendar_event.field_event_source
     - field.field.node.calendar_event.field_event_url
+    - field.field.node.calendar_event.field_import_location_raw
+    - field.field.node.calendar_event.field_import_state
     - field.field.node.calendar_event.field_location
     - field.field.node.calendar_event.field_tags
     - field.field.node.calendar_event.field_virtual
@@ -16,6 +20,7 @@ dependencies:
     - link
     - smart_date_recur
     - text
+    - user
 id: node.calendar_event.submission_confirmation
 targetEntityType: node
 bundle: calendar_event
@@ -103,4 +108,9 @@ content:
     weight: 4
     region: content
 hidden:
+  feeds_item: true
+  field_event_source: true
+  field_import_location_raw: true
+  field_import_recurrence_raw: true
+  field_import_state: true
   links: true
