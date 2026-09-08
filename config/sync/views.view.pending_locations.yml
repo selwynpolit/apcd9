@@ -762,9 +762,9 @@ display:
                 soft_limit: 0
                 soft_limit_label_less: 'Show less'
                 soft_limit_label_more: 'Show more'
+                soft_limit_include_children: false
                 scrollable: false
                 scrollable_height: 300
-                soft_limit_include_children: false
       access:
         type: perm
         options:
@@ -898,8 +898,8 @@ display:
         description: ''
         weight: 0
         expanded: false
-        menu_name: main
-        parent: ''
+        menu_name: admin
+        parent: apc_calendar.admin.apc_group
         context: '0'
     cache_metadata:
       max-age: 0
