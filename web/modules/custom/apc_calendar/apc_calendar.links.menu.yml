@@ -1,6 +1,23 @@
 # Footer menu links, defined in code so they deploy with the module rather than
 # living only as content (menu_link_content) that would have to be recreated per
 # environment.
+
+# "APC" grouping link nested under Content in the Administration menu (the
+# admin toolbar's "Content" flyout), so the moderation views below show up
+# there instead of only in the front-end 'main' navigation -- which isn't
+# rendered anywhere while browsing in the admin theme (Claro). route_name
+# '<nolink>' is core's special-cased "menu link with no real destination"
+# (see \Drupal\Core\Utility\LinkGenerator) -- this item exists purely to
+# group its children, same as the real "Content"/"Structure" top-level menu
+# items it sits beside.
+apc_calendar.admin.apc_group:
+  title: APC
+  description: 'Austin Progressive Calendar moderation queues'
+  route_name: '<nolink>'
+  menu_name: admin
+  parent: system.admin_content
+  weight: 20
+
 apc_calendar.footer.calendar:
   title: 'Calendar'
   description: 'Browse upcoming progressive events'

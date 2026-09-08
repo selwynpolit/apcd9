@@ -1005,8 +1005,8 @@ display:
       menu:
         type: normal
         title: 'Photo Moderation'
-        menu_name: main
-        parent: ''
+        menu_name: admin
+        parent: apc_calendar.admin.apc_group
     cache_metadata:
       max-age: 0
       contexts:

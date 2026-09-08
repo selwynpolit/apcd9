@@ -666,8 +666,8 @@ display:
         description: 'Curate the tags used by the "Suggest tags" feature on the event form.'
         weight: 0
         expanded: false
-        menu_name: main
-        parent: ''
+        menu_name: admin
+        parent: apc_calendar.admin.apc_group
         context: '0'
     cache_metadata:
       max-age: 0
