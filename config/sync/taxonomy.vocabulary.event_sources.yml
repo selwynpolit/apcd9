@@ -1,0 +1,9 @@
+uuid: 63fb2090-f1ef-4ffb-96cd-c9c975c42366
+langcode: en
+status: true
+dependencies: {  }
+name: 'Event Sources'
+vid: event_sources
+description: 'External calendars imported via Feeds (e.g. Forward TX).'
+weight: 0
+new_revision: false

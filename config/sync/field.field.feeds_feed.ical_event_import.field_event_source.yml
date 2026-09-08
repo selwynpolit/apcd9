@@ -1,0 +1,29 @@
+uuid: 49b623d0-7320-4c09-98e5-99b17ed28cc0
+langcode: en
+status: true
+dependencies:
+  config:
+    - feeds.feed_type.ical_event_import
+    - field.storage.feeds_feed.field_event_source
+    - taxonomy.vocabulary.event_sources
+id: feeds_feed.ical_event_import.field_event_source
+field_name: field_event_source
+entity_type: feeds_feed
+bundle: ical_event_import
+label: 'Event Source'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:filter_existing_terms'
+  handler_settings:
+    target_bundles:
+      event_sources: event_sources
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

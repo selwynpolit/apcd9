@@ -119,6 +119,16 @@
     </div>
   {% endif %}
 
+  {% if event_source_label %}
+    <p class="apc-detail__source">
+      {% if event_source_url %}
+        {{ 'Imported from <a href="@url">@source</a>'|t({'@url': event_source_url, '@source': event_source_label}) }}
+      {% else %}
+        {{ 'Imported from @source'|t({'@source': event_source_label}) }}
+      {% endif %}
+    </p>
+  {% endif %}
+
   <div class="apc-detail__cta">
     <p>{{ 'Have an event of your own?'|t }}</p>
     <a class="apc-pill-button apc-pill-button--primary" href="/node/add/calendar_event">{{ 'Submit your event'|t }}</a>

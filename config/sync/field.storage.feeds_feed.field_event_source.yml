@@ -1,0 +1,20 @@
+uuid: fb53a3a2-c0ac-4a86-a1ea-9e05c7565982
+langcode: en
+status: true
+dependencies:
+  module:
+    - feeds
+    - taxonomy
+id: feeds_feed.field_event_source
+field_name: field_event_source
+entity_type: feeds_feed
+type: entity_reference
+settings:
+  target_type: taxonomy_term
+module: core
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

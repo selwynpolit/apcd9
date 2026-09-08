@@ -35,6 +35,7 @@ module:
   editor_advanced_link: 0
   environment_indicator: 0
   feeds: 0
+  feeds_ical: 0
   feeds_tamper: 0
   field: 0
   field_ui: 0

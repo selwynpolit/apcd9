@@ -617,7 +617,22 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
     // adds these programmatically rather than through the form display, which is
     // why they cannot simply be dragged to Disabled in Manage Form Display —
     // and why they show to a visitor who has no idea what a revision is.
-    foreach (['revision', 'revision_log', 'revision_information'] as $element) {
+    //
+    // Also hide the Feeds-import bookkeeping fields (event-import-task.md):
+    // field_event_source, field_import_location_raw, field_import_state and
+    // field_import_recurrence_raw are meaningful only for nodes Feeds
+    // creates -- a human submitter has no "which calendar did this come
+    // from" to answer, and curators change field_import_state through the
+    // imported_events view's bulk actions, not this form.
+    foreach ([
+      'revision',
+      'revision_log',
+      'revision_information',
+      'field_event_source',
+      'field_import_location_raw',
+      'field_import_state',
+      'field_import_recurrence_raw',
+    ] as $element) {
       if (isset($form[$element])) {
         $form[$element]['#access'] = FALSE;
       }
@@ -1107,6 +1122,14 @@ function apc_calendar_entity_operation(EntityInterface $entity): array {
  *   own submissions" and would also let the role edit other administrative
  *   fields (authoring info, sticky, promote) on *any* content type.
  *
+ *   This check is gated out entirely for Feeds-imported nodes (a non-empty
+ *   feeds_item). Feeds saves programmatically under whichever admin account
+ *   triggered the import (manually or via cron), so \Drupal::currentUser()
+ *   here is that admin's session, not the actual submitter -- without this
+ *   guard, every imported event publishes immediately because the person
+ *   running the import always holds this permission, silently defeating the
+ *   whole curation queue described in event-import-task.md.
+ *
  * @see apc_calendar_form_node_calendar_event_form_alter()
  */
 function apc_calendar_node_presave(NodeInterface $node): void {
@@ -1115,8 +1138,13 @@ function apc_calendar_node_presave(NodeInterface $node): void {
       $node->set('field_location', []);
     }
 
-    if ($node->isNew() && \Drupal::currentUser()->hasPermission('publish calendar_event content immediately')) {
+    $is_feeds_import = $node->hasField('feeds_item') && !$node->get('feeds_item')->isEmpty();
+    if (!$is_feeds_import && $node->isNew() && \Drupal::currentUser()->hasPermission('publish calendar_event content immediately')) {
       $node->setPublished();
+    }
+
+    if ($is_feeds_import) {
+      _apc_calendar_fix_feeds_all_day_timezone($node);
     }
     return;
   }
@@ -1130,6 +1158,60 @@ function apc_calendar_node_presave(NodeInterface $node): void {
       $node->setPublished();
     }
   }
+}
+
+/**
+ * Re-anchors Feeds-imported all-day events from UTC midnight to local midnight.
+ *
+ * feeds_ical (IcalParser.php) hardcodes 'defaultTimeZone' => 'UTC' when
+ * instantiating the underlying ICal library, with no feed-type setting to
+ * override it. A bare iCal all-day value (VALUE=DATE, no TZID -- e.g.
+ * DTSTART;VALUE=DATE:20260913) has no timezone of its own by spec, so the
+ * library resolves it against that hardcoded default and produces a
+ * timestamp for 2026-09-13 00:00:00 UTC. Rendered in the site's actual
+ * default timezone (America/Chicago), that is 2026-09-12 19:00 -- the event
+ * displays starting the previous evening at 7pm instead of as an all-day
+ * event. Confirmed live against the Forward TX feed's all-day entries
+ * (event-import-task.md).
+ *
+ * Detected narrowly: a Smart Date item with the site's own "all day"
+ * convention (duration exactly 1440 minutes) whose start AND end both land
+ * on an exact UTC midnight. A genuine 24-hour timed event beginning at local
+ * midnight would not hit this signature except in the one timezone where
+ * local and UTC midnight coincide, so this does not misfire on real timed
+ * events. Re-anchoring computes each date's actual local midnight via PHP's
+ * timezone database, so it stays correct across the DST boundary rather than
+ * applying a fixed offset.
+ */
+function _apc_calendar_fix_feeds_all_day_timezone(NodeInterface $node): void {
+  if (!$node->hasField('field_event_date') || $node->get('field_event_date')->isEmpty()) {
+    return;
+  }
+
+  $item = $node->get('field_event_date')->first();
+  $start = (int) $item->value;
+  $end = (int) $item->end_value;
+  $duration = (int) $item->duration;
+
+  if ($duration !== 1440 || $start % 86400 !== 0 || $end % 86400 !== 0) {
+    return;
+  }
+
+  $item->value = _apc_calendar_utc_midnight_to_local($start);
+  $item->end_value = _apc_calendar_utc_midnight_to_local($end);
+}
+
+/**
+ * Returns the timestamp for local midnight on the UTC date $utc_timestamp falls on.
+ *
+ * @see _apc_calendar_fix_feeds_all_day_timezone()
+ */
+function _apc_calendar_utc_midnight_to_local(int $utc_timestamp): int {
+  $site_timezone = new \DateTimeZone(\Drupal::config('system.date')->get('timezone.default') ?: date_default_timezone_get());
+  $date = new \DateTime('@' . $utc_timestamp);
+  $date->setTimezone(new \DateTimeZone('UTC'));
+  $local_midnight = new \DateTime($date->format('Y-m-d') . ' 00:00:00', $site_timezone);
+  return $local_midnight->getTimestamp();
 }
 
 /**
@@ -1497,6 +1579,68 @@ function apc_calendar_file_insert(FileInterface $file): void {
   imagedestroy($image);
 
   clearstatcache(TRUE, $path);
+}
+
+/**
+ * Implements hook_views_query_alter().
+ *
+ * The `imported_events` view (event-import-task.md) needs to show pending
+ * Feeds-imported events that are either upcoming *or* part of a recurring
+ * series -- feeds_ical does not expand RRULE, so a weekly meeting running
+ * since last year is represented by a single node whose event date is that
+ * old series start, not by its future occurrences. A plain "date >= now"
+ * filter would hide it, and every other open-ended recurring series, from
+ * the curation queue forever.
+ *
+ * This can't be built as a Views UI filter group: the documented way to
+ * express "A OR B" across two different fields is to duplicate the view's
+ * other filters (type, field_import_state) into a second OR'd group, but
+ * doing that here triggers a Views query-builder bug -- the second copy's
+ * auto-generated table join for field_import_state carries a self-
+ * contradicting `!= 'pending'` condition, so that whole group can never
+ * match any row (confirmed by dumping the built SQL). Added directly to
+ * the query instead, reusing the table aliases Views already joins for the
+ * view's own (visible) Event Date and Recurrence columns.
+ */
+function apc_calendar_views_query_alter(\Drupal\views\ViewExecutable $view, \Drupal\views\Plugin\views\query\QueryPluginBase $query): void {
+  if ($view->id() !== 'imported_events' || $view->current_display !== 'page_1') {
+    return;
+  }
+  if (!$query instanceof \Drupal\views\Plugin\views\query\Sql) {
+    return;
+  }
+
+  // The view already displays both of these as fields, but relying on that
+  // to guarantee their table joins isn't safe: the pager's separate COUNT
+  // query strips joins that only serve SELECT-ed display fields, so a join
+  // that exists in the main query can silently be missing here (confirmed
+  // live -- the COUNT query 500'd with "Unknown column
+  // node__field_import_recurrence_raw...", exactly this). Force both joins
+  // explicitly instead of trusting the display fields to provide them,
+  // using the same join shape every Drupal field table uses (entity_id =
+  // host id, deleted = 0).
+  $join_manager = \Drupal::service('plugin.manager.views.join');
+  $force_join = function (string $table) use ($query, $join_manager): string {
+    /** @var \Drupal\views\Plugin\views\join\JoinPluginBase $join */
+    $join = $join_manager->createInstance('standard', [
+      'table' => $table,
+      'field' => 'entity_id',
+      'left_table' => 'node_field_data',
+      'left_field' => 'nid',
+      'type' => 'LEFT',
+      'extra' => [
+        ['field' => 'deleted', 'value' => 0, 'numeric' => TRUE],
+      ],
+    ]);
+    return $query->ensureTable($table, NULL, $join);
+  };
+
+  $date_alias = $force_join('node__field_event_date');
+  $recurrence_alias = $force_join('node__field_import_recurrence_raw');
+
+  $query->addWhereExpression(0, "($date_alias.field_event_date_value >= :apc_imported_events_now OR $recurrence_alias.field_import_recurrence_raw_value IS NOT NULL)", [
+    ':apc_imported_events_now' => \Drupal::time()->getRequestTime(),
+  ]);
 }
 
 /**

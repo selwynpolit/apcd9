@@ -1,19 +1,23 @@
-uuid: 03c4923c-7715-40c6-abc3-7f24f7de7e3e
+uuid: 519dd0e1-4fd6-4b62-9c3d-793c74d983c7
 langcode: en
 status: true
 dependencies:
   config:
+    - field.storage.node.field_event_date
+    - field.storage.node.field_event_source
+    - field.storage.node.field_import_location_raw
+    - field.storage.node.field_import_recurrence_raw
+    - field.storage.node.field_import_state
     - node.type.calendar_event
-    - system.menu.main
   module:
-    - better_exposed_filters
     - node
+    - taxonomy
     - user
     - views_bulk_operations
-id: pending_events
-label: 'Pending events'
+id: imported_events
+label: 'Imported Events'
 module: views
-description: ''
+description: 'Pending Feeds-imported events, for accepting or rejecting into the calendar. See event-import-task.md.'
 tag: ''
 base_table: node_field_data
 base_field: nid
@@ -24,7 +28,7 @@ display:
     display_plugin: default
     position: 0
     display_options:
-      title: 'Pending events'
+      title: 'Imported Events'
       fields:
         views_bulk_operations_bulk_form:
           id: views_bulk_operations_bulk_form
@@ -86,99 +90,19 @@ display:
           show_select_all: default
           selected_actions:
             -
-              action_id: apc_calendar_publish_event_and_location
+              action_id: apc_calendar_accept_imported_event
               preconfiguration:
                 add_confirmation: false
                 confirm_help_text: ''
                 label_override: ''
                 message_override: ''
             -
-              action_id: views_bulk_operations_delete_entity
+              action_id: apc_calendar_reject_imported_event
               preconfiguration:
-                add_confirmation: false
-                confirm_help_text: ''
+                add_confirmation: true
+                confirm_help_text: 'Rejected events stay unpublished and are never re-imported, but are not deleted -- deleting would let the same event re-import forever.'
                 label_override: ''
                 message_override: ''
-            -
-              action_id: 'entity:publish_action:node'
-              preconfiguration:
-                add_confirmation: false
-                confirm_help_text: ''
-                label_override: ''
-                message_override: ''
-            -
-              action_id: 'entity:unpublish_action:node'
-              preconfiguration:
-                add_confirmation: false
-                confirm_help_text: ''
-                label_override: ''
-                message_override: ''
-        nid:
-          id: nid
-          table: node_field_data
-          field: nid
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: node
-          entity_field: nid
-          plugin_id: field
-          label: ID
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: number_integer
-          settings:
-            thousand_separator: ''
-            prefix_suffix: true
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
         title:
           id: title
           table: node_field_data
@@ -226,161 +150,16 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        status:
-          id: status
-          table: node_field_data
-          field: status
+        field_event_source:
+          id: field_event_source
+          table: node__field_event_source
+          field: field_event_source
           relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
-          entity_field: status
           plugin_id: field
-          label: Published
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: boolean
-          settings:
-            format: custom
-            format_custom_false: Unpublished
-            format_custom_true: Published
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        created:
-          id: created
-          table: node_field_data
-          field: created
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: node
-          entity_field: created
-          plugin_id: field
-          label: 'Authored on'
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: timestamp
-          settings:
-            date_format: short
-            custom_date_format: ''
-            timezone: ''
-            tooltip:
-              date_format: long
-              custom_date_format: ''
-            time_diff:
-              enabled: false
-              future_format: '@interval hence'
-              past_format: '@interval ago'
-              granularity: 2
-              refresh: 60
-              description: ''
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        uid:
-          id: uid
-          table: node_field_data
-          field: uid
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: node
-          entity_field: uid
-          plugin_id: field
-          label: Author
+          label: Source
           exclude: false
           alter:
             alter_text: false
@@ -424,7 +203,7 @@ display:
           click_sort_column: target_id
           type: entity_reference_label
           settings:
-            link: true
+            link: false
           group_column: target_id
           group_columns: {  }
           group_rows: true
@@ -435,16 +214,16 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        view_node:
-          id: view_node
-          table: node
-          field: view_node
+        field_event_date:
+          id: field_event_date
+          table: node__field_event_date
+          field: field_event_date
           relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
-          plugin_id: entity_link
-          label: 'Nice URL'
+          plugin_id: field
+          label: 'Event date'
           exclude: false
           alter:
             alter_text: false
@@ -485,19 +264,44 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          text: view
-          output_url_as_text: true
-          absolute: false
-        edit_node:
-          id: edit_node
-          table: node
-          field: edit_node
+          click_sort_column: value
+          type: smartdate_default
+          settings:
+            timezone_override: ''
+            format: default
+            force_chronological: false
+            add_classes: false
+            time_wrapper: true
+            localize: false
+            parts:
+              start: start
+              end: end
+              duration: '0'
+            duration:
+              separator: ' | '
+              unit: ''
+              decimals: 2
+              suffix: h
+          group_column: value
+          group_columns: {  }
+          group_rows: false
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_import_location_raw:
+          id: field_import_location_raw
+          table: node__field_import_location_raw
+          field: field_import_location_raw
           relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
-          plugin_id: entity_link_edit
-          label: Edit
+          plugin_id: field
+          label: 'Raw location'
           exclude: false
           alter:
             alter_text: false
@@ -538,20 +342,146 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          text: edit
-          output_url_as_text: false
-          absolute: false
+          click_sort_column: value
+          type: basic_string
+          settings: {  }
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_import_recurrence_raw:
+          id: field_import_recurrence_raw
+          table: node__field_import_recurrence_raw
+          field: field_import_recurrence_raw
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: node
+          plugin_id: field
+          label: Recurrence
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: basic_string
+          settings: {  }
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        operations:
+          id: operations
+          table: node
+          field: operations
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: node
+          plugin_id: entity_operations
+          label: Operations
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          destination: true
       pager:
-        type: mini
+        type: full
         options:
           offset: 0
           pagination_heading_level: h4
-          items_per_page: 20
+          items_per_page: 25
           total_pages: null
           id: 0
           tags:
-            next: ››
-            previous: ‹‹
+            next: 'Next ››'
+            previous: '‹‹ Previous'
+            first: '« First'
+            last: 'Last »'
           expose:
             items_per_page: false
             items_per_page_label: 'Items per page'
@@ -560,57 +490,17 @@ display:
             items_per_page_options_all_label: '- All -'
             offset: false
             offset_label: Offset
+          quantity: 9
       exposed_form:
-        type: bef
+        type: basic
         options:
           submit_button: Apply
-          reset_button: false
+          reset_button: true
           reset_button_label: Reset
           exposed_sorts_label: 'Sort by'
           expose_sort_order: true
           sort_asc_label: Asc
           sort_desc_label: Desc
-          text_input_required: 'Select any filter and click on Apply to see results'
-          text_input_required_format: basic_html
-          bef:
-            general:
-              autosubmit: true
-              auto_submit_sort_only: false
-              autosubmit_breakpoint: ''
-              autosubmit_exclude_textfield: false
-              autosubmit_textfield_delay: 500
-              autosubmit_textfield_minimum_length: 3
-              autosubmit_hide: true
-              input_required: false
-              allow_secondary: false
-              secondary_label: 'Advanced options'
-              secondary_open: false
-              reset_button_always_show: false
-            filter:
-              status:
-                plugin_id: bef
-                advanced:
-                  sort_options: false
-                  sort_options_method: alphabetical_asc
-                  sort_options_natural: true
-                  rewrite:
-                    filter_rewrite_values: ''
-                    filter_rewrite_values_key: false
-                  collapsible: false
-                  collapsible_disable_automatic_open: false
-                  open_by_default: false
-                  is_secondary: false
-                  hide_label: false
-                  field_classes: ''
-                select_all_none: false
-                select_all_none_nested: false
-                display_inline: true
-                soft_limit: 0
-                soft_limit_label_less: 'Show less'
-                soft_limit_label_more: 'Show more'
-                soft_limit_include_children: false
-                scrollable: false
-                scrollable_height: 300
       access:
         type: perm
         options:
@@ -620,66 +510,23 @@ display:
         options: {  }
       empty: {  }
       sorts:
-        created:
-          id: created
-          table: node_field_data
-          field: created
+        field_event_date_value:
+          id: field_event_date_value
+          table: node__field_event_date
+          field: field_event_date_value
           relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
-          entity_field: created
-          plugin_id: date
-          order: DESC
+          entity_field: field_event_date
+          plugin_id: field
+          order: ASC
           expose:
             label: ''
             field_identifier: ''
           exposed: false
-          granularity: second
       arguments: {  }
       filters:
-        status:
-          id: status
-          table: node_field_data
-          field: status
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: node
-          entity_field: status
-          plugin_id: boolean
-          operator: '='
-          value: All
-          group: 1
-          exposed: true
-          expose:
-            operator_id: ''
-            label: 'Published status'
-            description: ''
-            use_operator: false
-            operator: status_op
-            operator_limit_selection: false
-            operator_list: {  }
-            identifier: status
-            required: false
-            remember: false
-            multiple: false
-            remember_roles:
-              authenticated: authenticated
-              anonymous: '0'
-              administrator: '0'
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
         type:
           id: type
           table: node_field_data
@@ -689,38 +536,50 @@ display:
           plugin_id: bundle
           value:
             calendar_event: calendar_event
-        feeds_item_target_id:
-          id: feeds_item_target_id
-          table: node__feeds_item
-          field: feeds_item_target_id
+          group: 1
+        field_import_state_value:
+          id: field_import_state_value
+          table: node__field_import_state
+          field: field_import_state_value
           relationship: none
           group_type: group
           admin_label: ''
-          plugin_id: numeric
-          operator: empty
+          entity_type: node
+          entity_field: field_import_state
+          plugin_id: list_field
+          operator: or
           value:
-            min: ''
-            max: ''
-            value: ''
+            pending: pending
           group: 1
-          exposed: false
+        field_event_source_target_id:
+          id: field_event_source_target_id
+          table: node__field_event_source
+          field: field_event_source_target_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: node
+          entity_field: field_event_source
+          plugin_id: taxonomy_index_tid
+          operator: or
+          value: {  }
+          group: 1
+          exposed: true
           expose:
             operator_id: ''
-            label: ''
-            description: ''
+            label: Source
+            description: 'Leave blank to see all sources.'
             use_operator: false
-            operator: ''
+            operator: field_event_source_target_id_op
             operator_limit_selection: false
             operator_list: {  }
-            identifier: ''
+            identifier: field_event_source_target_id
             required: false
             remember: false
             multiple: false
             remember_roles:
               authenticated: authenticated
-            min_placeholder: ''
-            max_placeholder: ''
-            placeholder: ''
+            reduce: false
           is_grouped: false
           group_info:
             label: ''
@@ -733,6 +592,11 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
+          vid: event_sources
+          type: select
+          hierarchy: false
+          limit: true
+          error_message: true
       style:
         type: table
         options:
@@ -741,21 +605,15 @@ display:
           default_row_class: true
           columns:
             views_bulk_operations_bulk_form: views_bulk_operations_bulk_form
-            nid: nid
             title: title
-            uid: uid
-            created: created
-            status: status
+            field_event_source: field_event_source
+            field_event_date: field_event_date
+            field_import_location_raw: field_import_location_raw
+            field_import_recurrence_raw: field_import_recurrence_raw
+            operations: operations
           default: '-1'
           info:
             views_bulk_operations_bulk_form:
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-            nid:
-              sortable: false
-              default_sort_order: asc
               align: ''
               separator: ''
               empty_column: false
@@ -767,23 +625,27 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
-            uid:
-              sortable: true
-              default_sort_order: asc
+            field_event_source:
               align: ''
               separator: ''
               empty_column: false
               responsive: ''
-            created:
-              sortable: true
-              default_sort_order: asc
+            field_event_date:
               align: ''
               separator: ''
               empty_column: false
               responsive: ''
-            status:
-              sortable: true
-              default_sort_order: asc
+            field_import_location_raw:
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+            field_import_recurrence_raw:
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+            operations:
               align: ''
               separator: ''
               empty_column: false
@@ -791,7 +653,7 @@ display:
           override: true
           sticky: true
           summary: ''
-          empty_table: false
+          empty_table: true
           caption: ''
           description: ''
       row:
@@ -807,7 +669,6 @@ display:
       relationships: {  }
       header: {  }
       footer: {  }
-      display_extenders: {  }
     cache_metadata:
       max-age: 0
       contexts:
@@ -825,10 +686,10 @@ display:
     position: 1
     display_options:
       display_extenders: {  }
-      path: admin/content/pending-events
+      path: admin/imported-events
       menu:
         type: normal
-        title: 'Pending events'
+        title: 'Imported Events'
         menu_name: admin
         parent: apc_calendar.admin.apc_group
     cache_metadata:
