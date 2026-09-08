@@ -247,6 +247,16 @@ function apc_brown_theme_suggestions_taxonomy_term_alter(array &$suggestions, ar
   $term = $variables['elements']['#taxonomy_term'];
   $view_mode = $variables['elements']['#view_mode'];
   $suggestions[] = 'taxonomy_term__' . $term->bundle() . '__' . $view_mode;
+
+  // 'tags' (calendar_event's field_tags) and 'photo_categories'
+  // (community_photo's field_photo_tags) are two separate vocabularies --
+  // confirmed live it's genuinely two, not one shared 'tags' vocabulary as
+  // the field names alone suggest -- but they need the exact same "show
+  // what's tagged with this" treatment, so both get this one shared
+  // suggestion rather than duplicating a template file per vocabulary.
+  if (in_array($term->bundle(), ['tags', 'photo_categories'], TRUE) && $view_mode === 'full') {
+    $suggestions[] = 'taxonomy_term__tagged_content__full';
+  }
 }
 
 /**
@@ -269,6 +279,24 @@ function apc_brown_preprocess_taxonomy_term(&$variables) {
     // block_past) specifically so they could be embedded here.
     $variables['upcoming_events'] = \Drupal\views\Views::getView('location_page')?->buildRenderable('block_upcoming', [$term->id()]);
     $variables['past_events'] = \Drupal\views\Views::getView('location_page')?->buildRenderable('block_past', [$term->id()]);
+  }
+  elseif (in_array($term->bundle(), ['tags', 'photo_categories'], TRUE) && $variables['view_mode'] === 'full') {
+    // A tags or photo_categories term page rendered no content at all --
+    // clicking a tag pill on the photo gallery or an event landed on a page
+    // with just the term's own fields (e.g. the keyword-matching "Match
+    // keywords" list) and nothing tagged with it, confirmed live. These are
+    // two separate vocabularies (calendar_event's field_tags targets 'tags',
+    // community_photo's field_photo_tags targets 'photo_categories' --
+    // confirmed live it's genuinely two, not one shared vocabulary the field
+    // names alone would suggest), but both need the same fix. Core's own
+    // taxonomy_term view would normally provide that listing, but it's
+    // deliberately disabled site-wide (see views.view.taxonomy_term.yml,
+    // status: false) because its own page route at taxonomy/term/%25
+    // hijacked the locations vocabulary's own term page. tagged_content is a
+    // block-only view (no page display, no route) built specifically so it
+    // can be embedded here for these two alone without going anywhere near
+    // that conflict again.
+    $variables['tagged_content'] = \Drupal\views\Views::getView('tagged_content')?->buildRenderable('block_1', [$term->id()]);
   }
 }
 
