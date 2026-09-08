@@ -36,6 +36,17 @@ function apc_brown_preprocess_html(&$variables) {
     $variables['attributes']['class'][] = 'page-calendar';
   }
 
+  // Same reasoning as page-calendar above: this page's own sidebar (the
+  // filters column, see views-view--photo-gallery--page-1.html.twig) isn't
+  // Olivero's page.sidebar region, so there's no competing sidebar content
+  // to leave room for -- confirmed no block.block.apc_brown_* sits in the
+  // sidebar region here either. Widening the content column gives the photo
+  // grid enough room for 3 comfortably-sized columns instead of being
+  // squeezed by the site-wide "medium" content width meant for body text.
+  if (\Drupal::routeMatch()->getRouteName() === 'view.photo_gallery.page_1') {
+    $variables['attributes']['class'][] = 'page-photo-gallery';
+  }
+
   // Convert custom hex to hsl so we can use the hue value
   $brand_color_hex = theme_get_setting('base_primary_color') ?? '#1b9ae4';
   [$h, $s, $l] = _apc_brown_hex_to_hsl($brand_color_hex);
@@ -480,6 +491,23 @@ function _apc_brown_preprocess_community_photo(array &$variables): void {
   // apc_calendar_node_access()); depends only on the node's own status, so its
   // cache tag already covers it.
   $variables['is_unpublished'] = !$node->isPublished();
+
+  // A second "Back to content editing" link, fixed to the bottom of the
+  // viewport to mirror core's own top-fixed one (.node-preview-backlink,
+  // position: fixed via Olivero's node-preview-container.css). Core's own
+  // link lives in NodePreviewForm, rendered in a separate region above the
+  // page content -- an anonymous submitter previewing a long photo page (the
+  // hero image alone can push the fold well down) can lose track of it after
+  // scrolling, with no other way back to their in-progress, unsaved
+  // submission. Same URL logic as NodePreviewForm::buildForm(): a preview is
+  // always an unsaved node, so this always resolves to the add form with the
+  // uuid query param that restores the in-progress submission from the
+  // preview tempstore, never to a blank form.
+  if (\Drupal::routeMatch()->getRouteName() === 'entity.node.preview') {
+    $variables['photo_preview_backlink_url'] = Url::fromRoute('node.add', ['node_type' => $node->bundle()], [
+      'query' => ['uuid' => $node->uuid()],
+    ])->toString();
+  }
 
   // photo-carousel carries photo-gallery.css (the .apc-photo-gallery__photo
   // frame styling and this page's .apc-photo-detail layout); its JS is inert

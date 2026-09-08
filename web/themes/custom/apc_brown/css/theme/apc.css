@@ -394,3 +394,56 @@
   font-family: var(--font-heading);
   font-size: 18px;
 }
+
+/* ══ Fieldset spacing ════════════════════════════════════════════════════ */
+
+/* Olivero's own .fieldset__description keeps an equal 9px margin-block
+   (--sp0-5) on both sides, but the fieldset's own .fieldset__wrapper padding
+   (var(--sp), 18px) only reinforces the TOP gap -- above the description
+   there's still a full checkbox/radio row's own margin before it, while
+   below it there's nothing else to add space, so a fieldset whose last
+   visible thing is its description (e.g. "Gallery placement" on the
+   Community Photo/Signs form) measures ~38px above its first option but
+   only ~29px below the description, before the border -- a real,
+   measurable asymmetry, not just appearance. Bumping the description's own
+   bottom margin to match --sp brings the two back in line (measured live:
+   38px top, 38px bottom). Scoped to :last-child so a description followed
+   by more content (an error message, another field) is untouched. */
+.fieldset__description:last-child {
+  margin-block-end: var(--sp);
+}
+
+/* ══ Inline radio/checkbox groups (exposed filters) ═════════════════════ */
+
+/* Olivero's own .form--inline > * only sets vertical margin (form.css) --
+   no horizontal gap between inline items at all. That's invisible for a
+   couple of buttons side by side, but the photo_gallery exposed filters
+   (Category, Photo or sign?) render many radios inline via Better Exposed
+   Filters' "Display as: buttons" option, and the result reads as broken:
+   each option's own input-to-label gap is only ~4px, so with zero gap
+   between items too, a label butts almost straight into the NEXT option's
+   circle with barely more space than it has from its own -- it visually
+   reads as though every radio belongs to the option after it, not its own.
+   Confirmed live by measuring each item's rect on /photos: 0px between one
+   item's label and the next item's input, every time. Adding real spacing
+   between items (not touching the existing input-to-label gap) fixes it. */
+.form--inline .js-form-type-radio,
+.form--inline .js-form-type-checkbox {
+  margin-inline-end: var(--sp1);
+}
+
+/* Better Exposed Filters' own CSS (better_exposed_filters.css) floats each
+   option left (`.bef-exposed-form .form--inline > .form-item { float: left }`)
+   for its "Display as: buttons" layout, but never clears that float on the
+   containing `.form-boolean-group` -- so the group collapses to 0 height and
+   the fieldset's own bordered/background `.fieldset__wrapper` box (built for
+   a normal-flow child) shrinks to fit nothing, leaving the floated radios
+   rendering below the box instead of inside it. Confirmed live: form-radios
+   measured 0px tall while its floated .js-form-type-radio children sat
+   20px below the fieldset's visible bottom border. A standard clearfix on
+   the group makes it contain its floated children again. */
+.bef-exposed-form .form-boolean-group::after {
+  content: '';
+  display: table;
+  clear: both;
+}
