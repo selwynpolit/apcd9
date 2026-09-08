@@ -69,4 +69,33 @@
     <p>{{ 'Have a photo or sign of your own?'|t }}</p>
     <a href="{{ photo_submit_url }}" class="button button--primary">{{ 'Upload a photo or sign'|t }}</a>
   </div>
+
+  {% if photo_preview_backlink_url %}
+    {#
+      Mirrors core's own "Back to content editing" link (NodePreviewForm),
+      which is fixed to the top of the viewport -- this one is fixed to the
+      bottom, so a submitter previewing a long page (a big hero image alone
+      can push the fold well past the top link) always has a way back to
+      their in-progress submission without scrolling up. Same button
+      classes core uses for the visual match; the wrapping div is
+      positioned at the bottom by .apc-photo-detail__preview-backlink-
+      wrapper in photo-gallery.css.
+
+      The wrapping div's node-preview-container class is load-bearing, not
+      decorative: core's node.preview.js binds a click handler to
+      'a:not([href^="#"], .node-preview-container a)' that intercepts every
+      other link on the page with an "unsaved changes" confirmation dialog
+      -- confirmed live, without this wrapper this link triggered exactly
+      that dialog instead of just navigating like the real top link does.
+      apc-photo-detail__preview-backlink-wrapper resets the position:fixed;
+      top:0 styling node-preview-container carries from Olivero's own
+      node-preview-container.css back to this link's own bottom-left
+      placement -- the class is only here for the JS selector, not its CSS.
+    #}
+    <div class="node-preview-container apc-photo-detail__preview-backlink-wrapper">
+      <a href="{{ photo_preview_backlink_url }}" class="button button--small button--icon-back button--primary">
+        {{ 'Back to content editing'|t }}
+      </a>
+    </div>
+  {% endif %}
 </article>

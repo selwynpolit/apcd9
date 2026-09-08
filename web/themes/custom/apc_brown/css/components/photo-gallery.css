@@ -14,12 +14,106 @@
   gap: var(--sp1);
 }
 
-/* "Share a photo or sign" CTA in the /photos page header (Views header area).
-   Centered, standing above the category filter, so the submission entry point
-   is the first thing on the browse page. */
+/* ══ Browse page layout (page_1 only) ═══════════════════════════════════
+   views-view--photo-gallery--page-1.html.twig moves the title, "Upload a
+   photo or sign" CTA and exposed filters into one left-hand column instead
+   of stacking all three full-width above the results grid -- on the old
+   layout that header block alone pushed the first row of photos below the
+   fold on most screens. Below 62.5rem (the same breakpoint the event/
+   location detail pages use for their own sidebar-to-stack collapse) the
+   two columns stack in source order: title/CTA/filters, then the grid. */
+.apc-photo-gallery__layout {
+  display: block;
+}
+
+@media (min-width: 62.5rem) {
+  .apc-photo-gallery__layout {
+    display: grid;
+    grid-template-columns: 16rem minmax(0, 1fr);
+    gap: var(--sp2);
+    align-items: start;
+  }
+}
+
+/* Same technique as body.page-calendar in apc.css: Olivero's own
+   .region--content.html.twig wraps the content region in
+   .layout--pass--content-medium, whose core CSS (layout-content-medium.css,
+   do not edit) caps ">.*" children to a "medium", body-text-width span --
+   10 of 14 grid columns, ~900px even on a wide desktop. Fine for prose, but
+   it left this page's grid only ~580-610px to work with regardless of
+   viewport, capping it at 2 columns of any reasonable thumbnail size.
+   There's no page.sidebar content to leave room for here either (the
+   filters column is this page's own template, not that Olivero region), so
+   reclaiming the full nested 14-column span is free -- same justification
+   apc_brown_preprocess_html() already documents for page-calendar. */
+@media (min-width: 62.5rem) {
+  body.page-photo-gallery .layout--pass--content-medium > * {
+    grid-column: 1 / 15;
+  }
+}
+
+/* The base .view-photo-gallery .view-content rule above (minmax 220px) is
+   sized for whatever width the medium content column happened to leave --
+   before the full-width override just above, that was only ~580-610px,
+   just enough for 2 of those. Now that this page has the full content
+   column to work with, bump the minimum back up so 3 columns render at a
+   genuinely larger, gallery-appropriate size instead of the cramped ~190px
+   the medium-width column would have forced. Scoped to this page's grid
+   only -- the carousel block displays override to display:block anyway,
+   but there's no reason to change the shared default other consumers of
+   this view might still want. */
+.apc-photo-gallery__main .view-content {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.apc-photo-gallery__title {
+  margin-block: 0 var(--sp1);
+}
+
+/* "Upload a photo or sign" CTA in the /photos page header (Views header
+   area). Full-width in the sidebar column so it reads as one of the stacked
+   controls there rather than a stray centered button. */
 .apc-photo-submit-cta {
   margin-block-end: var(--sp1-5);
   text-align: center;
+}
+
+.apc-photo-gallery__sidebar .apc-photo-submit-cta {
+  text-align: initial;
+}
+
+.apc-photo-gallery__sidebar .apc-photo-submit-cta .button {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+/* The exposed filters' "Category"/"Photo or sign?" boxes were designed for
+   a full-width row of inline radio pills (see the "Inline radio/checkbox
+   groups" rule below) -- in the ~18rem sidebar column there isn't room for
+   that, so each group is stacked into a plain vertical list instead. Scoped
+   to the sidebar so the wider exposed-filter layout elsewhere (if any is
+   ever added) is untouched. */
+.apc-photo-gallery__sidebar .form-boolean-group .form-radios,
+.apc-photo-gallery__sidebar .form-boolean-group .form-checkboxes {
+  display: block;
+}
+
+.apc-photo-gallery__sidebar .form--inline .js-form-type-radio,
+.apc-photo-gallery__sidebar .form--inline .js-form-type-checkbox {
+  float: none;
+  display: block;
+  margin-inline-end: 0;
+  margin-block-end: var(--sp0-5);
+}
+
+.apc-photo-gallery__sidebar .form--inline .js-form-type-radio:last-child,
+.apc-photo-gallery__sidebar .form--inline .js-form-type-checkbox:last-child {
+  margin-block-end: 0;
+}
+
+.apc-photo-gallery__sidebar .views-exposed-form .fieldgroup {
+  margin-block-end: var(--sp1);
 }
 
 /* Framed like a small mounted print: a surface-colour mat plus the same
@@ -61,6 +155,32 @@
 
 .apc-photo-gallery__caption a {
   color: inherit;
+}
+
+/* Same pill treatment as .apc-photo-detail__tags on the full detail page,
+   just reused here for the grid so a photo's category tags show at a
+   glance without opening it. */
+.apc-photo-gallery__tags {
+  margin-block-start: var(--sp0-5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp0-5);
+}
+
+.apc-photo-gallery__tags .field__item a {
+  display: inline-block;
+  padding: 0.15rem 0.7rem;
+  border-radius: 999px;
+  background: var(--color-accent-100);
+  color: var(--color-accent-800);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.apc-photo-gallery__tags .field__item a:hover,
+.apc-photo-gallery__tags .field__item a:focus-visible {
+  background: var(--color-accent-200);
 }
 
 /* Admin-only "View node / Edit node" row (apc_brown_preprocess_views_view_
@@ -354,6 +474,38 @@ body.page-calendar #block-apc-brown-calendar-community-photos-mini > h2 {
   margin-block: 0 var(--sp1);
   font-family: var(--font-heading);
   font-size: 1.2rem;
+}
+
+/* Mirrors core's own top-fixed "Back to content editing" link
+   (.node-preview-backlink, NodePreviewForm) at the bottom of the viewport
+   instead -- a submitter previewing a long page (a big hero image alone can
+   push the fold well down) can lose track of the top one after scrolling,
+   with no other way back to their in-progress, unsaved submission. Reuses
+   core's own .button classes for the same look; only this positioning is
+   new. z-index one below .node-preview-container's 499 so the two never
+   fight if a viewport is ever short enough for both to be visible at once. */
+/* The wrapping .node-preview-container class this link needs (see the
+   template comment -- it's what exempts the link from core's node-preview
+   "unsaved changes" confirmation dialog) brings along that class's own
+   fixed-to-top-of-viewport styling, some of it applied by core JS rather
+   than plain CSS (position/top/z-index aren't in Olivero's own
+   node-preview-container.css at all, yet a real page measures
+   position:fixed;top:0;z-index:499 on it). !important is deliberate here:
+   this wrapper exists solely to carry that one class for the JS selector,
+   and needs to reliably win over styling whose exact source (core CSS vs.
+   JS-applied inline styles) isn't fully pinned down. */
+.apc-photo-detail__preview-backlink-wrapper {
+  position: fixed !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: var(--sp1) !important;
+  left: var(--sp1) !important;
+  z-index: 498 !important;
+  width: auto !important;
+  max-width: none !important;
+  padding: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
 }
 
 /* Category tags on the detail page: inline pills rather than a stacked list. */
