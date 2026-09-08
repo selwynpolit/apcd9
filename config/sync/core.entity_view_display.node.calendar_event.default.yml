@@ -4,15 +4,20 @@ status: true
 dependencies:
   config:
     - field.field.node.calendar_event.body
+    - field.field.node.calendar_event.feeds_item
     - field.field.node.calendar_event.field_event_date
     - field.field.node.calendar_event.field_event_image
+    - field.field.node.calendar_event.field_event_source
     - field.field.node.calendar_event.field_event_url
+    - field.field.node.calendar_event.field_import_location_raw
+    - field.field.node.calendar_event.field_import_state
     - field.field.node.calendar_event.field_location
     - field.field.node.calendar_event.field_tags
     - field.field.node.calendar_event.field_virtual
     - node.type.calendar_event
   module:
     - link
+    - options
     - smart_date_recur
     - text
     - user
@@ -64,6 +69,14 @@ content:
     third_party_settings: {  }
     weight: 0
     region: content
+  field_event_source:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
   field_event_url:
     type: link
     label: hidden
@@ -75,6 +88,20 @@ content:
       target: _blank
     third_party_settings: {  }
     weight: 4
+    region: content
+  field_import_location_raw:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_import_state:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
     region: content
   field_location:
     type: entity_reference_entity_view
@@ -99,4 +126,6 @@ content:
     weight: 6
     region: content
 hidden:
+  feeds_item: true
+  field_import_recurrence_raw: true
   field_virtual: true

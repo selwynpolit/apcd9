@@ -5,9 +5,13 @@ dependencies:
   config:
     - core.entity_view_mode.node.teaser
     - field.field.node.calendar_event.body
+    - field.field.node.calendar_event.feeds_item
     - field.field.node.calendar_event.field_event_date
     - field.field.node.calendar_event.field_event_image
+    - field.field.node.calendar_event.field_event_source
     - field.field.node.calendar_event.field_event_url
+    - field.field.node.calendar_event.field_import_location_raw
+    - field.field.node.calendar_event.field_import_state
     - field.field.node.calendar_event.field_location
     - field.field.node.calendar_event.field_tags
     - field.field.node.calendar_event.field_virtual
@@ -70,7 +74,12 @@ content:
     weight: 2
     region: content
 hidden:
+  feeds_item: true
   field_event_image: true
+  field_event_source: true
   field_event_url: true
+  field_import_location_raw: true
+  field_import_recurrence_raw: true
+  field_import_state: true
   field_location: true
   field_virtual: true
