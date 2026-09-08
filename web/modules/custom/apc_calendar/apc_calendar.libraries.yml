@@ -74,3 +74,12 @@ media_dialog_scroll_top:
     js/media-dialog-scroll-top.js: {}
   dependencies:
     - core/drupal.dialog
+
+# Layout fix for the focal-point explanation text added to the Media
+# Library "Add media" dialog by _apc_calendar_add_focal_point_explanation().
+# Attached by apc_calendar_form_media_library_add_form_dropzonejs_alter().
+focal_point_help:
+  version: 1.x
+  css:
+    theme:
+      css/focal-point-help.css: {}

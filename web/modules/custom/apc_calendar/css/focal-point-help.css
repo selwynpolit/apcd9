@@ -1,0 +1,25 @@
+/**
+ * @file
+ * Layout fix for the focal-point explanation text added by
+ * _apc_calendar_add_focal_point_explanation() to the Media Library "Add
+ * media" dialog's preview area.
+ *
+ * .media-library-add-form__preview is a narrow (220px), single-row flex
+ * container built to hold just the image thumbnail -- appending a paragraph
+ * of explanatory text as a plain flex item there squeezes it into whatever
+ * space is left beside the image instead of wrapping below it. flex-wrap on
+ * the container plus flex-basis: 100% on the paragraph is the standard fix:
+ * it forces the paragraph onto its own full-width line under the image
+ * without touching the image/indicator's own layout.
+ */
+.media-library-add-form__preview {
+  flex-wrap: wrap;
+}
+
+.apc-focal-point-help {
+  flex-basis: 100%;
+  width: 100%;
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}

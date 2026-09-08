@@ -1714,4 +1714,134 @@ function apc_calendar_theme(): array {
  */
 function apc_calendar_form_media_library_add_form_dropzonejs_alter(array &$form, FormStateInterface $form_state): void {
   focal_point_form_media_library_add_form_upload_alter($form, $form_state);
+  _apc_calendar_add_focal_point_explanation($form, $form_state);
 }
+
+/**
+ * Implements hook_field_widget_single_element_WIDGET_TYPE_form_alter() for image_focal_point.
+ *
+ * Pre-fills the alt text field from the uploaded file's own name. The alt
+ * field is otherwise blank by default, and a submitter -- especially an
+ * anonymous one uploading a single photo in a hurry -- will often just
+ * leave it blank or type something unhelpful. The uploaded file's own name
+ * is usually at least somewhat descriptive ("rally-at-city-hall.jpg", a
+ * phone's auto-generated "IMG_1234.jpg" being the obvious exception this
+ * doesn't try to solve), so it's a better starting point than nothing --
+ * always a suggestion, never forced: sets only a #default_value, freely
+ * overwritable, and only when the field doesn't already have a value
+ * (existing media being re-edited already has real alt text).
+ *
+ * Also rewrites the alt field's description: core's own wording
+ * ("Short description of the image used by screen readers and displayed
+ * when the image is not loaded. This is important for accessibility.",
+ * ImageWidget::process()) explains what alt text *is* but not what to
+ * *write*, which matters most for an anonymous submitter who has never
+ * filled in an alt field before.
+ *
+ * This can't be done in a plain hook_form_alter(): 'alt' doesn't exist yet
+ * at that point. ImageWidget::formElement() (which FocalPointImageWidget's
+ * own formElement() calls via parent::) only registers its own
+ * ImageWidget::process() as a #process callback -- the 'alt'/'preview'/
+ * 'focal_point' sub-elements aren't actually built until that #process
+ * callback runs later, well after every hook_form_alter has already fired
+ * (confirmed live by dumping array_keys() at hook_form_alter time: 'alt'
+ * genuinely isn't there yet). This hook fires right after formElement()
+ * returns (WidgetBase::formSingleElement()), by which point '#process'
+ * already has ImageWidget::process() queued but hasn't run it -- appending
+ * a second callback here relies on Drupal invoking #process callbacks in
+ * array order, so this one runs immediately after the widget's own and
+ * 'alt' already exists by then.
+ */
+function apc_calendar_field_widget_single_element_image_focal_point_form_alter(array &$element, FormStateInterface $form_state, array $context): void {
+  // Computed here (not inside the #process callback below) and stashed as a
+  // plain '#'-prefixed property, rather than captured by a closure: render
+  // arrays get serialized into the form cache between requests, and PHP
+  // cannot serialize a Closure -- confirmed live, using a closure here
+  // threw "Serialization of 'Closure' is not allowed" on the very first
+  // AJAX round trip.
+  $filename = pathinfo($context['items']->getEntity()->label(), PATHINFO_FILENAME);
+  $element['#apc_suggested_alt'] = trim(preg_replace('/[-_]+/', ' ', $filename));
+  $element['#process'][] = '_apc_calendar_process_suggest_alt_text';
+}
+
+/**
+ * #process callback: applies the suggested alt text stashed by the alter
+ * hook above, and rewrites the alt field's description, once
+ * ImageWidget::process() (queued first) has actually built the 'alt'
+ * sub-element.
+ *
+ * @see apc_calendar_field_widget_single_element_image_focal_point_form_alter()
+ */
+function _apc_calendar_process_suggest_alt_text(array $element, FormStateInterface $form_state, array $form): array {
+  if (empty($element['alt'])) {
+    return $element;
+  }
+  if (empty($element['alt']['#default_value']) && !empty($element['#apc_suggested_alt'])) {
+    $element['alt']['#default_value'] = $element['#apc_suggested_alt'];
+  }
+  $element['alt']['#description'] = t('Please provide a short description of the image so screen readers can explain to visually impaired users what is in the image.');
+  return $element;
+}
+
+/**
+ * Explains the focal point crosshair in the Media Library "Add media" dialog.
+ *
+ * field_media_image's own field description ("After uploading, click on the
+ * photo to mark its most important part...") is configured
+ * (field.field.media.image.field_media_image.yml) and does display on the
+ * plain /media/{id}/edit form, but never reaches this dialog -- confirmed
+ * live, zero `.description` elements anywhere in the rendered markup here,
+ * even after the crosshair itself was fixed to appear (see
+ * apc_calendar_form_media_library_add_form_dropzonejs_alter() above). Media
+ * Library builds this field into $element['fields'] via a plain
+ * EntityFormDisplay::buildForm() call, the same mechanism the standalone
+ * edit form uses, so the description is presumably still attached to the
+ * widget's own #description property -- it just never gets printed, most
+ * likely because the image/focal_point widget's own theme templates
+ * (image-widget.html.twig, focal-point-media-library-image-widget.html.twig)
+ * never output {{ description }} at all, unlike the generic form-element
+ * wrapper the standalone edit form's field happens to render through. Not
+ * chased further -- added directly here instead, next to the image itself
+ * (in the relocated preview slot Media Library actually displays) rather
+ * than depending on wherever the widget's own description would have gone.
+ *
+ * Anonymous submitters see this every time (Media Library is their only way
+ * to upload), which is exactly who needs the explanation most -- an admin
+ * editing an existing photo has the standalone edit form's real description
+ * to fall back on.
+ */
+function _apc_calendar_add_focal_point_explanation(array &$form, FormStateInterface $form_state): void {
+  $media = $form_state->get('media') ?: [];
+  /** @var \Drupal\media\MediaInterface $item */
+  foreach ($media as $delta => $item) {
+    $fields = &$form['media'][$delta]['fields'];
+    $source_field = $fields['#source_field_name'] ?? NULL;
+    if ($source_field === NULL || !isset($fields[$source_field])) {
+      continue;
+    }
+    $component = \Drupal::service('entity_display.repository')
+      ->getFormDisplay('media', $item->bundle(), 'media_library')
+      ->getComponent($source_field);
+    if (!$component || $component['type'] !== 'image_focal_point') {
+      continue;
+    }
+    $description = $item->hasField($source_field) ? $item->{$source_field}->getFieldDefinition()->getDescription() : NULL;
+    if (empty($description)) {
+      continue;
+    }
+    $form['media'][$delta]['preview']['focal_point_help'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'p',
+      '#value' => $description,
+      '#attributes' => ['class' => ['apc-focal-point-help']],
+      '#weight' => 5,
+      // .media-library-add-form__preview is a narrow, single-row flex
+      // container sized for just the thumbnail -- without this, the
+      // paragraph squeezes into whatever space is left beside the image
+      // instead of wrapping below it. See css/focal-point-help.css.
+      '#attached' => ['library' => ['apc_calendar/focal_point_help']],
+    ];
+  }
+}
+
+
