@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - core.entity_form_mode.media.media_library
+    - field.field.media.image.field_import_checksum
     - field.field.media.image.field_media_image
     - field.field.media.image.rabbit_hole__settings
     - image.style.medium
@@ -29,6 +30,7 @@ content:
     third_party_settings: {  }
 hidden:
   created: true
+  field_import_checksum: true
   name: true
   path: true
   rabbit_hole__settings: true

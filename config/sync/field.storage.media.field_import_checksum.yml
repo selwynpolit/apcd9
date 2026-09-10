@@ -1,0 +1,21 @@
+uuid: e1a570ef-b6fb-4cf6-8694-81b403d50121
+langcode: en
+status: true
+dependencies:
+  module:
+    - media
+id: media.field_import_checksum
+field_name: field_import_checksum
+entity_type: media
+type: string
+settings:
+  max_length: 40
+  case_sensitive: false
+  is_ascii: false
+module: core
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

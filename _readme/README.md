@@ -174,3 +174,88 @@ $settings['simple_sitemap_engines.index_now.key'] = '9f170430-2830-413f-9410-f76
 - drush cr
 - enjoy!
 
+## Bulk photo import
+
+Here is the sequence to follow:
+
+```
+drush apc:prep-photo-batch <directory>        # thumbnails + task brief
+drush apc:merge-photo-batch <directory>       # folds AI-authored descriptions into manifest.yml
+drush apc:review-photo-batch <directory>      # writes .prep/review.html (thumbnail + text, side by side)
+drush apc:import-photos <directory>           # creates the community_photo nodes
+drush apc:reset-photo-batch-nids <directory>  # before pushing an already-imported batch elsewhere
+```
+
+**Prep and merge run locally, against local files — no rsync needed for either.**
+`apc:prep-photo-batch` actually opens every image (decodes it, reads EXIF, writes a
+thumbnail), so it needs the real files on whatever filesystem it runs against; since the
+photos start out on your Mac, that means running it in `ddev`, not remotely. `rsync` only
+enters the picture once, right before the import step — that's the only part that
+actually needs a specific site's database.
+
+Actual sequence:
+1. Put the photos in `photo-batches/2026-09/` (repo root, gitignored).
+2. Prep them locally. This writes thumbnails, a task brief `.prep/TASK.md`, and a skeleton `manifest.yml`.
+```shell
+ddev drush apc:prep-photo-batch photo-batches/2026-09
+```
+3. In your Claude Code chat, ask Claude to describe the batch — this is a normal chat
+   message, nothing special to install or run:
+   > Please describe the photos in photo-batches/2026-09 using a Haiku subagent. Read
+   > .prep/TASK.md in that directory for the brief, then write one JSON file per photo
+   > into .prep/rows/.
+
+   Claude reads the brief and spawns the subagent itself.
+4. Merge the descriptions into `manifest.yml`, locally:
+```shell
+ddev drush apc:merge-photo-batch photo-batches/2026-09
+```
+5. Build a visual review page — each thumbnail next to its own text, instead of
+   cross-referencing `.prep/thumbs/` against the YAML by eye:
+```shell
+ddev drush apc:review-photo-batch photo-batches/2026-09
+```
+   Open `photo-batches/2026-09/.prep/review.html` directly in a browser.
+   It's read-only; flagged photos (`NOT-A-PHOTO`/`POSSIBLE-REPOST`) are
+   highlighted with a jump list at the top.
+6. Edit `manifest.yml` by hand — this is the actual review/edit step (on another
+   monitor, alongside the page from step 5). Check captions/alt text against the actual
+   photos (especially any with several signs in one frame), decide on any
+   `suggested_new_categories` the merge step lists — note that `apc:import-photos` will
+   create these automatically now, so remove one here if you don't want it kept — and
+   drop or fix anything wrong. **Re-run step 5 any time to see edits reflected.**
+7. Import locally to see it for real:
+```shell
+ddev drush apc:import-photos photo-batches/2026-09 --dry-run   # check first
+ddev drush apc:import-photos photo-batches/2026-09
+```
+
+### Promoting the same batch to dev, then prod
+
+No need to redo prep/describe/merge/review for this — the manifest is fully reusable.
+The one thing that isn't: local's import just wrote a `nid` into every row it created,
+and `nid` means "already imported" only relative to *that* database. Reset it once,
+before the first push elsewhere:
+```shell
+ddev drush apc:reset-photo-batch-nids photo-batches/2026-09
+```
+Then, per site:
+```shell
+drush rsync photo-batches/2026-09/ @apc.dev:~/photo-import/2026-09/ -- --exclude=.DS_Store --exclude='._*' --exclude=.prep
+drush @apc.dev apc:import-photos ~/photo-import/2026-09 --cleanup
+```
+Confirmed on dev? Repeat the same two commands with `@apc.prod` — **no need to reset nids
+again first**: that command wrote dev's node IDs into the remote copy at
+`~/photo-import/2026-09/manifest.yml` on dev's host, not back into your local file, so
+your local copy (what the second `rsync` reads from) is still the nid-free one from the
+one reset above.
+
+**`--cleanup` removes the whole remote staging folder, not just the photos.** It deletes
+each original photo as its row imports (as before), and once every row in the manifest
+has a `nid` and nothing failed, `manifest.yml` and the now-empty batch directory too —
+nothing is left on dev/prod afterward. `.prep/` never needs cleaning up remotely in the
+first place: `apc:import-photos` doesn't read it at all, which is why it's excluded from
+the `rsync` above.
+
+Full workflow, why the reset step matters, and known gaps:
+[assets/Plans/photo-batch-import-task.md](assets/Plans/photo-batch-import-task.md).

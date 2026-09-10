@@ -1534,9 +1534,43 @@ function apc_calendar_file_insert(FileInterface $file): void {
     return;
   }
 
-  // Standard EXIF orientation values -> the GD transform that corrects them.
-  // imagerotate()'s angle is counter-clockwise, so a tag meaning "this image
-  // needs a 90° clockwise turn to be upright" (6) is a *negative* angle here.
+  $image = apc_calendar_apply_exif_orientation($image, $orientation);
+
+  // imagejpeg() writes a fresh JPEG from the decoded raster data and does not
+  // carry EXIF/XMP forward -- this re-encode is the strip, not a separate
+  // "remove metadata" step. Quality matches core's own GD toolkit setting so
+  // this doesn't silently change upload quality from what site config
+  // already expects.
+  $quality = (int) (\Drupal::config('system.image.gd')->get('jpeg_quality') ?? 75);
+  imagejpeg($image, $path, $quality);
+  imagedestroy($image);
+
+  clearstatcache(TRUE, $path);
+}
+
+/**
+ * Applies an EXIF orientation tag to a GD image as a real pixel transform.
+ *
+ * Extracted from apc_calendar_file_insert() so the batch-import prep command
+ * can build orientation-correct thumbnails with exactly the same mapping.
+ * Those thumbnails are what gets looked at when captions and focal points are
+ * written, so a thumbnail that disagrees with the imported file about which
+ * way is up would put the focal point in the wrong place -- worth one shared
+ * function rather than two switches that can drift apart.
+ *
+ * imagerotate()'s angle is counter-clockwise, so a tag meaning "this image
+ * needs a 90 degree clockwise turn to be upright" (6) is a *negative* angle.
+ *
+ * @param \GdImage $image
+ *   The decoded image, modified in place for the flip-only cases.
+ * @param int|null $orientation
+ *   The EXIF Orientation tag value, or NULL when there was none.
+ *
+ * @return \GdImage
+ *   The corrected image -- imagerotate() returns a new resource, so callers
+ *   must use the return value rather than assuming in-place modification.
+ */
+function apc_calendar_apply_exif_orientation(\GdImage $image, ?int $orientation): \GdImage {
   switch ($orientation) {
     case 2:
       imageflip($image, IMG_FLIP_HORIZONTAL);
@@ -1569,16 +1603,7 @@ function apc_calendar_file_insert(FileInterface $file): void {
       break;
   }
 
-  // imagejpeg() writes a fresh JPEG from the decoded raster data and does not
-  // carry EXIF/XMP forward -- this re-encode is the strip, not a separate
-  // "remove metadata" step. Quality matches core's own GD toolkit setting so
-  // this doesn't silently change upload quality from what site config
-  // already expects.
-  $quality = (int) (\Drupal::config('system.image.gd')->get('jpeg_quality') ?? 75);
-  imagejpeg($image, $path, $quality);
-  imagedestroy($image);
-
-  clearstatcache(TRUE, $path);
+  return $image;
 }
 
 /**

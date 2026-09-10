@@ -5,5 +5,10 @@ package: APC
 core_version_requirement: ^10 || ^11
 dependencies:
   - drupal:field
+  - drupal:file
+  - drupal:image
+  - drupal:media
   - drupal:node
   - drupal:taxonomy
+  # PhotoBatchImporter writes an explicit focal point for imported photos.
+  - focal_point:focal_point

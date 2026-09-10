@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - core.entity_view_mode.media.photo_gallery_card
+    - field.field.media.image.field_import_checksum
     - field.field.media.image.field_media_image
     - field.field.media.image.rabbit_hole__settings
     - image.style.photo_gallery_card
@@ -28,6 +29,7 @@ content:
     region: content
 hidden:
   created: true
+  field_import_checksum: true
   name: true
   rabbit_hole__settings: true
   thumbnail: true
