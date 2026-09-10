@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.media.image.field_import_checksum
     - field.field.media.image.field_media_image
     - field.field.media.image.rabbit_hole__settings
     - image.style.medium
@@ -65,4 +66,5 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
+  field_import_checksum: true
   name: true

@@ -1,0 +1,19 @@
+uuid: c0579f4e-dbba-4037-b328-b97bf22a3ee4
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.media.field_import_checksum
+    - media.type.image
+id: media.image.field_import_checksum
+field_name: field_import_checksum
+entity_type: media
+bundle: image
+label: 'Import checksum'
+description: 'SHA-1 of the original file, written by apc:import-photos so a re-import of the same photo can be detected. Not shown on any form or display -- bookkeeping only.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

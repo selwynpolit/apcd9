@@ -30,3 +30,6 @@
 # Local db dumps
 *.sql
 *.sql.gz
+
+# Local photo batches staged for apc:import-photos
+/photo-batches/

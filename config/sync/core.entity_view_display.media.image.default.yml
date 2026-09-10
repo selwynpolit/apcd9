@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.media.image.field_import_checksum
     - field.field.media.image.field_media_image
     - field.field.media.image.rabbit_hole__settings
     - image.style.large
@@ -29,6 +30,7 @@ content:
     region: content
 hidden:
   created: true
+  field_import_checksum: true
   name: true
   rabbit_hole__settings: true
   thumbnail: true
