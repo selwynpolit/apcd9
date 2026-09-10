@@ -1,24 +1,28 @@
-uuid: 00575297-7140-4fc1-bf94-14f930426784
+uuid: 4b0cce60-fbaf-4e56-85a4-98e75c774b3a
 langcode: en
 status: true
 dependencies:
   config:
     - views.view.photo_gallery
+  module:
+    - system
+    - views
   theme:
     - apc_brown
-id: apc_brown_calendar_protest_signs_mini
+id: apc_brown_calendar_photos_mobile
 theme: apc_brown
 region: content_above
-weight: -5
+weight: -3
 provider: null
-plugin: 'views_block:photo_gallery-block_protest_signs'
+plugin: 'views_block:photo_gallery-block_calendar_mobile'
 settings:
-  id: 'views_block:photo_gallery-block_protest_signs'
-  label: 'Protest Signs / Memes'
-  label_display: visible
+  id: 'views_block:photo_gallery-block_calendar_mobile'
+  label: Photos
+  label_display: '1'
   provider: views
-  views_label: 'Protest Signs / Memes'
+  views_label: Photos
   items_per_page: none
+  exposed: {  }
 visibility:
   request_path:
     id: request_path

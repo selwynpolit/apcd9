@@ -11,7 +11,7 @@ third_party_settings:
     parent: 'main:'
 name: 'Community Photo/Signs'
 type: community_photo
-description: 'A moderated photo for the Protest Signs / Community Photos galleries.'
+description: 'A moderated photo for the Protest Signs / Memes / Community Photos galleries.'
 help: "Please don't submit copyrighted materials here"
 new_revision: true
 preview_mode: 1

@@ -14,10 +14,10 @@ provider: null
 plugin: 'views_block:photo_gallery-block_protest_signs'
 settings:
   id: 'views_block:photo_gallery-block_protest_signs'
-  label: 'Protest Signs'
+  label: 'Protest Signs / Memes'
   label_display: visible
   provider: views
-  views_label: 'Protest Signs'
+  views_label: 'Protest Signs / Memes'
   items_per_page: none
 visibility:
   request_path:

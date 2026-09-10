@@ -16,7 +16,7 @@
 
 /* ══ Browse page layout (page_1 only) ═══════════════════════════════════
    views-view--photo-gallery--page-1.html.twig moves the title, "Upload a
-   photo or sign" CTA and exposed filters into one left-hand column instead
+   photo, meme or sign" CTA and exposed filters into one left-hand column instead
    of stacking all three full-width above the results grid -- on the old
    layout that header block alone pushed the first row of photos below the
    fold on most screens. Below 62.5rem (the same breakpoint the event/
@@ -70,7 +70,7 @@
   margin-block: 0 var(--sp1);
 }
 
-/* "Upload a photo or sign" CTA in the /photos page header (Views header
+/* "Upload a photo, meme or sign" CTA in the /photos page header (Views header
    area). Full-width in the sidebar column so it reads as one of the stacked
    controls there rather than a stray centered button. */
 .apc-photo-submit-cta {
@@ -291,33 +291,82 @@
 
 /* ══ Calendar page mini galleries (/calendar) ═════════════════════════════
    block.block.apc_brown_calendar_protest_signs_mini and
-   ..._community_photos_mini, both placed in content_above. Positioned to
-   flank the view's "Add Calendar Event" row rather than add a row above it
-   -- same out-of-flow technique apc_calendar's calendar-toggle.css already
-   uses for the "Pending / manage view" button, reproduced independently
-   here (not relied on) because that CSS only loads when the toggle block
-   itself renders, i.e. never for anonymous visitors.
+   ..._community_photos_mini, both placed in content_above, desktop only
+   (≥48rem). A third block, apc_brown_calendar_photos_mobile
+   (views.view.photo_gallery's block_calendar_mobile display -- same
+   filters as Default, i.e. no field_gallery_placement narrowing, so it
+   mixes both categories into one feed), replaces both of them below that
+   breakpoint: 2026-09-10 feedback -- "space is at a premium" on a small
+   screen, so mobile gets one combined carousel instead of two stacked
+   ones. All three share this same CSS file/JS behavior (photo-carousel.js
+   activates on any block_* display) and only one or the other pair is
+   ever visible at a given width -- see the two media queries below.
 
-   content_above reserves no flow height (its children are all absolutely
-   positioned), so the calendar's own toolbar row starts right where the
-   button row visually is -- these blocks have to fit inside that same
-   ~140px band or they'll run into the toolbar underneath. That's why the
-   mini card is smaller and caption-less, not just a narrower version of
-   the homepage/full-size card. */
+   Desktop positions the two mini blocks to flank the view's "Add Calendar
+   Event" row rather than add a row above it -- same out-of-flow technique
+   apc_calendar's calendar-toggle.css already uses for the "Pending /
+   manage view" button, reproduced independently here (not relied on)
+   because that CSS only loads when the toggle block itself renders, i.e.
+   never for anonymous visitors.
+
+   content_above reserves no flow height there (its children are all
+   absolutely positioned), so the calendar's own toolbar row starts right
+   where the button row visually is -- these blocks have to fit inside
+   that same ~140px band or they'll run into the toolbar underneath.
+   That's why the mini card is smaller and caption-less, not just a
+   narrower version of the homepage/full-size card -- and why categories
+   are hidden here too (2026-09-10 feedback: "the photos are sufficient"),
+   which was in practice already pushing some of these past that budget
+   into the toolbar below it. */
 body.page-calendar .region--content-above {
   position: relative;
 }
 
+/* 2026-09-10 feedback: noticeable empty space both above the breadcrumb and
+   between the breadcrumb and these mini galleries. Both gaps are generic,
+   site-wide rules (.main-content__container's padding-block-start, and
+   core's own un-editable region.css giving every region child a
+   margin-block-end) -- scoped down here to /calendar only rather than
+   changed globally, since nothing elsewhere on the site was reported as
+   too spacious. */
+body.page-calendar .main-content__container {
+  padding-block-start: var(--sp2);
+}
+
+@media (min-width: 43.75rem) {
+  body.page-calendar .main-content__container {
+    padding-block-start: var(--sp3);
+  }
+}
+
+body.page-calendar .region--breadcrumb > * {
+  margin-block-end: var(--sp1);
+}
+
+/* Categories add nothing a person browsing thumbnails needs and were
+   pushing some of these mini cards past the ~140px budget above into the
+   calendar toolbar underneath (measured live: the community-photos card
+   ran 43px past the toolbar's own top edge before this rule). Hidden at
+   every width, including on the mobile combined block below, which shares
+   this same field markup. */
+body.page-calendar #block-apc-brown-calendar-protest-signs-mini .apc-photo-gallery__tags,
+body.page-calendar #block-apc-brown-calendar-community-photos-mini .apc-photo-gallery__tags,
+body.page-calendar #block-apc-brown-calendar-photos-mobile .apc-photo-gallery__tags {
+  display: none;
+}
+
 /* Compact block-title heading over each mini gallery ("Protest Signs" /
-   "Community Photos"). The default h2 is far too tall for the ~140px band
-   these blocks live in, so it's shrunk to a small uppercase label with tight
-   margins; the mini image is narrowed to 8rem to make the vertical room the
-   heading needs without the block running into the calendar toolbar below. */
+   "Community Photos" / "Photos"). The default h2 is far too tall for the
+   ~140px band the desktop pair live in, so it's shrunk to a small
+   uppercase label with tight margins; reused as-is for the mobile combined
+   block too, for the same visual language even though that one isn't
+   fighting the same height budget. */
 body.page-calendar #block-apc-brown-calendar-protest-signs-mini > h2,
-body.page-calendar #block-apc-brown-calendar-community-photos-mini > h2 {
+body.page-calendar #block-apc-brown-calendar-community-photos-mini > h2,
+body.page-calendar #block-apc-brown-calendar-photos-mobile > h2 {
   margin: 0 0 0.2rem;
   font-family: var(--font-heading);
-  /* Kept to a single line: "Community Photos" wraps at the 8rem width and
+  /* Kept to a single line: "Community Photos" wraps at the 9rem width and
      the second line pushes the block into the calendar toolbar below. */
   font-size: 0.65rem;
   font-weight: 700;
@@ -329,11 +378,20 @@ body.page-calendar #block-apc-brown-calendar-community-photos-mini > h2 {
 }
 
 @media (min-width: 48rem) {
+  /* Mobile-only combined carousel; see the file-header comment above. */
+  body.page-calendar #block-apc-brown-calendar-photos-mobile {
+    display: none;
+  }
+
   body.page-calendar #block-apc-brown-calendar-protest-signs-mini,
   body.page-calendar #block-apc-brown-calendar-community-photos-mini {
     position: absolute;
     inset-block-start: 0.25rem;
-    width: 8rem;
+    /* 2026-09-10 feedback: "pretty tiny" -- widened from 8rem now that
+       hiding categories (above) freed enough of the ~140px height budget
+       to grow the 4:3 image without running into the calendar toolbar
+       underneath; verified live after this change, not just calculated. */
+    width: 9rem;
     z-index: 2;
   }
 
@@ -369,11 +427,25 @@ body.page-calendar #block-apc-brown-calendar-community-photos-mini > h2 {
 }
 
 @media (max-width: 47.99rem) {
+  /* Desktop pair replaced by the single combined block below this width;
+     see the file-header comment above. */
   body.page-calendar #block-apc-brown-calendar-protest-signs-mini,
   body.page-calendar #block-apc-brown-calendar-community-photos-mini {
-    max-width: 14rem;
+    display: none;
+  }
+
+  /* Normal flow here, not absolutely positioned -- there's no calendar
+     toolbar height budget to fit inside on mobile (the FullCalendar
+     toolbar wraps to its own row above the grid at this width), so this
+     can just be sized for what reads well on a small screen. */
+  body.page-calendar #block-apc-brown-calendar-photos-mobile {
+    max-width: 18rem;
     margin-inline: auto;
-    margin-block-end: var(--sp1);
+    margin-block-end: var(--sp2);
+  }
+
+  body.page-calendar #block-apc-brown-calendar-photos-mobile .apc-photo-gallery__caption {
+    display: none;
   }
 }
 
