@@ -33,8 +33,8 @@ apc_calendar.footer.add_event:
   weight: 1
 
 apc_calendar.footer.submit_photo:
-  title: 'Submit a photo or sign'
-  description: 'Upload a community photo or protest sign'
+  title: 'Submit a photo, meme or sign'
+  description: 'Upload a community photo, meme or protest sign'
   menu_name: footer
   url: 'internal:/node/add/community_photo'
   weight: 2

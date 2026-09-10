@@ -577,6 +577,7 @@ function apc_brown_preprocess_block(&$variables) {
   if (in_array($variables['elements']['#id'] ?? NULL, [
     'apc_brown_calendar_protest_signs_mini',
     'apc_brown_calendar_community_photos_mini',
+    'apc_brown_calendar_photos_mobile',
     'apc_brown_photo_gallery_protest_signs',
     'apc_brown_photo_gallery_community_photos',
   ], TRUE)) {

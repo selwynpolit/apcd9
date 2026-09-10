@@ -3,13 +3,18 @@ langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.node.field_gallery_placement
+    - field.storage.node.field_caption
+    - field.storage.node.field_photo_image
     - field.storage.node.field_photo_tags
     - node.type.community_photo
+    - system.menu.main
+    - taxonomy.vocabulary.photo_categories
   module:
     - better_exposed_filters
-    - media
     - node
+    - options
+    - taxonomy
+    - user
 id: photo_gallery
 label: 'Photo Gallery'
 module: views
@@ -361,7 +366,28 @@ display:
         - 'user.node_grants:view'
         - user.permissions
       tags:
+        - 'config:field.storage.node.field_caption'
         - 'config:field.storage.node.field_photo_image'
+        - 'config:field.storage.node.field_photo_tags'
+  block_calendar_mobile:
+    id: block_calendar_mobile
+    display_title: 'Calendar Mobile Combined'
+    display_plugin: block
+    position: 4
+    display_options:
+      display_extenders: {  }
+      block_description: 'Photo Gallery: Calendar mobile (combined)'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - 'user.node_grants:view'
+        - user.permissions
+      tags:
+        - 'config:field.storage.node.field_caption'
+        - 'config:field.storage.node.field_photo_image'
+        - 'config:field.storage.node.field_photo_tags'
   block_community_photos:
     id: block_community_photos
     display_title: 'Community Photos'
@@ -443,10 +469,12 @@ display:
         - 'user.node_grants:view'
         - user.permissions
       tags:
+        - 'config:field.storage.node.field_caption'
         - 'config:field.storage.node.field_photo_image'
+        - 'config:field.storage.node.field_photo_tags'
   block_protest_signs:
     id: block_protest_signs
-    display_title: 'Protest Signs'
+    display_title: 'Protest Signs / Memes'
     display_plugin: block
     position: 1
     display_options:
@@ -525,7 +553,9 @@ display:
         - 'user.node_grants:view'
         - user.permissions
       tags:
+        - 'config:field.storage.node.field_caption'
         - 'config:field.storage.node.field_photo_image'
+        - 'config:field.storage.node.field_photo_tags'
   page_1:
     id: page_1
     display_title: 'Browse page'
@@ -736,10 +766,12 @@ display:
           limit: true
           error_message: true
       defaults:
+        use_ajax: false
         pager: false
         exposed_form: false
         filters: false
         header: false
+      use_ajax: true
       header:
         area_text_custom:
           id: area_text_custom
@@ -752,7 +784,7 @@ display:
           empty: true
           content: |
             <div class="apc-photo-submit-cta">
-              <a href="/node/add/community_photo" class="button button--primary">Upload a photo or sign</a>
+              <a href="/node/add/community_photo" class="button button--primary">Upload a photo, meme or sign</a>
             </div>
           tokenize: false
       display_extenders: {  }
@@ -776,4 +808,6 @@ display:
         - 'user.node_grants:view'
         - user.permissions
       tags:
+        - 'config:field.storage.node.field_caption'
         - 'config:field.storage.node.field_photo_image'
+        - 'config:field.storage.node.field_photo_tags'
