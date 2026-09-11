@@ -124,11 +124,26 @@ ddev drush apc:reset-photo-batch-nids photo-batches/2026-09
 Then, per site:
 
 ```
-drush rsync photo-batches/2026-09/ @apc.dev:~/photo-import/2026-09/ -- --exclude=.DS_Store --exclude='._*' --exclude=.prep
-drush @apc.dev apc:import-photos ~/photo-import/2026-09 --cleanup
+ddev drush rsync photo-batches/2026-09/ @apc.dev:%files/photo-import/2026-09/ -- --exclude=.DS_Store --exclude='._*' --exclude=.prep
+ddev drush @apc.dev apc:import-photos /home/austinpr/public_html/apcdev/web/sites/default/files/photo-import/2026-09 --cleanup
 ```
 
-Swap `@apc.dev` for `@apc.prod` once dev looks right. **You only run
+**The destination is `%files`, not a hand-picked path** (2026-09-11 finding, from two actual
+failed runs) -- first tried `~/photo-import/`: `drush rsync` through a site alias didn't
+expand the tilde, and instead tried to create a literal directory named `~` on dev. Then
+tried an absolute path outside `public_html` (`/home/austinpr/photo-import/`): that isn't
+reliably creatable on this host either. `%files` (the site's public files directory) always
+exists and is always writable, and `drush rsync` resolves the token itself, so it works
+regardless of which site's exact docroot you're targeting -- see "Do not stage outside
+`%files`" below for the GPS/EXIF trade-off this accepts and why it's fine for this workflow.
+
+`apc:import-photos` still needs a literal absolute path (it doesn't resolve `%files` itself
+-- that's a `drush rsync` feature). Dev and prod are the same host and user but *different*
+docroots, confirmed via `ddev drush @apc.dev status` / `ddev drush @apc.prod status`:
+- dev: `/home/austinpr/public_html/apcdev/web/sites/default/files/photo-import/2026-09`
+- prod: `/home/austinpr/public_html/d9/web/sites/default/files/photo-import/2026-09`
+
+Swap `@apc.dev` for `@apc.prod` (and the path above for prod's) once dev looks right. **You only run
 `apc:reset-photo-batch-nids` once, not again before the prod push** — `apc:import-photos`
 writes the `nid`s it creates into the copy of `manifest.yml` sitting on the host it just
 ran against (dev's remote copy, in the command above), not back into your local file. As
@@ -142,18 +157,20 @@ step is the expensive, judgment-heavy one; this whole point of separating it fro
 is that it only has to happen once, locally, regardless of how many sites end up with the
 batch.
 
-**Do not stage in `%files` /
-`sites/default/files`.** That was the original plan, on the reasoning that it keeps the
-same command working across both aliases — but the staged files are plain rsynced
-copies, not yet touched by Drupal's entity API, so the `hook_file_insert()` EXIF/GPS
-strip (see `apc_calendar.module`) hasn't run on them yet. Sitting in the public files
-directory, they'd be briefly web-reachable *with GPS metadata still intact* until
-`--cleanup` deletes them. `~/photo-import/` (outside `public_html`, i.e. outside both
-`root` paths in `drush/sites/apc.site.yml`) avoids that, and costs nothing here since
-`@apc.dev` and `@apc.prod` are the same host and user — one staging path serves both.
-Always pass `apc:import-photos` an absolute path when using a remote alias; a relative
-path resolves against wherever `drush`'s remote invocation lands, which is not
-guaranteed to be where you'd expect.
+**Staging in `%files` was tried, reverted, then brought back** (2026-09-09, then
+2026-09-11). The original concern: staged files are plain rsynced copies, not yet touched
+by Drupal's entity API, so the `hook_file_insert()` EXIF/GPS strip (see
+`apc_calendar.module`) hasn't run on them yet -- sitting in the public files directory,
+they'd be briefly web-reachable *with GPS metadata still intact* until `--cleanup` deletes
+them. A path outside `public_html` was tried instead specifically to avoid that window, but
+turned out not reliably creatable on this host at all (a real failed run, not a guess) --
+and the site owner's own call, once that broke: this is initial one-off loading, not a
+routine operation, so the brief GPS-exposure window is an acceptable trade-off against a
+staging path that has to actually work. `%files` it is. Always pass `apc:import-photos` a
+real absolute path when using a remote alias, never `~` or a relative path -- a relative
+path resolves against wherever `drush`'s remote invocation lands, which is not guaranteed
+to be where you'd expect, and `~` isn't reliably expanded through a site alias at all
+(confirmed: it tried to create a literal directory named `~` instead).
 
 **Why the reset step above isn't optional.** `apc:import-photos` skips a row outright
 when its `nid` loads as a real node, before any other check runs. That check has no

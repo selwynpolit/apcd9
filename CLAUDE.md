@@ -14,8 +14,10 @@ Site is hosted on GreenGeeks (`chi204.greengeeks.net`, path `/home/austinpr/publ
 domain `www.austinprogressivecalendar.com`). There is also a legacy Drupal 7 site running in
 parallel (`d7.austinprogressivecalendar.com`) — not part of this repo.
 
-A staging copy of this same codebase runs on the same GreenGeeks host at path `~/www/apcdev/web`,
-domain `dev.austinprogressivecalendar.com` — this is the environment `settings.php`'s
+A staging copy of this same codebase runs on the same GreenGeeks host at path
+`/home/austinpr/public_html/apcdev/web` (confirmed via `ddev drush @apc.dev status` — an earlier
+version of this doc said `~/www/apcdev/web`, which is wrong), domain
+`dev.austinprogressivecalendar.com` — this is the environment `settings.php`'s
 `str_contains($app_root, '/apcdev/')` branch detects and the `dev` config split targets (see
 [Config split: local vs. production behavior](#config-split-local-vs-production-behavior)). Useful
 for checking a change against something closer to production without touching prod itself.
