@@ -1258,6 +1258,88 @@ function apc_calendar_node_insert(NodeInterface $node): void {
 }
 
 /**
+ * Implements hook_ENTITY_TYPE_delete() for node entities.
+ *
+ * Deletes a community_photo's own media entity (and its file) when the node
+ * goes -- Drupal never does this by default (an entity reference field
+ * never cascades, since in general the referenced entity could be shared
+ * elsewhere), but field_photo_image is cardinality-1 and, in the intended
+ * design, every media entity it points to was created for that one node
+ * alone via either the public submission form or PhotoBatchImporter. Left
+ * alone, deleting the node orphans the media and its file forever;
+ * confirmed live (2026-09-11) before this hook existed.
+ *
+ * Two checks guard against "intended design" not being a technical
+ * guarantee, rather than assuming it (2026-09-11 correction, prompted by a
+ * direct question about exactly this): the Media Library widget's own
+ * "Browse" tab lets an editor pick an *already-existing* media entity
+ * instead of uploading a new one, so two nodes CAN legitimately end up
+ * sharing one media entity despite the field's intended 1:1 shape --
+ * checked for directly below, since core has no generic "is this entity
+ * referenced elsewhere" service the way it does for files. The file itself
+ * is checked against Drupal's own file.usage tracking (the mechanism the
+ * site owner specifically asked whether this used) after the media
+ * entity's own usage row is gone, so a file some other media entity still
+ * legitimately shares is left alone rather than deleted out from under it.
+ *
+ * The file is deleted explicitly, not left for Drupal's own cron-based
+ * unused-file cleanup -- tested that assumption directly rather than trust
+ * it, and it doesn't hold: file_cron() only ever considers files with
+ * `status <> PERMANENT`, and every file attached to a saved media entity is
+ * marked permanent. A permanent file at zero usage is invisible to that
+ * cleanup -- confirmed live, the file was still sitting there, still
+ * permanent, after the media entity was gone, before this was fixed.
+ *
+ * Scoped to community_photo only (2026-09-11 decision) -- field_event_image
+ * (calendar_event) and field_media_image (blog_entry) have the same
+ * dedicated-media shape, but the site owner wants those left at Drupal's
+ * default (non-cascading) behavior for now.
+ */
+function apc_calendar_node_delete(NodeInterface $node): void {
+  if ($node->bundle() !== 'community_photo') {
+    return;
+  }
+  if (!$node->hasField('field_photo_image') || $node->get('field_photo_image')->isEmpty()) {
+    return;
+  }
+
+  $media = $node->get('field_photo_image')->entity;
+  if (!$media) {
+    return;
+  }
+
+  // Is some OTHER node still pointing at this same media entity? (Media
+  // Library's "Browse" tab makes this possible -- see the docblock above.)
+  $other_usage = \Drupal::entityTypeManager()->getStorage('node')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'community_photo')
+    ->condition('field_photo_image', $media->id())
+    ->condition('nid', $node->id(), '<>')
+    ->range(0, 1)
+    ->execute();
+  if ($other_usage) {
+    return;
+  }
+
+  // The file entity has to be captured before the media entity is deleted --
+  // deleting the media entity is what decrements the file's usage count via
+  // ImageItem's own field-delete handling, but the field's own reference to
+  // it is gone once that call returns.
+  $file = $media->hasField('field_media_image') ? $media->get('field_media_image')->entity : NULL;
+  $media->delete();
+
+  // Only delete the file if nothing else is left using it. Deleting the
+  // media entity above already removed *its* usage row; if the list isn't
+  // empty now, some other media entity has its own separate usage row for
+  // this same file (e.g. two Image media entities that both ended up
+  // pointing at the same underlying file), and it isn't this hook's file to
+  // delete.
+  if ($file && empty(\Drupal::service('file.usage')->listUsage($file))) {
+    $file->delete();
+  }
+}
+
+/**
  * Implements hook_mail().
  */
 function apc_calendar_mail(string $key, array &$message, array $params): void {
