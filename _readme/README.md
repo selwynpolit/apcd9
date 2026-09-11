@@ -241,21 +241,19 @@ ddev drush apc:reset-photo-batch-nids photo-batches/2026-09
 ```
 Then, per site:
 ```shell
-drush rsync photo-batches/2026-09/ @apc.dev:~/photo-import/2026-09/ -- --exclude=.DS_Store --exclude='._*' --exclude=.prep
-drush @apc.dev apc:import-photos ~/photo-import/2026-09 --cleanup
+ddev drush rsync photo-batches @apc.dev:%files -- --exclude=.DS_Store --exclude='._*' --exclude=.prep --info=progress2
+ddev drush @apc.dev apc:import-photos /home/austinpr/public_html/apcdev/web/sites/default/files/photo-batches/2026-09 --cleanup
 ```
-Confirmed on dev? Repeat the same two commands with `@apc.prod` — **no need to reset nids
-again first**: that command wrote dev's node IDs into the remote copy at
-`~/photo-import/2026-09/manifest.yml` on dev's host, not back into your local file, so
-your local copy (what the second `rsync` reads from) is still the nid-free one from the
-one reset above.
+
+**`apc:import-photos` needs a literal absolute path**
+- dev: `/home/austinpr/public_html/apcdev/web/sites/default/files/photo-batches/2026-09`
+- prod: `/home/austinpr/public_html/d9/web/sites/default/files/photo-batches/2026-09`
+
 
 **`--cleanup` removes the whole remote staging folder, not just the photos.** It deletes
 each original photo as its row imports (as before), and once every row in the manifest
 has a `nid` and nothing failed, `manifest.yml` and the now-empty batch directory too —
-nothing is left on dev/prod afterward. `.prep/` never needs cleaning up remotely in the
-first place: `apc:import-photos` doesn't read it at all, which is why it's excluded from
-the `rsync` above.
+nothing is left on dev/prod afterward.
 
 Full workflow, why the reset step matters, and known gaps:
 [assets/Plans/photo-batch-import-task.md](assets/Plans/photo-batch-import-task.md).
