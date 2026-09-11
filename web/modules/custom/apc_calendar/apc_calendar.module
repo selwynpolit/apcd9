@@ -739,6 +739,23 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
     apc_calendar_attach_add_location_link($form);
   }
 
+  // Move the source calendar's raw LOCATION string (field_import_location_raw)
+  // to render directly under the Location field -- right where a curator is
+  // about to decide whether to match it to an existing term or create a new
+  // one, instead of its default form-display position far down the form,
+  // disconnected from the decision it's meant to inform. Moved, not copied,
+  // out of its default slot so nothing renders twice; #weight => 100 sorts it
+  // after whatever else field_location already carries (the widget itself,
+  // and the "Add a new location" link when the permission check above added
+  // it). Anonymous submitters never reach here with the field intact -- the
+  // #access => FALSE set on it earlier in the anonymous branch travels with
+  // the array when it moves.
+  if (isset($form['field_location']) && isset($form['field_import_location_raw'])) {
+    $form['field_location']['field_import_location_raw'] = $form['field_import_location_raw'];
+    $form['field_location']['field_import_location_raw']['#weight'] = 100;
+    unset($form['field_import_location_raw']);
+  }
+
   // "Suggest tags" — everyone gets it, anonymous included, same as the
   // add-location affordance above. #limit_validation_errors => [] is what
   // keeps a half-filled form (e.g. no location yet) from raising every other
@@ -834,6 +851,193 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
       ],
     ];
     $form['#validate'][] = 'apc_calendar_form_node_calendar_event_form_validate_location';
+  }
+
+  // Show the curator a ready-to-enter local end date for the source
+  // calendar's raw RRULE, when this field is present on the form display
+  // and the node actually has one. field_import_recurrence_raw only ever
+  // holds the untouched source string (feeds_ical never expands RRULE --
+  // see event-import-task.md), and its UNTIL value is always UTC per
+  // RFC5545 -- hand-converting that to the site's local timezone is
+  // exactly the kind of date arithmetic a curator gets wrong (see the
+  // README's "UNTIL is UTC and will trick you" note). Doing it here means
+  // nobody has to.
+  if (isset($form['field_import_recurrence_raw'])) {
+    /** @var \Drupal\node\NodeInterface $node */
+    $node = $form_state->getFormObject()->getEntity();
+    $raw = $node->hasField('field_import_recurrence_raw') ? (string) $node->get('field_import_recurrence_raw')->value : '';
+    if ($raw !== '') {
+      $parsed = _apc_calendar_parse_recurrence_end($raw);
+      if ($parsed === NULL) {
+        $hint = t('No explicit end date or count found in the source recurrence rule above -- pick a reasonable end yourself under Event Date → Ends.');
+      }
+      elseif ($parsed['type'] === 'UNTIL') {
+        $hint = t('Computed from the RRULE above: this series ends @date, local time -- enter that date under Event Date → Ends → On Date.', ['@date' => $parsed['display']]);
+      }
+      else {
+        $hint = t('Computed from the RRULE above: this series ends after @count occurrences -- enter @count under Event Date → Ends → After.', ['@count' => $parsed['value']]);
+      }
+      $form['field_import_recurrence_raw']['#suffix'] = '<div class="apc-recurrence-end-hint messages messages--status">' . $hint . '</div>';
+    }
+  }
+
+  if (isset($form['field_event_date'])) {
+    $form['#validate'][] = 'apc_calendar_form_node_calendar_event_form_validate_recurrence';
+  }
+}
+
+/**
+ * Parses UNTIL/COUNT out of a raw RRULE string, converting UNTIL to local time.
+ *
+ * UNTIL is always UTC per RFC5545 (RFC5545 §3.3.10); Smart Date's own "Ends
+ * on date" widget wants a plain local calendar date. Converting it here,
+ * once, correctly, removes the exact hand-conversion mistake documented in
+ * the README ("UNTIL is UTC and will trick you").
+ *
+ * @return array{type: string, value: string, display?: string}|null
+ *   ['type' => 'UNTIL', 'value' => <Y-m-d, local>, 'display' => <human
+ *   string>], or ['type' => 'COUNT', 'value' => <raw count>], or NULL when
+ *   the raw string has neither (e.g. Forward TX's own no-UNTIL series --
+ *   see event-import-task.md's "Two series have no UNTIL").
+ */
+function _apc_calendar_parse_recurrence_end(string $raw): ?array {
+  if (preg_match('/\bUNTIL=([0-9]{8}T[0-9]{6}Z?)/', $raw, $matches)) {
+    $utc_string = rtrim($matches[1], 'Z');
+    $date = \DateTime::createFromFormat('Ymd\THis', $utc_string, new \DateTimeZone('UTC'));
+    if (!$date) {
+      return NULL;
+    }
+    $site_timezone = \Drupal::config('system.date')->get('timezone.default') ?: date_default_timezone_get();
+    $date->setTimezone(new \DateTimeZone($site_timezone));
+    return [
+      'type' => 'UNTIL',
+      'value' => $date->format('Y-m-d'),
+      'display' => $date->format('l, F j, Y \a\t g:ia T'),
+    ];
+  }
+
+  if (preg_match('/\bCOUNT=(\d+)/', $raw, $matches)) {
+    return ['type' => 'COUNT', 'value' => $matches[1]];
+  }
+
+  return NULL;
+}
+
+/**
+ * Form validation handler: bound how many instances a recurring event can generate.
+ *
+ * Smart Date Recur has no built-in ceiling on the past side of a recurring
+ * rule: given no explicit "Ends" value, it treats the rule as unlimited and
+ * generates every instance from the field's actual start date through 12
+ * months past *today* -- see smart_date_recur_generate_rows() in
+ * smart_date_recur.module ($before = +month_limit from now, no $after
+ * bound at all). A standing weekly meeting imported with a start date over a
+ * year in the past therefore keeps generating more instances every week it
+ * remains unaddressed, with nothing surfacing that growth anywhere in the
+ * curation UI.
+ *
+ * This is not a theoretical concern -- it took down /calendar in production
+ * on 2026-09-11 (node 277, "What's The Plan: Weekly Call with Indivisible"):
+ * a July 2025 start date with weekly recurrence and "Ends: Never" had grown
+ * to 113 instances, and fullcalendar_view's rendering of that many deltas
+ * through Drupal\views\Plugin\views\field\EntityField::prepareItemsByDelta()
+ * throws "Undefined array key" and 500s the whole page. Confirmed as a
+ * known, still-unresolved upstream limitation, not something patchable on
+ * our side: https://www.drupal.org/project/fullcalendar_view/issues/3272681
+ * reports the same warning at as few as 10-20 instances on other sites. The
+ * cap chosen below (60) is a deliberately conservative guess with that in
+ * mind, not a value confirmed safe on this codebase's exact module
+ * versions -- reduce it if /calendar ever reproduces this again under it.
+ *
+ * Two things this checks, per date delta (the field allows multiple):
+ * - A chosen repeat frequency always requires an explicit "Ends" (COUNT or
+ *   UNTIL) -- "Never" is refused outright, regardless of instance count.
+ * - Even with an explicit "Ends", the resulting instance count is estimated
+ *   and refused if it would exceed the cap.
+ *
+ * The COUNT case is exact (Smart Date's own "Ends after" value already *is*
+ * the total instance count). The UNTIL case is only an estimate -- it
+ * divides the start-to-until span by frequency * interval and does not
+ * account for "Advanced" multi-weekday selections, which would multiply a
+ * WEEKLY estimate further. Every recurring event on this site so far is a
+ * plain single-weekday rule (see event-import-task.md), so this
+ * under-counting risk is accepted rather than built around.
+ *
+ * Deliberately reads raw submitted values for repeat/repeat-end/interval
+ * (simple select/number/date elements, safe to read directly) but the
+ * start date from the *currently saved* entity rather than the submitted
+ * date sub-widget -- calling $form_state->getFormObject()->buildEntity()
+ * here to get Smart Date's own massaged value would trigger
+ * smart_date_recur_generate_rows()'s immediate $rrule->save(), creating a
+ * real SmartDateRule entity as a side effect of mere validation. Known
+ * consequence: a delta whose start date is being changed in the very same
+ * edit that adds recurrence is checked against its *old* start date, not
+ * the new one. A brand-new date item (no saved entity value yet, i.e. a
+ * genuinely new event/date being added today) has no history to estimate,
+ * so it is skipped -- nothing dates back before today for it.
+ *
+ * @see apc_calendar_form_node_calendar_event_form_alter()
+ * @see apc_calendar_form_node_calendar_event_edit_form_alter()
+ */
+function apc_calendar_form_node_calendar_event_form_validate_recurrence(array &$form, FormStateInterface $form_state): void {
+  $max_instances = 60;
+
+  $deltas = $form_state->getValue('field_event_date');
+  if (!is_array($deltas)) {
+    return;
+  }
+
+  /** @var \Drupal\node\NodeInterface $entity */
+  $entity = $form_state->getFormObject()->getEntity();
+  $seconds_per_unit = [
+    'DAILY' => 86400,
+    'WEEKLY' => 604800,
+    'MONTHLY' => 2629800,
+    'YEARLY' => 31557600,
+  ];
+
+  foreach ($deltas as $delta => $item) {
+    if (!is_array($item) || empty($item['repeat'])) {
+      continue;
+    }
+
+    $element = $form['field_event_date']['widget'][$delta] ?? $form['field_event_date']['widget'];
+
+    if (empty($item['repeat-end'])) {
+      $form_state->setError($element, t('Recurring events need a defined end -- choose "After" or "On Date" under Ends. Left on "Never," a recurring event can quietly grow to hundreds of individual dates and has broken the public calendar page before.'));
+      continue;
+    }
+
+    if ($item['repeat-end'] === 'COUNT') {
+      $count = (int) ($item['repeat-end-count'] ?? 0);
+      if ($count > $max_instances) {
+        $form_state->setError($element, t('Repeating "after @count times" creates that many individual dates, which is more than this calendar page can reliably display (max @max). Reduce the count, or extend the interval between repeats instead.', [
+          '@count' => $count,
+          '@max' => $max_instances,
+        ]));
+      }
+      continue;
+    }
+
+    if ($item['repeat-end'] === 'UNTIL' && !empty($item['repeat-end-date'])) {
+      $until = strtotime($item['repeat-end-date']);
+      $start = NULL;
+      if ($entity->hasField('field_event_date') && !$entity->get('field_event_date')->isEmpty()) {
+        $current = $entity->get('field_event_date')->get($delta) ?? NULL;
+        $start = $current ? (int) $current->value : NULL;
+      }
+      if ($until && $start) {
+        $unit_seconds = $seconds_per_unit[$item['repeat']] ?? 604800;
+        $interval = max(1, (int) ($item['interval'] ?? 1));
+        $estimate = (int) ceil(max(0, $until - $start) / ($unit_seconds * $interval));
+        if ($estimate > $max_instances) {
+          $form_state->setError($element, t('This end date would create roughly @estimate individual dates for this event (max @max) -- mostly because the start date is far in the past. Either pick a nearer end date, or update the start date to the next upcoming occurrence before adding recurrence.', [
+            '@estimate' => $estimate,
+            '@max' => $max_instances,
+          ]));
+        }
+      }
+    }
   }
 }
 
