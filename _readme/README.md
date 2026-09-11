@@ -257,3 +257,88 @@ nothing is left on dev/prod afterward.
 
 Full workflow, why the reset step matters, and known gaps:
 [assets/Plans/photo-batch-import-task.md](assets/Plans/photo-batch-import-task.md).
+
+
+## Importing events from external calendars
+
+Feeds import iCal calendars (Forward TX is the first source) into `calendar_event` as
+**unpublished**, for a human to curate — never straight to published.
+
+**Run an import:**
+- Automatic: runs weekly on cron.
+- Manual: `/admin/content/feed` → the feed's "Import" link, or `ddev drush feeds:import <fid>`
+  (find `<fid>` on that same page).
+
+**Curate what came in** at `/admin/imported-events`:
+- Check `Raw location` and `Recurrence` (recurring series need Smart Date recurrence set by hand —
+  it's never auto-populated) against the source calendar.
+- Select rows, then **Accept (publish and mark accepted)** or
+  **Reject (keep unpublished, mark rejected)** from the bulk action dropdown.
+
+**Things to watch for while reviewing:**
+- *Recurrence — only applies to rows that actually have one.* A plain one-off event's date imports
+  correctly with nothing to edit. Only rows with an `RRULE` need manual work, because `feeds_ical`
+  never expands RRULE or populates Smart Date's recurrence — the `Recurrence` column is raw RRULE
+  text for your reference only.
+  - **A past `DTSTART` on a recurring row is normal — don't change it to today's date.** It's the
+    series' real, original start (often a year+ old for a standing weekly meeting) and is the
+    correct anchor for the weekday/time-of-day. Enter the recurring rule (weekly, etc.) on top of
+    that real start date; Smart Date then generates every instance of the pattern, past and future,
+    each as its own row — past instances simply land in "Past Events," which is expected. Moving the
+    start date to today risks shifting which weekday the series actually runs on.
+  - Its `UNTIL` date is in **UTC** and reads a day later than the real local last occurrence (e.g.
+    `UNTIL=20260917T045959Z` is Sept 16, 11:59pm Central). Enter the correct local end date — don't
+    copy the UTC date literally.
+  - `INTERVAL` isn't always what the title implies — a "Monthly Meeting" with a weekly rule and
+    `INTERVAL=4` recurs every 28 days, not on a calendar month. Check the actual rule, not the name.
+  - The same series can arrive as **several separate rows** — if an organizer extended a recurring
+    meeting in Google Calendar over time, each extension has its own UID, so GUID dedupe can't merge
+    them. Eyeball titles for repeats before accepting.
+  - A series with no `UNTIL` only gets Smart Date's default 12-month cap and quietly stops after a
+    year — nothing reminds you to extend it.
+- *Location.* `Raw location` is free text from the source, not a location term — the same venue can
+  show up as several differently-formatted strings. Match or create the real `locations` term
+  yourself during review.
+- *Scope.* Only future events or recurring series appear in this queue — past one-off events from
+  the source are intentionally excluded.
+- **Re-importing never duplicates or overwrites anything you've already curated.** Confirmed by
+  testing: running the import twice in a row created zero new nodes the second time. Dedup is by the
+  iCal `UID` (stored via `feeds_item`), and the feed type is set to never update existing items — so
+  hand-set recurrence, location, or an accept/reject decision on an already-imported node is
+  permanently safe from a later import run, as long as you don't delete the node.
+- Rejected events do **not** re-import on the next run, but they're never deleted either — deleting
+  one *would* cause it to come back forever, since the dedupe record lives on the node itself. Leave
+  rejects in place, unpublished.
+
+**Add a new source calendar** (same iCal format as Forward TX):
+1. Add a term to the `event_sources` vocabulary (name + `field_source_url` for attribution).
+2. `/admin/content/feed` → add feed → type **iCal event import**, paste the calendar's `.ics` URL,
+   set its `Event Source` field to the new term.
+3. Import once by hand and check the results at `/admin/imported-events` before trusting the weekly
+   cron run.
+
+A calendar published as RSS/Atom or scraped HTML instead of iCal needs a new feed *type*, not just a
+new feed — see [assets/Plans/event-import-task.md](assets/Plans/event-import-task.md) ("Genericity")
+before building one.
+
+### Reproducing a feed on another environment (dev, prod)
+
+**A feed is content, not config** — `drush cim`/`cex` never move it. `drush cst` will show nothing
+even though dev/prod is completely missing a feed that exists on apc3. There is no export/import
+shortcut for this (checked: Feeds' own drush commands only manage feeds that already exist, and no
+content-staging module like `default_content`/`content_sync` is installed) — until an update hook to
+create this automatically is built, it has to be repeated by hand, once per environment.
+
+To reproduce the Forward TX feed:
+1. Taxonomy → Event Sources → Add term. Name: `Forward TX`. `field_source_url`: `https://forwrd-tx.org`.
+2. `/admin/content/feed` → Add feed → type **iCal event import**. URL:
+   `https://calendar.google.com/calendar/ical/info%40forwrd-tx.org/public/basic.ics`. For the
+   **Event Source** field, type `Forward TX` and pick the term the autocomplete finds — it'll show as
+   `Forward TX (<id>)`. That `<id>` is just the term's ID *on this environment*; it will not match
+   apc3's (173) or any other site's, and that's fine — don't type a number, let autocomplete resolve it.
+3. Import once by hand at `/admin/content/feed` and check `/admin/imported-events` before trusting
+   the weekly cron run.
+
+Full design, real bugs hit on the first live import, and why several tempting shortcuts (auto-
+expanding recurrence, deleting rejects, an entity-level location-required constraint) were rejected:
+[assets/Plans/event-import-task.md](assets/Plans/event-import-task.md).
