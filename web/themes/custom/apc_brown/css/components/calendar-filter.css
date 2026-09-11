@@ -1,0 +1,93 @@
+/* ══ Calendar page category filter (/calendar) ═════════════════════════════
+   "Add Calendar Event" is a Views header text area (views.view.calendar's
+   page_1 display), not fullcalendar_view's own button -- so the exposed
+   filter form Drupal renders right after a header already lands exactly
+   where it was asked to ("right below Add Calendar Event"), with no
+   positioning hack needed the way the mini photo galleries elsewhere on
+   this page required. This file is just visual polish: centered and
+   compact rather than the wide inline treatment /photos uses, to sit
+   comfortably under one button instead of a whole sidebar of filters. */
+body.page-calendar .view-filters {
+  margin-block-end: var(--sp2);
+  text-align: center;
+}
+
+body.page-calendar #views-exposed-form-calendar-page-1 {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp0-5) var(--sp1);
+}
+
+body.page-calendar #views-exposed-form-calendar-page-1 .js-form-item {
+  margin: 0;
+}
+
+/* Only once calendar-filter.js has actually taken over form submission
+   (see its own file header) -- a no-JS visitor still needs this button as
+   their only way to apply the filter, so it's never hidden unconditionally. */
+body.page-calendar #views-exposed-form-calendar-page-1.apc-calendar-filter-active .form-actions {
+  display: none;
+}
+
+/* Loading feedback while calendar-filter.js's fetch is in flight -- see
+   that file's header for why this round trip is a real, uncached request
+   and not always instant. Two layers: a page-wide wait cursor (so the
+   feedback isn't missed just because the mouse already moved off the
+   dropdown), and a spinner over the calendar grid itself, since that's
+   where a visitor's eyes actually are while waiting. */
+body.apc-calendar-loading,
+body.apc-calendar-loading * {
+  cursor: wait !important;
+}
+
+.apc-calendar-loading-wrapper {
+  position: relative;
+}
+
+.apc-calendar-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp0-5);
+  /* --color--gray-100 (#f5ead8, "APC ground") at 85% -- hardcoded rather
+     than derived, since relative-color syntax (rgb(from ...)) isn't
+     supported by every browser this site still needs to work in. */
+  background: rgba(245, 234, 216, 0.85);
+  border-radius: var(--sp0-5);
+}
+
+.apc-calendar-loading-overlay.is-visible {
+  display: flex;
+}
+
+.apc-calendar-loading-spinner {
+  width: var(--sp2);
+  height: var(--sp2);
+  border: 0.3rem solid var(--color--primary-40);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: apc-calendar-loading-spin 0.7s linear infinite;
+}
+
+.apc-calendar-loading-text {
+  font-weight: bold;
+  color: var(--color-text-primary-loud);
+}
+
+@keyframes apc-calendar-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apc-calendar-loading-spinner {
+    animation: none;
+  }
+}

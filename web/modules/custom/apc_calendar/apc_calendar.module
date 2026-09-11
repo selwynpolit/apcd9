@@ -505,6 +505,89 @@ function apc_calendar_form_node_community_photo_edit_form_alter(array &$form, Fo
 }
 
 /**
+ * Implements hook_form_views_exposed_form_alter().
+ *
+ * Restricts the /calendar page's "Category" filter to tags that actually
+ * have an event on the calendar right now, and appends a "(N)" count to
+ * each. Out of ~120 tags on the site, only a dozen or so are ever attached
+ * to a calendar_event -- the rest come from the much larger photo-tagging
+ * vocabulary use -- so the unfiltered dropdown was mostly dead options a
+ * visitor could pick and always get zero results from.
+ *
+ * Counts are computed against the same status/type/date-window filters as
+ * views.view.calendar's own page_1 display (published, bundle
+ * calendar_event, end date within the last month or later) so a number
+ * shown here always matches what picking that option actually returns.
+ * Deliberately a raw query rather than executing the view once per tag --
+ * this runs on every page load and every AJAX filter change (see
+ * calendar-filter.js), so it needs to stay a single query, not N.
+ *
+ * @see _apc_calendar_calendar_tag_event_counts()
+ */
+function apc_calendar_form_views_exposed_form_alter(array &$form, FormStateInterface $form_state): void {
+  $view = $form_state->get('view');
+  if (!$view || $view->id() !== 'calendar' || $view->current_display !== 'page_1') {
+    return;
+  }
+  if (!isset($form['field_tags_target_id']['#options'])) {
+    return;
+  }
+
+  $counts = _apc_calendar_calendar_tag_event_counts();
+
+  $options = $form['field_tags_target_id']['#options'];
+  foreach ($options as $tid => $label) {
+    // 'All' is the filter's own "- Any -" option, not a real term id.
+    if ($tid === 'All') {
+      continue;
+    }
+    if (empty($counts[$tid])) {
+      unset($options[$tid]);
+      continue;
+    }
+    $options[$tid] = $label . ' (' . $counts[$tid] . ')';
+  }
+  $form['field_tags_target_id']['#options'] = $options;
+  $form['field_tags_target_id']['#cache']['tags'][] = 'node_list';
+}
+
+/**
+ * Counts published calendar_event nodes per tag.
+ *
+ * Mirrors views.view.calendar page_1's own status/type/date-window filters
+ * (see that config's `filters` section) so a tag only shows up here if
+ * selecting it on the calendar would actually return something. Does not
+ * replicate node grants/access-control query rewriting the way the real
+ * view does -- fine on this site (no private calendar_event content), but
+ * worth knowing if that ever changes.
+ *
+ * @return int[]
+ *   Term ID => count of distinct published calendar_event nodes carrying
+ *   that tag. A recurring event's multiple date deltas count once, not
+ *   once per occurrence.
+ */
+function _apc_calendar_calendar_tag_event_counts(): array {
+  $cutoff = strtotime('-1 month', \Drupal::time()->getRequestTime());
+
+  $query = \Drupal::database()->select('node__field_tags', 'ft');
+  $query->innerJoin('node_field_data', 'n', 'n.nid = ft.entity_id');
+  $query->innerJoin('node__field_event_date', 'fed', 'fed.entity_id = ft.entity_id AND fed.deleted = 0');
+  $query->condition('n.type', 'calendar_event');
+  $query->condition('n.status', 1);
+  $query->condition('ft.deleted', 0);
+  $query->condition('fed.field_event_date_end_value', $cutoff, '>=');
+  $query->addField('ft', 'field_tags_target_id', 'tid');
+  $query->addExpression('COUNT(DISTINCT n.nid)', 'cnt');
+  $query->groupBy('ft.field_tags_target_id');
+
+  $counts = [];
+  foreach ($query->execute() as $row) {
+    $counts[(int) $row->tid] = (int) $row->cnt;
+  }
+  return $counts;
+}
+
+/**
  * Forces the anonymous visitor's PHP session to actually start and persist.
  *
  * Both the calendar_event and community_photo forms have a Media Library
