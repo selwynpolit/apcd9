@@ -405,3 +405,21 @@ photo-lightbox:
   dependencies:
     - core/drupal
     - core/once
+
+# Filters /calendar's events by category without a page reload -- attached
+# by apc_brown_preprocess_views_view() on views.view.calendar's page_1
+# display only. See calendar-filter.js for why this can't just be Views'
+# own AJAX (it would reset FullCalendar to today's month on every filter
+# change): drupalSettings is needed to reach the live FullCalendar.Calendar
+# instance fullcalendar_view.js keeps at drupalSettings.calendar[].
+calendar-filter:
+  version: VERSION
+  css:
+    theme:
+      css/components/calendar-filter.css: {}
+  js:
+    js/calendar-filter.js: {}
+  dependencies:
+    - core/drupal
+    - core/once
+    - core/drupalSettings

@@ -1182,6 +1182,12 @@ function apc_brown_preprocess_views_view(&$variables) {
       $variables['#cache']['tags'] = Cache::mergeTags($variables['#cache']['tags'] ?? [], $cache_tags);
     }
   }
+
+  // See calendar-filter.js's file header for why this can't reuse Views'
+  // own AJAX handling the way the photo_gallery filters do.
+  if ($view->id() === 'calendar' && $view->current_display === 'page_1') {
+    $variables['#attached']['library'][] = 'apc_brown/calendar-filter';
+  }
 }
 
 /**
