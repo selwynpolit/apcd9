@@ -239,11 +239,19 @@ before the first push elsewhere:
 ```shell
 ddev drush apc:reset-photo-batch-nids photo-batches/2026-09
 ```
-Then, per site:
+Then, for dev:
 ```shell
 ddev drush rsync photo-batches @apc.dev:%files -- --exclude=.DS_Store --exclude='._*' --exclude=.prep --info=progress2
 ddev drush @apc.dev apc:import-photos /home/austinpr/public_html/apcdev/web/sites/default/files/photo-batches/2026-09 --cleanup
 ```
+
+For prod:
+```shell
+ddev drush rsync photo-batches @apc.prod:%files -- --exclude=.DS_Store --exclude='._*' --exclude=.prep --info=progress2
+ddev drush @apc.prod apc:import-photos /home/austinpr/public_html/d9/web/sites/default/files/photo-batches/2026-09 --cleanup
+```
+Note. leave off --cleanup if you want to keep the staging folder on dev/prod for any reason.  It will be removed if you use --cleanup.
+
 
 **`apc:import-photos` needs a literal absolute path**
 - dev: `/home/austinpr/public_html/apcdev/web/sites/default/files/photo-batches/2026-09`
