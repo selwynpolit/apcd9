@@ -254,7 +254,7 @@
 
 .apc-info-card__title {
   margin: 0 0 0.25rem;
-  font-family: var(--font-serif);
+  font-family: var(--font-heading);
   font-size: var(--font-size-l);
 }
 
@@ -272,7 +272,7 @@
 
 /* Related events lists (upcoming / past), embedded views on location page. */
 .apc-detail__section-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-heading);
 }
 
 .apc-event-list {
@@ -293,7 +293,7 @@
 
 .apc-event-card__title {
   margin: 0 0 0.25rem;
-  font-family: var(--font-serif);
+  font-family: var(--font-heading);
   font-size: var(--font-size-l);
 }
 

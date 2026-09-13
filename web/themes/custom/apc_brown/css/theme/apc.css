@@ -48,7 +48,7 @@
   --color-neutral-800: #474238;
   --color-neutral-900: #2e2b25;
 
-  --font-heading: var(--font-serif);
+  --font-heading: "Caprasimo", system-ui, sans-serif;
   --font-body: var(--font-sans);
 
   --radius-sm: 8px;
