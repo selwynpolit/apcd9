@@ -533,6 +533,12 @@ function apc_calendar_form_views_exposed_form_alter(array &$form, FormStateInter
     return;
   }
 
+  // "Category" is redundant next to the dropdown's own options ("- Any -",
+  // tag names) and just adds a line of vertical space above an already
+  // cramped calendar page; keep it as the select's accessible name instead
+  // of a visible label.
+  $form['field_tags_target_id']['#title_display'] = 'invisible';
+
   $counts = _apc_calendar_calendar_tag_event_counts();
 
   $options = $form['field_tags_target_id']['#options'];
