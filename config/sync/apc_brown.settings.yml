@@ -1,7 +1,7 @@
 _core:
   default_config_hash: LdsRgYddPoeww0HWiA5AKnQGZCtQvlkCzJ9Jw9TalTg
 logo:
-  use_default: 1
+  use_default: 0
   path: themes/custom/apc_brown/images/apc_logo.jpg
 favicon:
   use_default: 1
