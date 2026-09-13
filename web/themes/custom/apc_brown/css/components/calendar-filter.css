@@ -7,8 +7,17 @@
    this page required. This file is just visual polish: centered and
    compact rather than the wide inline treatment /photos uses, to sit
    comfortably under one button instead of a whole sidebar of filters. */
+/* Olivero core's region.css gives every direct child of a region
+   margin-block-end: var(--sp3) (54px) at ≥62.5rem -- fine for a normal
+   content page, but stacked across the toggle block and both mini photo
+   galleries above the calendar it's most of the "too much cruft before you
+   see a single day" gap on a laptop screen. Tightened for this page only. */
+body.page-calendar .region--content > * {
+  margin-block-end: var(--sp1);
+}
+
 body.page-calendar .view-filters {
-  margin-block-end: var(--sp2);
+  margin-block-end: var(--sp1);
   text-align: center;
 }
 
