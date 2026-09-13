@@ -842,9 +842,12 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
   // The online-only checkbox is available to everyone, anonymous included —
   // no #access gating. #states below only ever hides these elements in the
   // browser; it does not stop a POST that includes both a checked box and a
-  // location value. The two things that actually enforce the rule are
-  // apc_calendar_node_presave() (clears field_location when virtual) and the
-  // validate handler added here (requires field_location when not virtual).
+  // location value. Location itself is optional either way (not just for
+  // virtual events) — apc_calendar_node_presave() still clears it whenever
+  // field_virtual is checked, so a virtual event never carries a stray
+  // location, but a non-virtual event with no location is a valid,
+  // supported state (e.g. a location still being worked out) rather than a
+  // validation error.
   if (isset($form['field_location']) && isset($form['field_event_url'])) {
     $form['field_location']['#states'] = [
       'invisible' => [
@@ -856,7 +859,6 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
         ':input[name="field_virtual[value]"]' => ['checked' => FALSE],
       ],
     ];
-    $form['#validate'][] = 'apc_calendar_form_node_calendar_event_form_validate_location';
   }
 
   // Show the curator a ready-to-enter local end date for the source
@@ -1044,42 +1046,6 @@ function apc_calendar_form_node_calendar_event_form_validate_recurrence(array &$
         }
       }
     }
-  }
-}
-
-/**
- * Form validation handler: require a location for non-virtual events.
- *
- * Form-level only — it does not cover programmatic or REST node creation,
- * which would need an entity-level constraint instead. That gap is accepted
- * here: this form is the only path anonymous and typical authenticated
- * submitters have to create a calendar_event.
- *
- * @see apc_calendar_form_node_calendar_event_form_alter()
- * @see apc_calendar_node_presave()
- */
-function apc_calendar_form_node_calendar_event_form_validate_location(array &$form, FormStateInterface $form_state): void {
-  // boolean_checkbox is a 'multiple_values' widget (it builds its own element
-  // structure rather than one per delta), so the submitted value sits at
-  // field_virtual[value], not field_virtual[0][value].
-  if ($form_state->getValue(['field_virtual', 'value'])) {
-    return;
-  }
-
-  $location = $form_state->getValue('field_location');
-  if (!empty($location[0]['target_id'])) {
-    return;
-  }
-
-  // Only show "required" when the field was left genuinely blank. If the
-  // submitter typed something that didn't resolve to an existing location,
-  // apc_calendar_validate_location_not_found() already set a more specific
-  // error on the element itself -- piling "Location is required" on top of
-  // that would just be a second, contradictory-sounding message for the
-  // same field.
-  $raw = $form_state->getUserInput()['field_location'][0]['target_id'] ?? '';
-  if (trim((string) $raw) === '') {
-    $form_state->setError($form['field_location'], t('Location is required unless this is an online-only event.'));
   }
 }
 
