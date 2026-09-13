@@ -40,16 +40,49 @@
     return $card;
   }
 
+  /**
+   * Decodes HTML entities in a FullCalendar event title.
+   *
+   * fullcalendar_view's own event feed pre-escapes title (e.g. an apostrophe
+   * arrives as "&#039;") so FullCalendar's default renderer -- which sets it
+   * via .html() -- is safe against a title containing markup. This card uses
+   * .text() instead (see buildCard()), which does not decode entities, so
+   * without this the escaped sequence shows up on screen literally. Reusing
+   * a <textarea> to decode is safe: its content is never parsed as markup,
+   * so this can't turn a hostile title into executing HTML.
+   */
+  function decodeHtmlEntities(str) {
+    if (!str) {
+      return str;
+    }
+    const el = document.createElement('textarea');
+    el.innerHTML = str;
+    return el.value;
+  }
+
+  /**
+   * Formats a start/end pair as a time range, e.g. "12 – 6:00 PM".
+   *
+   * fullcalendar_view hands the calendar a floating wall-clock string (no
+   * offset, e.g. "2026-09-27T12:00:00" for a noon event) rather than a real
+   * UTC instant, since these events have no meaning in any timezone but the
+   * site's own. FullCalendar parses that the only way a Date object can
+   * represent it -- as if the wall-clock numbers were UTC -- so the correct
+   * hour/minute live in the Date's *UTC* fields, not its local ones. Every
+   * format call here must pass timeZone: 'UTC' or Intl re-converts through
+   * the visitor's own browser timezone and shifts the displayed time by
+   * whatever that visitor's UTC offset happens to be.
+   */
   function formatTimeRange(start, end) {
     if (!start) {
       return '';
     }
-    const timeFmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+    const timeFmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
     let text = timeFmt.format(start);
     if (end && end.getTime() !== start.getTime()) {
-      const sameDay = start.toDateString() === end.toDateString();
+      const sameDay = start.toISOString().slice(0, 10) === end.toISOString().slice(0, 10);
       text += ' – ' + (sameDay ? timeFmt.format(end) : new Intl.DateTimeFormat(undefined, {
-        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'UTC',
       }).format(end));
     }
     return text;
@@ -68,7 +101,7 @@
 
     const $body = $('<div class="apc-event-hover-card__body"></div>').appendTo($el);
 
-    $('<div class="apc-event-hover-card__title"></div>').text(event.title).appendTo($body);
+    $('<div class="apc-event-hover-card__title"></div>').text(decodeHtmlEntities(event.title)).appendTo($body);
 
     const timeText = props.virtual ? Drupal.t('Online only') : (event.allDay ? '' : formatTimeRange(event.start, event.end));
     if (timeText) {
