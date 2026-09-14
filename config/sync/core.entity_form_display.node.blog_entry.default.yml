@@ -53,7 +53,7 @@ content:
       media_types: {  }
     third_party_settings: {  }
   field_tags:
-    type: entity_reference_autocomplete
+    type: entity_reference_autocomplete_tags
     weight: 10
     region: content
     settings:
@@ -77,6 +77,11 @@ content:
     third_party_settings: {  }
   simple_sitemap:
     weight: 11
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  simple_sitemap_index_now:
+    weight: 130
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -111,6 +116,11 @@ content:
       match_limit: 10
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  url_redirects:
+    weight: 50
+    region: content
+    settings: {  }
     third_party_settings: {  }
 hidden:
   feeds_item: true
