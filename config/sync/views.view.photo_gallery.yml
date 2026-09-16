@@ -616,7 +616,7 @@ display:
                   sort_options_method: alphabetical_asc
                   sort_options_natural: true
                   rewrite:
-                    filter_rewrite_values: ''
+                    filter_rewrite_values: '- Any -|All'
                     filter_rewrite_values_key: false
                   collapsible: false
                   collapsible_disable_automatic_open: false
@@ -640,7 +640,7 @@ display:
                   sort_options_method: alphabetical_asc
                   sort_options_natural: true
                   rewrite:
-                    filter_rewrite_values: ''
+                    filter_rewrite_values: '- Any -|All'
                     filter_rewrite_values_key: false
                   collapsible: false
                   collapsible_disable_automatic_open: false
@@ -703,7 +703,7 @@ display:
             identifier: field_gallery_placement_value
             required: false
             remember: false
-            multiple: false
+            multiple: true
             remember_roles:
               authenticated: authenticated
             reduce: false
@@ -744,7 +744,7 @@ display:
             identifier: field_photo_tags_target_id
             required: false
             remember: false
-            multiple: false
+            multiple: true
             remember_roles:
               authenticated: authenticated
             reduce: false
