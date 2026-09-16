@@ -117,6 +117,16 @@
   max-height: 15rem;
 }
 
+/* apc_brown/gallery's own .apc-gallery__hero img is now a plain, uncropped
+   scale-to-fit (see that file) since the full event page's hero style
+   switched from crop to scale -- right there, wrong here: this dialog's
+   fixed 16:9 box above still needs the image to fill it, not float inside
+   at its own natural height. */
+.apc-gallery--popup .apc-gallery__hero img {
+  height: 100%;
+  object-fit: cover;
+}
+
 .apc-gallery--popup .apc-gallery__thumb {
   width: 3.5rem;
   height: 3.5rem;
