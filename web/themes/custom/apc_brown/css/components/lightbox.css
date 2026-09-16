@@ -23,16 +23,51 @@
   display: none;
 }
 
+/* A fixed, generous box rather than sizing to the image's own natural
+   pixel dimensions -- source photos on this site range from small phone
+   screenshots to full-resolution DSLR shots, and max-width/max-height:
+   100% on the <img> alone showed each at native size: a 339x480 upload
+   rendered genuinely tiny while a 1890x988 one nearly filled the screen,
+   for no reason a visitor could tell. object-fit: contain inside this
+   fixed box means every photo displays at the same generous size
+   regardless of upload resolution -- a small source just scales up
+   (softer, but still readably large) instead of staying postage-stamp
+   sized. */
+.apc-lightbox__viewport {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(94vw, 100rem);
+  height: min(90vh, 100rem);
+  overflow: hidden;
+}
+
 .apc-lightbox__img {
-  max-width: 100%;
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   border-radius: var(--border-radius);
+  cursor: grab;
+  /* Panning (see lightbox.js) moves this via transform on every pointer
+     event, which must stay instant; zoom-button/wheel/double-click
+     changes are the only ones that get the smooth transition. */
+  touch-action: none;
+}
+
+.apc-lightbox__img.apc-lightbox__img--transition {
+  transition: transform 0.15s ease;
+}
+
+.apc-lightbox__img.apc-lightbox__img--dragging {
+  cursor: grabbing;
 }
 
 .apc-lightbox__close {
   position: absolute;
   top: var(--sp1);
   right: var(--sp1);
+  z-index: 1;
   width: 2.5rem;
   height: 2.5rem;
   border: none;
@@ -47,4 +82,36 @@
 .apc-lightbox__close:hover,
 .apc-lightbox__close:focus {
   background: var(--color--gray-90);
+}
+
+.apc-lightbox__zoom {
+  position: absolute;
+  bottom: var(--sp1);
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  gap: var(--sp0-5, 0.5625rem);
+  transform: translateX(-50%);
+}
+
+.apc-lightbox__zoom-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--color--white);
+  color: var(--color--gray-5);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.apc-lightbox__zoom-button:hover,
+.apc-lightbox__zoom-button:focus {
+  background: var(--color--gray-90);
+}
+
+.apc-lightbox__zoom-button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
