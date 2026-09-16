@@ -390,8 +390,12 @@ body.page-calendar #block-apc-brown-calendar-photos-mobile > h2 {
     /* 2026-09-10 feedback: "pretty tiny" -- widened from 8rem now that
        hiding categories (above) freed enough of the ~140px height budget
        to grow the 4:3 image without running into the calendar toolbar
-       underneath; verified live after this change, not just calculated. */
-    width: 9rem;
+       underneath; verified live after this change, not just calculated.
+       Widened again 2026-09-13 -- the filter row below no longer needs the
+       clearance it used to (its own gap to the toolbar was cut way down
+       the same day, see calendar-filter.css), leaving a little more of the
+       ~140px band free for the image itself. */
+    width: 10rem;
     z-index: 2;
   }
 

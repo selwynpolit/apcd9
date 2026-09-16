@@ -16,8 +16,18 @@ body.page-calendar .region--content > * {
   margin-block-end: var(--sp1);
 }
 
+/* The real driver of the big gaps above/below the filter row turned out to
+   be Olivero core's views.css, not margins: `.view, .view-content { gap:
+   var(--sp3) }` (54px) at ≥43.75rem, a grid gap applied by the *parent*
+   -- invisible to inspecting the children's own margins, which is why the
+   region.css override above didn't touch it. Tightened here too, scoped to
+   this page only. */
+body.page-calendar .view,
+body.page-calendar .view-content {
+  gap: var(--sp0-5);
+}
+
 body.page-calendar .view-filters {
-  margin-block-end: var(--sp1);
   text-align: center;
 }
 
