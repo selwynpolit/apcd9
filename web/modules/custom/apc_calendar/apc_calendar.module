@@ -460,6 +460,33 @@ function apc_calendar_form_node_calendar_event_form_alter(array &$form, FormStat
  */
 function apc_calendar_form_node_calendar_event_edit_form_alter(array &$form, FormStateInterface $form_state): void {
   _apc_calendar_calendar_event_form_alter($form, $form_state);
+
+  // Same convenience as community_photo's edit form (see
+  // apc_calendar_form_node_community_photo_edit_form_alter()): link straight
+  // to a selected image's own media edit form (crop, alt text, focal point)
+  // instead of leaving the editor to hunt for it in the media library.
+  // field_event_image allows up to 6 images (field_photo_image is just one),
+  // so this adds one link per already-selected item -- into the Media
+  // Library widget's own per-item row (selection.$delta), alongside its
+  // existing remove_button/rendered_entity -- rather than a single
+  // field-level link.
+  /** @var \Drupal\node\NodeInterface $node */
+  $node = $form_state->getFormObject()->getEntity();
+  if ($node->hasField('field_event_image') && isset($form['field_event_image']['widget']['selection'])) {
+    foreach ($node->get('field_event_image')->referencedEntities() as $delta => $media) {
+      if ($media->access('update') && isset($form['field_event_image']['widget']['selection'][$delta])) {
+        $form['field_event_image']['widget']['selection'][$delta]['edit_media_link'] = [
+          '#type' => 'link',
+          '#title' => t('Edit this photo (crop, alt text, focal point)'),
+          '#url' => $media->toUrl('edit-form', [
+            'query' => ['destination' => Url::fromRoute('<current>')->toString()],
+          ]),
+          '#weight' => 100,
+          '#attributes' => ['class' => ['button', 'button--small', 'apc-edit-media-link']],
+        ];
+      }
+    }
+  }
 }
 
 /**
