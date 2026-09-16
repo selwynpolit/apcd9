@@ -447,3 +447,24 @@
   display: table;
   clear: both;
 }
+
+/* ══ Embedded remote video (body content) ═══════════════════════════════ */
+
+/* An embedded YouTube/Vimeo video in a body field renders as an <iframe
+   class="media-oembed-content">, not a wrapped block -- Olivero core's own
+   embedded-media.css caps that class at max-width: 100%, but never gets the
+   chance to matter: media.remote_video.default.yml's oembed formatter has
+   max_width/max_height left at 0 (unset), and Drupal's OEmbedFormatter
+   falls back to a fixed 200x113 iframe in that case rather than sizing to
+   the provider's own default -- 200px never comes close to needing a 100%
+   cap. Confirmed live: /blog/hands-our-vote-... rendered
+   <iframe width="200" height="113" class="media-oembed-content">.
+   200x113 is already a 16:9 box, just a tiny one -- filling the column's
+   width and deriving height from that same ratio (rather than the fixed
+   113px attribute) scales the video with its container instead of leaving
+   it stuck at postage-stamp size. */
+.media-oembed-content {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
