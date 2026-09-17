@@ -857,22 +857,6 @@ $settings['migrate_node_migrate_type_classic'] = FALSE;
 
 
 
-
-/**
- * The default list of directories that will be ignored by Drupal's file API.
- *
- * By default ignore node_modules and bower_components folders to avoid issues
- * with common frontend tools and recursive scanning of directories looking for
- * extensions.
- *
- * @see \Drupal\Core\File\FileSystemInterface::scanDirectory()
- * @see \Drupal\Core\Extension\ExtensionDiscovery::scanDirectory()
- */
-$settings['file_scan_ignore_directories'] = [
-  'node_modules',
-  'bower_components',
-];
-
 /**
  * The default number of entities to update in a batch process.
  *
