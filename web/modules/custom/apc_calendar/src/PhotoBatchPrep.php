@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\apc_calendar;
 
+use Drupal\Component\Serialization\Yaml as DrupalYaml;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Symfony\Component\Yaml\Yaml;
 
@@ -133,7 +134,7 @@ final class PhotoBatchPrep {
       throw new \RuntimeException('Run the prep command first -- no manifest.yml to merge into.');
     }
 
-    $manifest = Yaml::parse((string) file_get_contents($manifestPath));
+    $manifest = DrupalYaml::decode((string) file_get_contents($manifestPath));
     $known = $this->categoryNames();
     $merged = 0;
     $skipped = 0;
@@ -230,7 +231,7 @@ final class PhotoBatchPrep {
       throw new \RuntimeException('No manifest.yml to review -- run prep and merge first.');
     }
 
-    $manifest = Yaml::parse((string) file_get_contents($path));
+    $manifest = DrupalYaml::decode((string) file_get_contents($path));
     if (!is_array($manifest) || !is_array($manifest['photos'] ?? NULL)) {
       throw new \RuntimeException('manifest.yml did not parse as expected.');
     }
@@ -621,7 +622,7 @@ final class PhotoBatchPrep {
       return count($photos);
     }
 
-    $manifest = Yaml::parse((string) file_get_contents($path));
+    $manifest = DrupalYaml::decode((string) file_get_contents($path));
     $manifest += ['defaults' => [], 'photos' => []];
     $known = array_column($manifest['photos'], 'file');
 

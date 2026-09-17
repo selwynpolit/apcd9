@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\apc_calendar;
 
+use Drupal\Component\Serialization\Yaml as DrupalYaml;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\File\FileExists;
@@ -114,7 +115,7 @@ final class PhotoBatchImporter {
       throw new \RuntimeException(sprintf('No readable %s in %s.', self::MANIFEST_FILENAME, $directory));
     }
 
-    $manifest = Yaml::parse((string) file_get_contents($path));
+    $manifest = DrupalYaml::decode((string) file_get_contents($path));
     if (!is_array($manifest)) {
       throw new \RuntimeException(sprintf('%s did not parse as a YAML mapping.', $path));
     }
