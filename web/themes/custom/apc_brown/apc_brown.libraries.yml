@@ -100,12 +100,6 @@ content-below:
     layout:
       css/layout/region-content-below.css: {}
 
-content_moderation:
-  version: VERSION
-  css:
-    component:
-      css/components/content-moderation.css: {}
-
 details:
   version: VERSION
   css:

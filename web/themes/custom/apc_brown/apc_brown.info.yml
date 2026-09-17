@@ -79,5 +79,3 @@ libraries-extend:
     - apc_brown/layout_discovery_section
   node/drupal.node.preview:
     - apc_brown/drupal.node.preview
-  content_moderation/content_moderation:
-    - apc_brown/content_moderation
