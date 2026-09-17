@@ -65,7 +65,7 @@
         "drupal/taxonomy_manager": "^2.0",
         "drupal/term_merge": "^2.0",
         "drupal/token": "^1.7",
-        "drupal/upgrade_status": "^4.0",
+        "drupal/upgrade_status": "^5.0@alpha",
         "drupal/views_bulk_operations": "^4.4",
         "drush/drush": "^13.7",
         "enyo/dropzone": "^5.9",
@@ -182,10 +182,14 @@
         ]
     },
     "require-dev": {
+        "behat/mink": "^1.11",
         "drupal/coder": "^9.0",
         "drupal/core-dev": "^8.0@beta",
         "drupal/devel": "^5.3",
         "drupal/stage_file_proxy": "^3.1",
-        "squizlabs/php_codesniffer": "^4.0"
+        "phpspec/prophecy-phpunit": "^2",
+        "phpunit/phpunit": "^9.6",
+        "squizlabs/php_codesniffer": "^4.0",
+        "symfony/phpunit-bridge": "^6.4"
     }
 }
