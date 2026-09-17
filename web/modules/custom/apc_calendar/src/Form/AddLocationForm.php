@@ -34,9 +34,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 final class AddLocationForm extends FormBase {
 
   public function __construct(
-    protected readonly EntityTypeManagerInterface $entityTypeManager,
-    protected readonly PrivateTempStoreFactory $tempStoreFactory,
-    protected readonly RendererInterface $renderer,
+    protected EntityTypeManagerInterface $entityTypeManager,
+    protected PrivateTempStoreFactory $tempStoreFactory,
+    protected RendererInterface $renderer,
   ) {}
 
   /**

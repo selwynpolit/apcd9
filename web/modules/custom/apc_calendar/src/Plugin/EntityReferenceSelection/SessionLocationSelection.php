@@ -69,7 +69,7 @@ class SessionLocationSelection extends DefaultSelection {
     EntityFieldManagerInterface $entity_field_manager,
     EntityTypeBundleInfoInterface $entity_type_bundle_info,
     EntityRepositoryInterface $entity_repository,
-    protected readonly PrivateTempStoreFactory $tempStoreFactory,
+    protected PrivateTempStoreFactory $tempStoreFactory,
   ) {
     parent::__construct(
       $configuration,
