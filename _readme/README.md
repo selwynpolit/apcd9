@@ -1,4 +1,4 @@
-#APC D9/D10 version
+#APC Drupal 11 version
 
 ## Hosting
 hosted at greengeeks.com
@@ -9,9 +9,9 @@ hosted at greengeeks.com
 - d9.austinprogressivecalendar.com - redirects to Drupal10 live site
 - 'database' => 'austinpr_d9', 'username' => 'austinpr_d9',
 
-- dev.austinprogressivecalendar.com - Drupal 10 dev site - ~/www/apcdev
+- dev.austinprogressivecalendar.com - Drupal 11 dev site - ~/www/apcdev
 - 'database' => 'austinpr_apcdev', 'username' => 'austinpr_apcdev',
-
+- typically deploy develop branch here
 
 - d7.austinprogressivecalendar.com - old d7 live site - ~/www/live
 - 'database' => 'austinpr_apclive',   'username' => 'austinpr_apclive',

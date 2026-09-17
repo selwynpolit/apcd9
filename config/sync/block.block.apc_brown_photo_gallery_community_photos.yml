@@ -4,6 +4,9 @@ status: true
 dependencies:
   config:
     - views.view.photo_gallery
+  module:
+    - system
+    - views
   theme:
     - apc_brown
 id: apc_brown_photo_gallery_community_photos
@@ -18,7 +21,8 @@ settings:
   label_display: visible
   provider: views
   views_label: 'Community Photos'
-  items_per_page: none
+  items_per_page: null
+  exposed: {  }
 visibility:
   request_path:
     id: request_path

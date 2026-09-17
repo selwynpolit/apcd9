@@ -21,7 +21,7 @@ settings:
   label_display: '1'
   provider: views
   views_label: Photos
-  items_per_page: none
+  items_per_page: null
   exposed: {  }
 visibility:
   request_path:

@@ -6,7 +6,7 @@ dependencies:
     - field.storage.taxonomy_term.field_address
     - field.storage.taxonomy_term.field_geofield
     - field.storage.taxonomy_term.field_term_author
-    - system.menu.main
+    - system.menu.admin
     - taxonomy.vocabulary.locations
   module:
     - address
@@ -452,7 +452,6 @@ display:
               past_format: '@interval ago'
               granularity: 2
               refresh: 60
-              description: ''
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -813,8 +812,6 @@ display:
             multiple: false
             remember_roles:
               authenticated: authenticated
-              anonymous: '0'
-              administrator: '0'
           is_grouped: false
           group_info:
             label: ''
@@ -858,6 +855,7 @@ display:
           empty_table: false
           caption: ''
           description: ''
+          class: ''
       row:
         type: fields
       query:

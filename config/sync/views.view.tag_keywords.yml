@@ -5,7 +5,7 @@ dependencies:
   config:
     - field.storage.taxonomy_term.field_tag_exclude_keywords
     - field.storage.taxonomy_term.field_tag_keywords
-    - system.menu.main
+    - system.menu.admin
     - taxonomy.vocabulary.tags
   module:
     - taxonomy
@@ -627,6 +627,7 @@ display:
           empty_table: true
           caption: ''
           description: ''
+          class: ''
       row:
         type: fields
       query:

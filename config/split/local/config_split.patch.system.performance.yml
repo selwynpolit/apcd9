@@ -4,13 +4,17 @@ adding:
       max_age: 0
   css:
     preprocess: false
+    compress: true
   js:
     preprocess: false
+    compress: true
 removing:
   cache:
     page:
       max_age: 3600
   css:
     preprocess: true
+    gzip: true
   js:
     preprocess: true
+    gzip: true

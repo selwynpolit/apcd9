@@ -7,10 +7,13 @@ dependencies:
     - field.storage.node.field_event_source
     - field.storage.node.field_import_location_raw
     - field.storage.node.field_import_recurrence_raw
-    - field.storage.node.field_import_state
     - node.type.calendar_event
+    - system.menu.admin
+    - taxonomy.vocabulary.event_sources
   module:
     - node
+    - options
+    - smart_date
     - taxonomy
     - user
     - views_bulk_operations
@@ -656,6 +659,7 @@ display:
           empty_table: true
           caption: ''
           description: ''
+          class: ''
       row:
         type: fields
       query:
@@ -669,6 +673,7 @@ display:
       relationships: {  }
       header: {  }
       footer: {  }
+      display_extenders: {  }
     cache_metadata:
       max-age: 0
       contexts:
@@ -678,7 +683,11 @@ display:
         - url.query_args
         - 'user.node_grants:view'
         - user.permissions
-      tags: {  }
+      tags:
+        - 'config:field.storage.node.field_event_date'
+        - 'config:field.storage.node.field_event_source'
+        - 'config:field.storage.node.field_import_location_raw'
+        - 'config:field.storage.node.field_import_recurrence_raw'
   page_1:
     id: page_1
     display_title: Page
@@ -701,4 +710,8 @@ display:
         - url.query_args
         - 'user.node_grants:view'
         - user.permissions
-      tags: {  }
+      tags:
+        - 'config:field.storage.node.field_event_date'
+        - 'config:field.storage.node.field_event_source'
+        - 'config:field.storage.node.field_import_location_raw'
+        - 'config:field.storage.node.field_import_recurrence_raw'

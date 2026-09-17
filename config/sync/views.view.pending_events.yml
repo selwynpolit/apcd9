@@ -4,7 +4,7 @@ status: true
 dependencies:
   config:
     - node.type.calendar_event
-    - system.menu.main
+    - system.menu.admin
   module:
     - better_exposed_filters
     - node
@@ -359,7 +359,6 @@ display:
               past_format: '@interval ago'
               granularity: 2
               refresh: 60
-              description: ''
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -666,8 +665,6 @@ display:
             multiple: false
             remember_roles:
               authenticated: authenticated
-              anonymous: '0'
-              administrator: '0'
           is_grouped: false
           group_info:
             label: ''
@@ -794,6 +791,7 @@ display:
           empty_table: false
           caption: ''
           description: ''
+          class: ''
       row:
         type: fields
       query:
