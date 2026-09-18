@@ -16,6 +16,21 @@
         {
             "type": "composer",
             "url": "https://asset-packagist.org"
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "noli42/chosen",
+                "version": "3.1.4",
+                "type": "drupal-library",
+                "extra": {
+                    "installer-name": "chosen"
+                },
+                "dist": {
+                    "url": "https://github.com/noli42/chosen/releases/download/3.1.4/chosen-assets-v3.1.4.zip",
+                    "type": "zip"
+                }
+            }
         }
     ],
     "require": {
@@ -70,6 +85,7 @@
         "drush/drush": "^13.7",
         "enyo/dropzone": "^5.9",
         "geocoder-php/nominatim-provider": "^5.8",
+        "noli42/chosen": "3.1.4",
         "npm-asset/fullcalendar--core": "4.4.2",
         "npm-asset/fullcalendar--daygrid": "4.4.2",
         "npm-asset/fullcalendar--interaction": "4.4.2",

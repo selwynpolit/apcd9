@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "192a10b3060f27c53179c40141ac7b2c",
+    "content-hash": "9f09bfa6188838db1fcdf4da28d616d0",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -7039,6 +7039,18 @@
                 "source": "https://github.com/nikic/PHP-Parser/tree/v5.9.0"
             },
             "time": "2026-09-13T18:51:52+00:00"
+        },
+        {
+            "name": "noli42/chosen",
+            "version": "3.1.4",
+            "dist": {
+                "type": "zip",
+                "url": "https://github.com/noli42/chosen/releases/download/3.1.4/chosen-assets-v3.1.4.zip"
+            },
+            "type": "drupal-library",
+            "extra": {
+                "installer-name": "chosen"
+            }
         },
         {
             "name": "npm-asset/fullcalendar--core",
