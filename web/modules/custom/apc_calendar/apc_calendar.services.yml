@@ -22,3 +22,9 @@ services:
   logger.channel.apc_calendar:
     parent: logger.channel_base
     arguments: ['apc_calendar']
+
+  apc_calendar.base_url_consistency:
+    class: Drupal\apc_calendar\EventSubscriber\BaseUrlConsistencySubscriber
+    arguments: ['@router.request_context']
+    tags:
+      - { name: event_subscriber }
