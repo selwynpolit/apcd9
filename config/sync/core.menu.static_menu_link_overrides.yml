@@ -7,3 +7,21 @@ definitions:
     weight: 0
     expanded: false
     enabled: true
+  apc_calendar__footer__calendar:
+    menu_name: footer
+    parent: ''
+    weight: 0
+    expanded: false
+    enabled: false
+  apc_calendar__footer__blog:
+    menu_name: footer
+    parent: ''
+    weight: 3
+    expanded: false
+    enabled: false
+  apc_calendar__footer__home:
+    menu_name: footer
+    parent: ''
+    weight: 4
+    expanded: false
+    enabled: false
