@@ -24,12 +24,12 @@
     {% if gallery|length > 1 %}
       <source media="(min-width: 62.5rem)" srcset="{{ gallery.0.hero_desktop }}" data-apc-gallery-source-desktop>
     {% endif %}
-    <img src="{{ gallery.0.hero_mobile }}" alt="{{ gallery.0.alt }}" data-apc-gallery-img>
+    <img src="{{ gallery.0.hero_mobile }}" alt="{{ gallery.0.alt }}" width="{{ gallery.0.hero_mobile_width }}" height="{{ gallery.0.hero_mobile_height }}" data-apc-gallery-img>
   </picture>
   {% if gallery|length > 1 %}
     <div class="apc-gallery__thumbs" data-apc-gallery-thumbs>
       {% for item in gallery %}
-        <button type="button" class="apc-gallery__thumb{{ loop.first ? ' is-active' }}" data-apc-gallery-thumb data-hero-mobile="{{ item.hero_mobile }}" data-hero-desktop="{{ item.hero_desktop }}" data-alt="{{ item.alt }}">
+        <button type="button" class="apc-gallery__thumb{{ loop.first ? ' is-active' }}" data-apc-gallery-thumb data-hero-mobile="{{ item.hero_mobile }}" data-hero-mobile-width="{{ item.hero_mobile_width }}" data-hero-mobile-height="{{ item.hero_mobile_height }}" data-hero-desktop="{{ item.hero_desktop }}" data-alt="{{ item.alt }}">
           <img src="{{ item.thumb }}" alt="">
         </button>
       {% endfor %}

@@ -3,6 +3,13 @@ services:
     class: Drupal\apc_calendar\TagSuggester
     arguments: ['@entity_type.manager']
 
+  apc_calendar.event_card_builder:
+    class: Drupal\apc_calendar\EventCardBuilder
+    arguments:
+      - '@database'
+      - '@entity_type.manager'
+      - '@entity_display.repository'
+
   apc_calendar.photo_batch_importer:
     class: Drupal\apc_calendar\PhotoBatchImporter
     arguments:

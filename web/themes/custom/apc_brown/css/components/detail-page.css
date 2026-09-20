@@ -34,9 +34,9 @@
 }
 
 /* Matches the site header's own wordmark (.site-branding__name -- Figtree
-   700) rather than the site's default Caprasimo heading font (bold,
-   rounded, playful), just a step larger than the header's 2rem. Scoped to
-   this one title rather than changing --font-heading site-wide. */
+   700) rather than the site's default heading font (rounded, playful),
+   just a step larger than the header's 2rem. Scoped to this one title
+   rather than changing --font-heading site-wide. */
 .apc-detail__title {
   margin-block-end: var(--sp0-5, 0.5625rem);
   font-family: var(--font-sans);

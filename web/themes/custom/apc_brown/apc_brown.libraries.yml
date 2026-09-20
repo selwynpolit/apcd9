@@ -307,6 +307,42 @@ detail-page:
   dependencies:
     - apc_brown/gallery
 
+# Homepage: hero with shuffle placard, upcoming-events strip, featured
+# spotlight, and the blended signs/memes wall. The wall's Views display is
+# deliberately named wall_recent_all, not block_recent_all -- the "block_"
+# prefix is what apc_brown_preprocess_views_view() matches to opt a display
+# into the shuffle-and-cycle carousel treatment (one photo at a time), which
+# is wrong here: this is meant to read as a grid of several photos at once,
+# same as the /photos browse page. Confirmed live: with the "block_" name it
+# silently collapsed to a single-photo carousel.
+front-page:
+  version: VERSION
+  css:
+    theme:
+      css/components/front-page.css: {}
+  js:
+    js/sign-shuffle.js: {}
+  dependencies:
+    - core/drupal
+    - core/once
+    - core/drupal.ajax
+    - core/drupal.dialog.ajax
+    - apc_brown/event-popup
+    - apc_brown/lightbox
+
+# /calendar/upcoming: colorful card grid + signs/blog sidebar. Depends on
+# apc_brown/front-page for the shared card markup rules (.apc-front__card-title,
+# .apc-front__card-overlay, .apc-default-event-image, popup dialog AJAX) --
+# EventCardBuilder renders this page's cards with the exact same markup as
+# the homepage's, just laid out differently.
+upcoming-events:
+  version: VERSION
+  css:
+    theme:
+      css/components/upcoming-events.css: {}
+  dependencies:
+    - apc_brown/front-page
+
 # Click-to-swap hero + thumbnail rail. Shared by the event/location detail
 # pages (via detail-page's dependency) and the calendar event popup dialog
 # (attached directly from field--field-event-image--calendar-item.html.twig).
@@ -332,6 +368,19 @@ lightbox:
     - core/drupal
     - core/once
 
+# Wires the signs/memes wall's photos into apc_brown/lightbox instead of the
+# richer apc_brown/photo-lightbox the carousels and the /photos grid use --
+# see js/wall-lightbox.js for why.
+wall-lightbox:
+  version: VERSION
+  js:
+    js/wall-lightbox.js: {}
+  dependencies:
+    - core/drupal
+    - core/once
+    - core/drupalSettings
+    - apc_brown/lightbox
+
 event-popup:
   version: VERSION
   css:
@@ -345,6 +394,19 @@ media-library:
   css:
     component:
       css/components/media-library.css: {}
+
+# Works around a media_library.ui.js bug (drupal.org #3463417, unreleased)
+# that can double the "N of 1 item selected" line in the Add-media dialog's
+# button pane -- confirmed live on the anonymous upload flow. Attached by
+# libraries-extend on media_library/ui specifically (not view/widget above),
+# so it loads -- and its listener registers -- after that core script. See
+# js/media-library-selection-count-fix.js.
+media-library-selection-count-fix:
+  version: VERSION
+  js:
+    js/media-library-selection-count-fix.js: {}
+  dependencies:
+    - core/drupal
 
 # Slick footer layout. Attached by the module's AboutSiteBlock, which sits in
 # the footer on every page, so the footer styling loads site-wide.
@@ -399,6 +461,20 @@ photo-lightbox:
   dependencies:
     - core/drupal
     - core/once
+
+# Stops core Views' post-AJAX "scroll to top of view" command from firing on
+# the /photos browse grid's exposed filters (Category, Photo/Sign) --
+# without it, checking a box while scrolled elsewhere on the page snapped
+# the viewport back to the results grid, which read as a full reload even
+# though the request was genuinely AJAX. See js/disable-views-scroll-top.js.
+# Attached only on page_1 (the one ajax-enabled display with an exposed
+# form) by apc_brown_preprocess_views_view().
+disable-views-scroll-top:
+  version: VERSION
+  js:
+    js/disable-views-scroll-top.js: {}
+  dependencies:
+    - core/drupal.ajax
 
 # Filters /calendar's events by category without a page reload -- attached
 # by apc_brown_preprocess_views_view() on views.view.calendar's page_1

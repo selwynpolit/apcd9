@@ -1,0 +1,88 @@
+{#
+/**
+ * @file
+ * Bulletin-board homepage.
+ *
+ * No page-level <h1> here on purpose -- the site header already carries the
+ * "Austin Progressive Calendar" wordmark, and a second one right below it
+ * read as pure repetition.
+ *
+ * featured_event, upcoming_events and signs_wall are pre-rendered render
+ * arrays (featured_event/upcoming_events via the calendar_item view mode,
+ * narrowed to the specific occurrence that matched, each card already
+ * wired to open the same AJAX popup dialog /calendar uses -- see
+ * FrontPageController::renderOccurrence()). signs_pool is a plain array of
+ * {thumb, full, alt, caption, full} built in apc_brown_preprocess_apc_front_page()
+ * for the hero's shuffle placard; only the first is shown server-side, the
+ * rest are hidden and cycled by apc_brown/front-page's JS behavior. Its
+ * photo opens apc_brown/lightbox (the same zoom/pan overlay the event and
+ * location detail pages use) rather than linking anywhere.
+ *
+ * @see \Drupal\apc_calendar\Controller\FrontPageController
+ * @see apc_brown_preprocess_apc_front_page()
+ */
+#}
+<div class="apc-front">
+
+  <section class="apc-front__hero">
+    <img class="apc-front__mascot" src="{{ directory }}/images/apc_logo.jpg" alt="{{ 'Austin Progressive Calendar mascot'|t }}">
+    <div class="apc-front__intro">
+      <p class="apc-front__tagline">{{ 'Protests, phone banks, potlucks and everything else worth showing up for.'|t }}</p>
+      <div class="apc-front__ctas">
+        <a class="button button--primary" href="/node/add/calendar_event">{{ 'Add an event'|t }}</a>
+        <a class="button" href="/node/add/community_photo">{{ 'Submit a photo, meme or sign'|t }}</a>
+      </div>
+    </div>
+    {% if signs_pool %}
+      <div class="apc-front__placard" data-apc-sign-shuffle>
+        {% for sign in signs_pool %}
+          <figure class="apc-front__placard-item" data-apc-sign-index="{{ loop.index0 }}"{{ loop.first ? '' : ' hidden' }}>
+            <button type="button" class="apc-front__placard-photo" data-apc-lightbox-trigger data-full="{{ sign.full }}" data-alt="{{ sign.alt }}">
+              <img src="{{ sign.thumb }}" alt="{{ sign.alt }}">
+            </button>
+            {% if sign.caption %}<figcaption>{{ sign.caption }}</figcaption>{% endif %}
+          </figure>
+        {% endfor %}
+        {% if signs_pool|length > 1 %}
+          <button type="button" class="apc-front__shuffle-button" data-apc-sign-shuffle-button>{{ 'Shuffle'|t }}</button>
+        {% endif %}
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="apc-front__footer-cta">
+    <a class="button button--primary apc-front__cta-big" href="/calendar">{{ 'Browse the full calendar'|t }} &rarr;</a>
+  </section>
+
+  {% if upcoming_events %}
+    <section class="apc-front__upcoming">
+      <h2 class="apc-front__heading">{{ 'Coming up'|t }}</h2>
+      <div class="apc-front__upcoming-row">
+        {% for event in upcoming_events %}
+          <div class="apc-front__upcoming-card">{{ event }}</div>
+        {% endfor %}
+      </div>
+      <a class="apc-front__more-link" href="/calendar/upcoming">{{ 'See upcoming events'|t }} &rarr;</a>
+    </section>
+  {% endif %}
+
+  {% if featured_event %}
+    <section class="apc-front__featured">
+      <h2 class="apc-front__heading">{{ 'Featured event'|t }}</h2>
+      <div class="apc-front__corkboard">
+        <div class="apc-front__featured-card">{{ featured_event }}</div>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if signs_wall %}
+    <section class="apc-front__wall">
+      <h2 class="apc-front__heading">{{ 'Fresh off the bulletin board'|t }}</h2>
+      <div class="apc-front__corkboard">
+        {{ signs_wall }}
+      </div>
+      <a class="apc-front__more-link" href="/photos">{{ 'See the full wall of signs'|t }} &rarr;</a>
+    </section>
+  {% endif %}
+
+</div>

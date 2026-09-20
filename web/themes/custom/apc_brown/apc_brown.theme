@@ -12,10 +12,37 @@ use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Url;
 use Drupal\image\Entity\ImageStyle;
 use Drupal\node\NodeInterface;
 use Drupal\user\UserInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function apc_brown_theme($existing, $type, $theme, $path) {
+  return [
+    'apc_front_page' => [
+      'template' => 'front-page',
+      'variables' => [
+        'featured_event' => NULL,
+        'upcoming_events' => [],
+        'signs_pool' => [],
+        'signs_wall' => NULL,
+      ],
+    ],
+    'apc_upcoming_events' => [
+      'template' => 'upcoming-events',
+      'variables' => [
+        'cards' => [],
+        'pager' => NULL,
+        'signs_sidebar' => NULL,
+        'recent_posts' => NULL,
+      ],
+    ],
+  ];
+}
 
 /**
  * Implements hook_preprocess_HOOK() for HTML document templates.
@@ -149,6 +176,23 @@ function apc_brown_preprocess_node(&$variables) {
   // expose.
   if ($variables['node']->bundle() === 'calendar_event' && $variables['view_mode'] === 'full') {
     $variables['gallery'] = _apc_brown_build_gallery($variables['node'], 'field_event_image');
+    // Not every organizer uploads a photo -- confirmed live, several of this
+    // site's own events have none, which otherwise left the whole gallery
+    // slot empty (the template drops it via {% if gallery %}). The default
+    // is a single static SVG, not a managed file with real derivatives, so
+    // every size key below just points at the same URL; the browser scales
+    // it, and there is nothing here for the click-to-swap thumbnail rail to
+    // switch between (it only shows when gallery has 2+ items).
+    if (!$variables['gallery']) {
+      $default_url = \Drupal\apc_calendar\DefaultEventImage::url();
+      $variables['gallery'] = [[
+        'hero_mobile' => $default_url,
+        'hero_desktop' => $default_url,
+        'thumb' => $default_url,
+        'full' => $default_url,
+        'alt' => t('Austin skyline illustration with the Austin Progressive Calendar mascot'),
+      ]];
+    }
     // Multi-provider "Add to calendar" control (Google/Apple/Outlook/Yahoo),
     // built by the apc_calendar module so the full page, the popup and the
     // .ics route all share one implementation. Delta 0 = first/next occurrence
@@ -312,6 +356,89 @@ function apc_brown_preprocess_taxonomy_term(&$variables) {
 }
 
 /**
+ * HTML-escapes $text and wraps any bare http(s) URLs in it with <a> tags
+ * that open in a new tab, leaving everything else as plain escaped text.
+ * Deliberately not a full markup/BBCode syntax -- just auto-linking, for
+ * captions on field_caption (a plain string field, not formatted text).
+ *
+ * Returns a Markup object so Twig prints it as-is instead of re-escaping the
+ * <a> tags this function just built; callers should only call this on
+ * non-empty text (an empty Markup object is still truthy to Twig's `if`,
+ * unlike an empty string).
+ */
+function _apc_brown_linkify_urls(string $text): Markup {
+  $escaped = Html::escape($text);
+  $html = preg_replace_callback('#(https?://[^\s<]+)#i', function (array $match): string {
+    // Trailing punctuation right at the end of the match is usually
+    // sentence punctuation, not part of the URL (e.g. "see https://x.org.").
+    $url = rtrim($match[1], '.,;:!?)]}\'"');
+    $suffix = substr($match[1], strlen($url));
+    return '<a href="' . $url . '" target="_blank" rel="noopener noreferrer">' . $url . '</a>' . $suffix;
+  }, $escaped);
+  return Markup::create($html);
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for the apc_front_page theme hook.
+ *
+ * FrontPageController passes raw entities, not markup, for the same reason
+ * apc_brown_preprocess_taxonomy_term() builds its own Views embeds rather
+ * than a controller: the theme layer owns ImageStyle usage and Views
+ * embedding for every other custom template in this codebase, so the front
+ * page follows the same split.
+ */
+function apc_brown_preprocess_apc_front_page(&$variables) {
+  $thumb_style = ImageStyle::load('gallery_thumb');
+  $file_url = \Drupal::service('file_url_generator');
+
+  $pool = [];
+  foreach ($variables['signs_pool'] as $node) {
+    if (!$node->hasField('field_photo_image') || $node->get('field_photo_image')->isEmpty()) {
+      continue;
+    }
+    $media = $node->get('field_photo_image')->entity;
+    if ($media === NULL || !$media->hasField('field_media_image') || $media->get('field_media_image')->isEmpty()) {
+      continue;
+    }
+    $image_item = $media->get('field_media_image')->first();
+    $file = $image_item->entity;
+    if ($file === NULL) {
+      continue;
+    }
+    $uri = $file->getFileUri();
+    $caption = $node->hasField('field_caption') ? (string) $node->get('field_caption')->value : '';
+    $pool[] = [
+      'thumb' => $thumb_style->buildUrl($uri),
+      'full' => $file_url->generateAbsoluteString($uri),
+      'alt' => $image_item->get('alt')->getString() ?: $media->label(),
+      'caption' => $caption !== '' ? _apc_brown_linkify_urls($caption) : '',
+    ];
+    $variables['#cache']['tags'] = Cache::mergeTags($variables['#cache']['tags'] ?? [], $node->getCacheTags());
+  }
+  $variables['signs_pool'] = $pool;
+
+  // Same block-display embedding pattern as the location page's
+  // upcoming/past events lists.
+  $view = \Drupal\views\Views::getView('photo_gallery');
+  $variables['signs_wall'] = $view?->access('wall_recent_all') ? $view->buildRenderable('wall_recent_all') : NULL;
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for the apc_upcoming_events theme hook.
+ *
+ * Same reasoning as apc_brown_preprocess_apc_front_page() just above: the
+ * controller passes cards it already rendered, the theme layer owns the
+ * Views embeds for the sidebar (signs wall + recent blog posts).
+ */
+function apc_brown_preprocess_apc_upcoming_events(&$variables) {
+  $photo_gallery = \Drupal\views\Views::getView('photo_gallery');
+  $variables['signs_sidebar'] = $photo_gallery?->access('wall_recent_all') ? $photo_gallery->buildRenderable('wall_recent_all') : NULL;
+
+  $blog = \Drupal\views\Views::getView('blog');
+  $variables['recent_posts'] = $blog?->access('block_recent_posts') ? $blog->buildRenderable('block_recent_posts') : NULL;
+}
+
+/**
  * Builds the click-to-swap gallery variable for a node or term template.
  *
  * @see apc_brown_preprocess_node()
@@ -341,9 +468,36 @@ function _apc_brown_build_gallery(FieldableEntityInterface $entity, string $fiel
     }
 
     $uri = $file->getFileUri();
+
+    // gallery_hero_mobile/_desktop are image_scale (not crop) styles on
+    // purpose -- see the "No fixed aspect-ratio" note in gallery.css -- so
+    // each image keeps its own natural ratio and there's no single fixed
+    // box size to hard-code here. Computing the *actual* derivative
+    // dimensions per image lets the templates set real width/height
+    // attributes, which is what gallery.js needs to swap the hero image
+    // without the page collapsing then popping back to size around it
+    // (confirmed live: with no width/height hint, the browser has nothing
+    // to reserve space with until the new file finishes downloading, and
+    // the resulting jump got worse the more the two images' aspect ratios
+    // differed). Uses the image field's own already-stored width/height
+    // (the ORIGINAL upload's dimensions -- no extra file I/O) rather than
+    // re-reading the file, same as core's own image formatters do.
+    $original_width = (int) ($image_item->width ?? 0);
+    $original_height = (int) ($image_item->height ?? 0);
+    $hero_mobile_dimensions = ['width' => $original_width, 'height' => $original_height];
+    $hero_desktop_dimensions = ['width' => $original_width, 'height' => $original_height];
+    if ($original_width && $original_height) {
+      $hero_mobile_style->transformDimensions($hero_mobile_dimensions, $uri);
+      $hero_desktop_style->transformDimensions($hero_desktop_dimensions, $uri);
+    }
+
     $items[] = [
       'hero_mobile' => $hero_mobile_style->buildUrl($uri),
+      'hero_mobile_width' => $hero_mobile_dimensions['width'] ?: NULL,
+      'hero_mobile_height' => $hero_mobile_dimensions['height'] ?: NULL,
       'hero_desktop' => $hero_desktop_style->buildUrl($uri),
+      'hero_desktop_width' => $hero_desktop_dimensions['width'] ?: NULL,
+      'hero_desktop_height' => $hero_desktop_dimensions['height'] ?: NULL,
       'thumb' => $thumb_style->buildUrl($uri),
       // Original, uncropped -- what the lightbox shows. Deliberately not a
       // cropped style: a lightbox is the one place the focal-point crop
@@ -431,7 +585,8 @@ function _apc_brown_preprocess_community_photo(array &$variables): void {
     $variables['photo_hero'] = $hero + ['nid' => $node->id()];
     $lightbox[$node->id()] = $lightbox_entry($node, $hero);
   }
-  $variables['photo_caption'] = $node->hasField('field_caption') ? (string) $node->get('field_caption')->value : '';
+  $photo_caption = $node->hasField('field_caption') ? (string) $node->get('field_caption')->value : '';
+  $variables['photo_caption'] = $photo_caption !== '' ? _apc_brown_linkify_urls($photo_caption) : '';
   $variables['photo_credit'] = $credit_for($node);
   if ($node->hasField('field_photo_tags') && !$node->get('field_photo_tags')->isEmpty()) {
     $variables['photo_tags'] = $node->get('field_photo_tags')->view([
@@ -1130,6 +1285,17 @@ function apc_brown_preprocess_views_view(&$variables) {
     elseif ($view->current_display === 'page_1') {
       $variables['attributes']['data-apc-photo-grid'] = TRUE;
       $variables['#attached']['library'][] = 'apc_brown/photo-lightbox';
+      $variables['#attached']['library'][] = 'apc_brown/disable-views-scroll-top';
+    }
+    // The wall (wall_recent_all, embedded on the homepage and the
+    // /calendar/upcoming sidebar) is the same kind of plain grid, but opens
+    // the simpler single-image apc_brown/lightbox instead -- picked on
+    // request for a more consistent feel with the homepage hero's own
+    // lightbox, rather than the carousels'/page_1's richer prev/next +
+    // caption one. See js/wall-lightbox.js.
+    elseif ($view->current_display === 'wall_recent_all') {
+      $variables['attributes']['data-apc-wall-lightbox'] = TRUE;
+      $variables['#attached']['library'][] = 'apc_brown/wall-lightbox';
     }
 
     // Per-photo data for the richer lightbox (apc_brown/photo-lightbox):
@@ -1175,6 +1341,31 @@ function apc_brown_preprocess_views_view(&$variables) {
           $entry['credit'] = $submitter;
         }
       }
+
+      // The lightbox shows this "full" entry uncropped (no image style --
+      // see the comment on _apc_brown_build_gallery()'s identical choice),
+      // so photo-lightbox.js's own default-zoom-on-desktop feature has
+      // nothing but the raw image to work with. Confirmed live: with no
+      // hint at all it defaulted to scrolling the zoomed view to the
+      // image's top-left corner, which on a tall multi-panel photo (a
+      // common shape for a submitted screenshot/meme) could land anywhere
+      // relative to the actual subject -- reads as "randomly zooming".
+      // Every image on the site already gets a focal point one way or
+      // another (explicitly set via the crosshair widget, or the
+      // focal_point.settings.default_value fallback applied at media save
+      // -- see apc_calendar.module/Group 4 notes), so reusing that same
+      // point to center the default zoom on is the same "where's the
+      // interesting part" answer the site's other focal-point-aware crops
+      // already give, just applied to an uncropped image instead of a
+      // fixed box.
+      $width = (int) ($image_item->width ?? 0);
+      $height = (int) ($image_item->height ?? 0);
+      if ($width && $height) {
+        $focal_point_manager = \Drupal::service('focal_point.manager');
+        $position = $focal_point_manager->getCropEntity($file, 'focal_point')->position();
+        $entry['focalPoint'] = $focal_point_manager->absoluteToRelative($position['x'], $position['y'], $width, $height);
+      }
+
       $lightbox_data[$node->id()] = $entry;
     }
     if ($lightbox_data) {
@@ -1188,6 +1379,44 @@ function apc_brown_preprocess_views_view(&$variables) {
   if ($view->id() === 'calendar' && $view->current_display === 'page_1') {
     $variables['#attached']['library'][] = 'apc_brown/calendar-filter';
   }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views-view-field.html.twig.
+ *
+ * photo_gallery's field_photo_image link is built entirely by Views' own
+ * alter->make_link (link_class: apc-photo-gallery__photo), not a template
+ * this module can add attributes to normally -- so wall-lightbox.js,
+ * photo-lightbox.js and photo-carousel.js all used to pull the node id back
+ * out of that link's own href with a regex instead (it used to always be
+ * node/[nid]). That broke the moment community_photo nodes got their own
+ * /photos/[title] alias (pathauto.pattern.community_photos) -- an alias
+ * carries no nid at all, so the regex found nothing and each of those three
+ * behaviors either silently fell back to a smaller/uncropped image or (in
+ * wall-lightbox.js's case) let the click fall through to a real page
+ * navigation instead of opening the lightbox. Stamping the nid on as its own
+ * data attribute here means those scripts no longer depend on the URL's
+ * shape at all.
+ */
+function apc_brown_preprocess_views_view_field(&$variables) {
+  $field = $variables['field'] ?? NULL;
+  if (!$field || $variables['view']->id() !== 'photo_gallery' || $field->field !== 'field_photo_image') {
+    return;
+  }
+  $node = $variables['row']->_entity ?? NULL;
+  if (!$node instanceof NodeInterface) {
+    return;
+  }
+  // Views renders this field's link as a plain HTML string (no render array
+  // to attach #attributes to at this point), so the attribute is spliced
+  // into the opening tag directly. Safe because the tag is always Drupal
+  // core's own Link::toString() output, which always starts "<a ".
+  $variables['output'] = Markup::create(preg_replace(
+    '/<a /',
+    '<a data-photo-nid="' . $node->id() . '" ',
+    (string) $variables['output'],
+    1
+  ));
 }
 
 /**

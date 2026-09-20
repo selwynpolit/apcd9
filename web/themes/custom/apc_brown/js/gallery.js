@@ -21,6 +21,19 @@
 
         thumbs.forEach((thumb) => {
           thumb.addEventListener('click', () => {
+            // Set width/height *before* src -- with no size hint, the
+            // browser has nothing to reserve layout space with until the
+            // new file has actually downloaded, so the hero visibly
+            // collapses and then pops back to size once it arrives
+            // (confirmed live -- worse the more the two photos' aspect
+            // ratios differ, matching the "sometimes jumps" report). Mobile
+            // and desktop derivatives of the same source share one aspect
+            // ratio (gallery_hero_mobile/_desktop both scale, never crop --
+            // see _apc_brown_build_gallery()), so either works as the hint.
+            if (thumb.dataset.heroMobileWidth && thumb.dataset.heroMobileHeight) {
+              img.width = thumb.dataset.heroMobileWidth;
+              img.height = thumb.dataset.heroMobileHeight;
+            }
             img.src = thumb.dataset.heroMobile;
             img.alt = thumb.dataset.alt;
             if (desktopSource) {

@@ -1,0 +1,23 @@
+uuid: cabf5137-0a4c-48a8-8fa7-a11b9f9a5497
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.community_photo
+  module:
+    - node
+id: community_photos
+label: 'Community Photos'
+type: 'canonical_entities:node'
+pattern: '/photos/[node:title]'
+selection_criteria:
+  d3fc2806-67b9-4c37-99f3-0384cffc096d:
+    id: 'entity_bundle:node'
+    negate: false
+    context_mapping:
+      node: node
+    bundles:
+      community_photo: community_photo
+selection_logic: and
+weight: -5
+relationships: {  }

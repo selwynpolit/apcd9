@@ -1,3 +1,19 @@
+apc_calendar.front_page:
+  path: '/home'
+  defaults:
+    _title: 'Austin Progressive Calendar'
+    _controller: '\Drupal\apc_calendar\Controller\FrontPageController::build'
+  requirements:
+    _permission: 'access content'
+
+apc_calendar.upcoming_events:
+  path: '/calendar/upcoming'
+  defaults:
+    _title: 'Upcoming Events'
+    _controller: '\Drupal\apc_calendar\Controller\UpcomingEventsController::build'
+  requirements:
+    _permission: 'access content'
+
 apc_calendar.event_submitted:
   path: '/event-submitted'
   defaults:

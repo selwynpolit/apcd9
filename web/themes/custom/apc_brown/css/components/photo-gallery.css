@@ -147,10 +147,18 @@
   transform: scale(1.03);
 }
 
+/* Clamped to 2 lines -- a long caption (some run several sentences, e.g. a
+   news quote) would otherwise blow out card height and break the grid's
+   even rows. Full text is still available on the photo's own detail page
+   and in the lightbox. */
 .apc-photo-gallery__caption {
   margin-block-start: var(--sp0-5);
   font-size: 0.9rem;
   color: var(--color-text-neutral-medium);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .apc-photo-gallery__caption a {
@@ -231,6 +239,20 @@
 [data-apc-photo-grid] .apc-photo-gallery__photo:focus-within {
   position: relative;
   z-index: 1;
+}
+
+/* All three of these open a lightbox (photo-lightbox.js for the first two,
+   apc_brown/lightbox via wall-lightbox.js for the wall), not a plain
+   navigation -- same zoom-in cue as the homepage hero's own lightbox
+   trigger (.apc-front__placard-photo), so the cursor itself hints at what a
+   click does. Written here (not relying on the card-level cursor set in
+   front-page.css) because .apc-photo-gallery__photo's own cursor:pointer
+   above is a direct declaration, which always wins over an inherited value
+   regardless of the ancestor selector's specificity. */
+[data-apc-photo-grid] .apc-photo-gallery__photo,
+[data-apc-photo-lightbox] .apc-photo-gallery__photo,
+[data-apc-wall-lightbox] .apc-photo-gallery__photo {
+  cursor: zoom-in;
 }
 
 /* Carousel blocks only -- one slide visible at a time. */

@@ -63,6 +63,8 @@ libraries-extend:
     - apc_brown/media-library
   media_library/widget:
     - apc_brown/media-library
+  media_library/ui:
+    - apc_brown/media-library-selection-count-fix
   core/drupal.progress:
     - apc_brown/progress
   core/drupal.tabledrag:

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\apc_calendar\Controller;
 
 use Drupal\apc_calendar\AddToCalendar;
+use Drupal\apc_calendar\DefaultEventImage;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Render\Markup;
@@ -98,6 +99,24 @@ final class EventPopupController extends ControllerBase {
     // renderer does not run this same build step a second time later.
     $build = $view_builder->build($build);
     unset($build['#pre_render']);
+
+    // Not every organizer uploads a photo -- an empty field_event_image
+    // component just vanishes rather than rendering anything, so the popup
+    // otherwise has a blank gap where the photo would be. Falls back to the
+    // theme's illustrated default (mascot + skyline), same as the homepage
+    // cards and the full event page's gallery.
+    if ($occurrence->get('field_event_image')->isEmpty()) {
+      $build['field_event_image'] = [
+        '#type' => 'html_tag',
+        '#tag' => 'img',
+        '#attributes' => [
+          'src' => DefaultEventImage::url(),
+          'alt' => '',
+          'class' => ['apc-default-event-image'],
+        ],
+        '#weight' => -10,
+      ];
+    }
 
     // #type container (not a bare array) so .apc-event-popup can be a
     // positioning root -- 'actions' below is pinned to its top-right corner,

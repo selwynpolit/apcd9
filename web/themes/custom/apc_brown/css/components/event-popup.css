@@ -186,7 +186,7 @@
 }
 
 /*
- * The mailto link in the event body inherits Caprasimo -- .text-content
+ * The mailto link in the event body inherits the heading font -- .text-content
  * (core, do-not-edit) sets the whole rich-text field to --font-serif, which
  * this theme maps to the display/heading font. Fine for body copy, but a
  * plain contact email reads better in the same simple, thinner font as the

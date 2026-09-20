@@ -24,6 +24,56 @@
 
 ((Drupal, once, drupalSettings) => {
   const ZOOM_STEPS = [1, 1.5, 2, 3, 4.5];
+  const URL_PATTERN = /(https?:\/\/[^\s<]+)/gi;
+  // Same breakpoint the rest of the theme uses for "desktop" layout
+  // (detail-page.css, upcoming-events.css). Below it a zoomed-in default
+  // would just mean more scrolling on an already-small screen, so mobile
+  // keeps opening at plain fit.
+  const DESKTOP_QUERY = window.matchMedia('(min-width: 62.5rem)');
+  // Index into ZOOM_STEPS a desktop viewer lands on by default -- picked to
+  // match "click + twice" (ZOOM_STEPS[2] === 2x), the size requested.
+  const DEFAULT_DESKTOP_ZOOM_INDEX = 2;
+
+  // Renders caption text into `el`, wrapping bare http(s) URLs in real <a>
+  // links that open in a new tab, while leaving everything else as plain
+  // text. Built with DOM nodes (createTextNode/createElement) rather than
+  // innerHTML, so nothing typed into a caption can ever be interpreted as
+  // markup -- only URLs this function itself finds become links.
+  const renderCaptionLinks = (el, text) => {
+    el.textContent = '';
+    if (!text) {
+      return;
+    }
+    let lastIndex = 0;
+    let match;
+    URL_PATTERN.lastIndex = 0;
+    while ((match = URL_PATTERN.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        el.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+      // Trailing punctuation right before the end of the match is usually
+      // sentence punctuation, not part of the URL (e.g. "see https://x.org.").
+      let url = match[0];
+      const trailing = url.match(/[.,;:!?)\]}'"]+$/);
+      const suffix = trailing ? trailing[0] : '';
+      if (suffix) {
+        url = url.slice(0, -suffix.length);
+      }
+      const link = document.createElement('a');
+      link.href = url;
+      link.textContent = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      el.appendChild(link);
+      if (suffix) {
+        el.appendChild(document.createTextNode(suffix));
+      }
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < text.length) {
+      el.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+  };
 
   once('apc-photo-lightbox', document.body).forEach(() => {
     const overlay = document.createElement('div');
@@ -110,6 +160,28 @@
       viewport.scrollTo(0, 0);
     };
 
+    // Once zoomed past the viewport, the image's own auto margins (centering
+    // it at fit size) resolve to 0 -- CSS's normal behavior once a box no
+    // longer fits its container -- so the scrollable area is left-aligned
+    // to the image's top-left corner by default. Confirmed live: with no
+    // correction, the default zoom below just showed whatever happened to
+    // be in that top-left corner, unrelated to the photo's actual subject
+    // (worst on a tall multi-panel photo, a common shape for a submitted
+    // screenshot/meme). Scrolls so the photo's own focal point --
+    // apcPhotoGallery[nid].focalPoint, the same point every other
+    // focal-point-aware image style on this site crops around -- lands in
+    // the center of the viewport instead.
+    const centerOnFocalPoint = (focalPoint) => {
+      if (!focalPoint) {
+        return;
+      }
+      const imgRect = img.getBoundingClientRect();
+      const targetX = (focalPoint.x / 100) * imgRect.width - viewport.clientWidth / 2;
+      const targetY = (focalPoint.y / 100) * imgRect.height - viewport.clientHeight / 2;
+      viewport.scrollLeft = Math.max(0, Math.min(targetX, viewport.scrollWidth - viewport.clientWidth));
+      viewport.scrollTop = Math.max(0, Math.min(targetY, viewport.scrollHeight - viewport.clientHeight));
+    };
+
     const render = (data) => {
       if (!data) {
         return;
@@ -123,8 +195,32 @@
       img.src = (meta && meta.full) || data.fallbackSrc;
       img.alt = (meta && meta.alt) || data.fallbackAlt || '';
 
-      captionEl.textContent = (meta && meta.caption) || '';
-      captionEl.hidden = !captionEl.textContent;
+      // Desktop opens a bit zoomed in by default (see DEFAULT_DESKTOP_ZOOM_INDEX
+      // above) rather than at plain fit. This has to wait for the *new*
+      // image to actually be loaded and laid out before measuring fitWidth
+      // -- captureFit()'s own comment already flags why a plain img.onload
+      // isn't reliable here (fires before layout, or not at all for a
+      // cached image); double requestAnimationFrame after either the load
+      // event or an already-cached image (img.complete) covers both.
+      if (DESKTOP_QUERY.matches) {
+        const applyDefaultZoom = () => {
+          captureFit();
+          zoomIndex = Math.min(DEFAULT_DESKTOP_ZOOM_INDEX, ZOOM_STEPS.length - 1);
+          applyZoom();
+          centerOnFocalPoint(meta && meta.focalPoint);
+        };
+        const afterLayout = () => requestAnimationFrame(() => requestAnimationFrame(applyDefaultZoom));
+        if (img.complete && img.naturalWidth) {
+          afterLayout();
+        }
+        else {
+          img.addEventListener('load', afterLayout, { once: true });
+        }
+      }
+
+      const captionText = (meta && meta.caption) || '';
+      renderCaptionLinks(captionEl, captionText);
+      captionEl.hidden = !captionText;
       if (meta && meta.credit) {
         creditEl.textContent = Drupal.t('Photo by @name', { '@name': meta.credit });
         creditEl.hidden = false;
@@ -196,16 +292,17 @@
     document.body.__apcPhotoLightboxOpen = open;
   });
 
-  // Reads a slide/grid item's lightbox lookup data. The nid is already in the
-  // photo's own link (views.view.photo_gallery links field_photo_image to
-  // node/[nid]); the card image is the fallback if that nid isn't in
-  // drupalSettings.apcPhotoGallery for some reason.
+  // Reads a slide/grid item's lightbox lookup data. The nid comes from the
+  // photo link's own data-photo-nid attribute (apc_brown_preprocess_views_view_field()
+  // -- not parsed from the href, which is a /photos/[title] alias since
+  // pathauto.pattern.community_photos and carries no nid at all); the card
+  // image is the fallback if that nid isn't in drupalSettings.apcPhotoGallery
+  // for some reason.
   const itemData = (item) => {
     const link = item.querySelector('.apc-photo-gallery__photo');
     const img = item.querySelector('img');
-    const match = link ? link.getAttribute('href').match(/(\d+)\/?$/) : null;
     return {
-      nid: match ? match[1] : null,
+      nid: link ? (link.dataset.photoNid || null) : null,
       fallbackSrc: img ? img.src : '',
       fallbackAlt: img ? img.alt : '',
     };

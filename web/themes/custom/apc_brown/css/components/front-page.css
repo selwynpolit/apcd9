@@ -1,0 +1,404 @@
+/**
+ * @file
+ * Bulletin-board homepage: hero with shuffle placard, upcoming-events strip,
+ * featured spotlight, and the blended signs/memes wall.
+ */
+
+.apc-front {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--container-padding);
+  padding-block: var(--sp2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp3);
+}
+
+.apc-front__hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--sp2);
+  align-items: center;
+  padding: var(--sp2);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.apc-front__mascot {
+  width: 6.5rem;
+  height: 6.5rem;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid var(--color-bg);
+  box-shadow: var(--shadow-sm);
+}
+
+.apc-front__tagline {
+  margin: 0 0 var(--sp1);
+  color: var(--color-text);
+}
+
+.apc-front__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp0-75, 0.84375rem);
+}
+
+.apc-front__placard {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp0-75, 0.84375rem);
+  padding-top: var(--sp1);
+  border-top: 1px dashed var(--color-divider);
+}
+
+.apc-front__placard-item {
+  margin: 0;
+  max-width: 18rem;
+  text-align: center;
+}
+
+.apc-front__placard-photo {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.apc-front__placard-photo img {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  transform: rotate(-2deg);
+}
+
+.apc-front__placard-item figcaption {
+  margin-top: var(--sp0-5, 0.5625rem);
+  font-style: italic;
+  color: var(--color-neutral-700);
+}
+
+.apc-front__shuffle-button {
+  border: 2px solid var(--color-accent-500);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-accent-600);
+  padding: var(--sp0-25, 0.28125rem) var(--sp1, 1.125rem);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.apc-front__shuffle-button:hover,
+.apc-front__shuffle-button:focus {
+  background: var(--color-accent-100);
+}
+
+.apc-front__heading {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--color-accent-800);
+  margin-block-end: var(--sp1);
+}
+
+.apc-front__upcoming-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--sp1);
+}
+
+/* Bulletin-board "pinned card" treatment, shared by the upcoming/featured
+   event cards and the wall's photo cards below -- a slight alternating
+   tilt plus a pushpin, as if each were tacked to a corkboard. Straightens
+   on hover/focus as a lightweight interactive cue. The whole card is a
+   click target (FrontPageController::renderOccurrence()'s apc_card_overlay
+   link, or the wall photo's own lightbox trigger), so it gets a zoom-in
+   cursor here rather than only on the title/photo -- same "click to see
+   more" cue as the photo gallery's own lightbox triggers. */
+.apc-front__upcoming-card,
+.apc-front__featured-card,
+.apc-front__wall .apc-photo-gallery__item {
+  position: relative;
+  transform: rotate(var(--apc-tilt, -2.5deg));
+  transition: transform 0.15s ease-out;
+  cursor: zoom-in;
+}
+
+.apc-front__upcoming-card:hover,
+.apc-front__featured-card:hover,
+.apc-front__wall .apc-photo-gallery__item:hover {
+  transform: rotate(0deg) scale(1.02);
+  z-index: 1;
+}
+
+/* The pin itself: a domed plastic head (radial gradient for the glossy
+   highlight + a dark rim) sitting on a short metal shaft, with its own
+   drop shadow cast onto the card below -- built from three stacked
+   pseudo-elements-worth of gradient/shadow rather than a flat dot. */
+.apc-front__upcoming-card::before,
+.apc-front__featured-card::before,
+.apc-front__wall .apc-photo-gallery__item::before {
+  content: '';
+  position: absolute;
+  top: 0.375rem;
+  left: 50%;
+  translate: -50% 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.85) 8%, transparent 45%),
+    radial-gradient(circle at 38% 35%, var(--color-accent-2-100) 0%, var(--color-accent-2) 45%, var(--color-accent-2-700) 100%);
+  border: 1px solid var(--color-accent-2-800);
+  box-shadow:
+    0 3px 4px rgba(0, 0, 0, 0.45),
+    inset 0 -2px 2px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+}
+
+/* Thin metal shaft peeking from under the pin head down onto the card. */
+.apc-front__upcoming-card::after,
+.apc-front__featured-card::after,
+.apc-front__wall .apc-photo-gallery__item::after {
+  content: '';
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  translate: -50% 0;
+  width: 2px;
+  height: 0.375rem;
+  background: linear-gradient(var(--color-neutral-300), var(--color-neutral-700));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.apc-front__upcoming-row .apc-front__upcoming-card:nth-child(3n+2),
+.apc-front__wall .apc-photo-gallery__item:nth-child(3n+2) {
+  --apc-tilt: 2deg;
+}
+
+.apc-front__upcoming-row .apc-front__upcoming-card:nth-child(3n),
+.apc-front__wall .apc-photo-gallery__item:nth-child(3n) {
+  --apc-tilt: -1.5deg;
+}
+
+.apc-front__upcoming-card,
+.apc-front__featured-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.apc-front__featured-card {
+  max-width: 40rem;
+  margin-inline: auto;
+}
+
+/* calendar_item is built for the FullCalendar popup dialog -- its node__meta
+   ("By admin, ...") and full-size node__title don't belong on a homepage
+   card grid. Scoped to these two card wrappers only, not calendar_item
+   generally (the popup still shows both). */
+.apc-front__upcoming-card .node__meta,
+.apc-front__featured-card .node__meta {
+  display: none;
+}
+
+/* Drupal core's use-ajax throbber (Drupal.behaviors.AJAX in core/misc/ajax.js
+   -- always "progress: {type: 'throbber'}" for a plain .use-ajax link, no
+   markup-level way to opt out) gets inserted as a sibling of the clicked
+   link while the popup's AJAX request is in flight. On these small cards
+   that's enough extra content to grow the card by a line's worth of height
+   until the throbber is removed again -- confirmed live (card height
+   dropped ~30px the moment the throbber was removed) -- which is what read
+   as the whole card "pushing down" on click. The popup opens fast enough
+   that a loading spinner isn't earning its keep here, so it's just hidden
+   rather than repositioned. */
+.apc-front__upcoming-card .ajax-progress,
+.apc-front__featured-card .ajax-progress {
+  display: none;
+}
+
+.apc-front__upcoming-card .node__title,
+.apc-front__featured-card .node__title {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  margin: var(--sp0-75, 0.84375rem) var(--sp0-75, 0.84375rem) var(--sp0-5, 0.5625rem);
+}
+
+.apc-front__upcoming-card .node__content,
+.apc-front__featured-card .node__content {
+  padding-inline: var(--sp0-75, 0.84375rem);
+  padding-block-end: var(--sp0-75, 0.84375rem);
+}
+
+/* apc.css's site-wide .field--name-field-event-date time rule hardcodes
+   accent-700 -- a shade off from the title's accent-800 here. Not a
+   contrast problem on this card's one light tan background, but matched
+   anyway so the date reads as "the same text", not a mismatched color
+   pulled in from elsewhere (confirmed as a real problem on the
+   /calendar/upcoming cards' colored backgrounds -- see upcoming-events.css). */
+.apc-front__upcoming-card .field--name-field-event-date time,
+.apc-front__featured-card .field--name-field-event-date time {
+  color: var(--color-accent-800);
+}
+
+.apc-front__card-title {
+  position: relative;
+  z-index: 1;
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  color: var(--color-accent-800);
+  text-decoration: none;
+}
+
+/* Every browser's UA stylesheet sets cursor: pointer directly on any <a
+   href> (Chrome/Safari's :any-link { cursor: pointer }, matched here by
+   a.apc-front__card-title and .apc-front__card-overlay). Author CSS beats
+   UA CSS when both apply to the SAME property on the SAME element, but
+   cursor is inherited -- and a directly-matching UA declaration on the link
+   itself wins the cascade there outright, so inheritance from the card's
+   own cursor: zoom-in (front-page.css, the pinned-card rule) never gets
+   consulted at all. Confirmed live: the card itself reported cursor:
+   zoom-in, but the overlay link sitting right on top of it reported
+   cursor: pointer. Has to be set directly on the link elements, not just
+   the card, to actually win. */
+a.apc-front__card-title,
+.apc-front__card-overlay {
+  cursor: zoom-in;
+}
+
+/* The "Coming up" strip's title is a plain <span>, not a link (see
+   EventCardBuilder::renderOccurrence()'s $link_title param) -- sitting
+   above .apc-front__card-overlay in the stacking order (z-index) but with
+   nothing of its own to click. Without pointer-events: none here, the span
+   still intercepts the click (any element blocks hit-testing to whatever's
+   behind it, whether or not it's a link) instead of letting it reach the
+   overlay underneath, so a click landing on the title text did nothing.
+   Harmless on the real a.apc-front__card-title elsewhere (Featured event,
+   /calendar/upcoming): the identical overlay link sits right behind those
+   too, so the click still lands on the same destination either way -- only
+   the anchor's own hover/focus-visible affordance moves to the overlay. */
+span.apc-front__card-title {
+  pointer-events: none;
+}
+
+/* Scoped to the element (a), not just the class -- the "Coming up" strip's
+   titles are a plain <span> now (see EventCardBuilder::renderOccurrence()'s
+   $link_title param), and :hover/:focus fire on any element regardless of
+   whether it's actually a link. Without the "a" here, hovering that span
+   still underlined text with nothing to click. */
+a.apc-front__card-title:hover,
+a.apc-front__card-title:focus {
+  text-decoration: underline;
+}
+
+/* Covers the whole card so clicking anywhere (not just the title text)
+   opens the popup -- see FrontPageController::renderOccurrence(). Sits
+   below the title (z-index) purely so the title's own hover underline
+   still shows; both links go to the same place. */
+.apc-front__card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.apc-front__more-link {
+  display: inline-block;
+  margin-block-start: var(--sp1);
+  font-weight: 700;
+  color: var(--color-accent-600);
+}
+
+.apc-front__footer-cta {
+  text-align: center;
+  padding-block: var(--sp1);
+}
+
+/* A louder CTA than the plain .button--primary used in the hero -- bigger,
+   solid red-orange fill, a slight tilt that straightens on hover. Sits
+   right under the hero, ahead of "Coming up", as the page's one big ask. */
+.apc-front__cta-big {
+  height: auto;
+  margin: 0;
+  padding-block: var(--sp1);
+  padding-inline: var(--sp2-5, 2.53125rem);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color--white);
+  background-color: var(--color-accent-2);
+  border-color: var(--color-accent-2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transform: rotate(-1deg);
+  transition: transform 0.15s ease-out;
+}
+
+.apc-front__cta-big:hover,
+.apc-front__cta-big:focus {
+  color: var(--color--white);
+  background-color: var(--color-accent-2-600);
+  border-color: var(--color-accent-2-600);
+  transform: rotate(0deg) scale(1.03);
+}
+
+/* A physical corkboard behind the featured event and the signs wall -- a
+   tan/brown base with dozens of small radial-gradient speckles standing in
+   for cork's mottled grain (no image asset needed), a routed-looking inset
+   shadow, and a darker frame edge. The pinned cards above sit on top of
+   this, which is what the pushpins in ::before are "stuck into". */
+.apc-front__corkboard {
+  padding: var(--sp2);
+  border-radius: var(--radius-md);
+  background-color: #ad7f52;
+  background-image:
+    radial-gradient(circle at 12% 22%, rgba(255, 255, 255, 0.16) 0, rgba(255, 255, 255, 0.16) 2px, transparent 3px),
+    radial-gradient(circle at 68% 8%, rgba(0, 0, 0, 0.18) 0, rgba(0, 0, 0, 0.18) 2px, transparent 3px),
+    radial-gradient(circle at 34% 64%, rgba(0, 0, 0, 0.14) 0, rgba(0, 0, 0, 0.14) 2px, transparent 3px),
+    radial-gradient(circle at 82% 46%, rgba(255, 255, 255, 0.14) 0, rgba(255, 255, 255, 0.14) 2px, transparent 3px),
+    radial-gradient(circle at 50% 88%, rgba(0, 0, 0, 0.16) 0, rgba(0, 0, 0, 0.16) 2px, transparent 3px),
+    radial-gradient(circle at 6% 78%, rgba(0, 0, 0, 0.12) 0, rgba(0, 0, 0, 0.12) 2px, transparent 3px),
+    radial-gradient(circle at 92% 82%, rgba(255, 255, 255, 0.12) 0, rgba(255, 255, 255, 0.12) 2px, transparent 3px);
+  background-size: 6.5rem 6.5rem;
+  border: 10px solid var(--color-accent-900, #3e2d1f);
+  box-shadow:
+    inset 0 0 2.5rem rgba(0, 0, 0, 0.45),
+    var(--shadow-md);
+}
+
+.apc-front__corkboard .apc-front__featured-card {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Category pills don't add anything on a corkboard full of photos -- same
+   reasoning as the /calendar/upcoming sidebar already hiding them (see
+   upcoming-events.css), just applied to the homepage's full wall too. The
+   caption itself gets a taller clamp than the default 2 lines
+   (.apc-photo-gallery__caption in photo-gallery.css) since this is the one
+   place the wall is shown at full width, not squeezed into a sidebar or
+   grid column. */
+.apc-front__wall .apc-photo-gallery__tags {
+  display: none;
+}
+
+.apc-front__wall .apc-photo-gallery__caption {
+  -webkit-line-clamp: 3;
+}
+
+/* The caption's underline (the browser's own default styling for any <a
+   href>, same as the cursor -- see the .apc-front__card-overlay comment
+   above) read as "this text navigates elsewhere", which stopped being true
+   here once wall-lightbox.js started opening the lightbox instead of
+   following the link (see that file's header comment). Scoped to the wall
+   only -- the caption's link is still a real, plain navigation to the node
+   everywhere else it appears (the /photos grid, carousels), where the
+   underline is accurate and stays. */
+.apc-front__wall .apc-photo-gallery__caption a {
+  text-decoration: none;
+}

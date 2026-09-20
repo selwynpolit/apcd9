@@ -1,0 +1,17 @@
+uuid: 72b40a85-f8e7-41f0-999a-4810a24f75ca
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: event_hover_card
+label: 'Event Hover Card'
+effects:
+  32c03fa2-cc9c-474f-a94a-8ecbd0ec9943:
+    uuid: 32c03fa2-cc9c-474f-a94a-8ecbd0ec9943
+    id: focal_point_scale_and_crop
+    weight: null
+    data:
+      width: 560
+      height: 280
+      crop_type: focal_point

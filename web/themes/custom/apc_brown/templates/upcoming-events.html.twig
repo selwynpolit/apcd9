@@ -1,0 +1,54 @@
+{#
+/**
+ * @file
+ * Plain chronological "browse upcoming events" page (/calendar/upcoming).
+ *
+ * cards are pre-rendered render arrays (calendar_item view mode, narrowed
+ * to the specific occurrence that matched, each already wired to open the
+ * same AJAX popup dialog /calendar uses) -- see
+ * UpcomingEventsController::build() and EventCardBuilder::renderOccurrence().
+ * signs_sidebar and recent_posts are built in
+ * apc_brown_preprocess_apc_upcoming_events().
+ *
+ * @see \Drupal\apc_calendar\Controller\UpcomingEventsController
+ * @see apc_brown_preprocess_apc_upcoming_events()
+ */
+#}
+<div class="apc-upcoming">
+
+  <div class="apc-upcoming__layout">
+    <div class="apc-upcoming__main">
+      <h1 class="apc-upcoming__title">{{ 'Upcoming events'|t }}</h1>
+
+      {% if cards %}
+        <div class="apc-upcoming__grid">
+          {% for card in cards %}
+            <div class="apc-upcoming__card">{{ card }}</div>
+          {% endfor %}
+        </div>
+        {{ pager }}
+      {% else %}
+        <p>{{ 'No upcoming events right now -- check back soon.'|t }}</p>
+      {% endif %}
+    </div>
+
+    <aside class="apc-upcoming__sidebar">
+      {% if signs_sidebar %}
+        <section class="apc-upcoming__sidebar-box">
+          <h2 class="apc-upcoming__sidebar-heading">{{ 'Signs & photos'|t }}</h2>
+          {{ signs_sidebar }}
+          <a class="apc-front__more-link" href="/photos">{{ 'See the full wall of signs'|t }} &rarr;</a>
+        </section>
+      {% endif %}
+
+      {% if recent_posts %}
+        <section class="apc-upcoming__sidebar-box">
+          <h2 class="apc-upcoming__sidebar-heading">{{ 'Recent posts'|t }}</h2>
+          {{ recent_posts }}
+          <a class="apc-front__more-link" href="/blog">{{ 'See all posts'|t }} &rarr;</a>
+        </section>
+      {% endif %}
+    </aside>
+  </div>
+
+</div>

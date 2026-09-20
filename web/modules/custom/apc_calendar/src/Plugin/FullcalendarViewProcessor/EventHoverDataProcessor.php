@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\apc_calendar\Plugin\FullcalendarViewProcessor;
 
+use Drupal\apc_calendar\DefaultEventImage;
 use Drupal\file\FileInterface;
 use Drupal\fullcalendar_view\Plugin\FullcalendarViewProcessorBase;
 use Drupal\image\Entity\ImageStyle;
@@ -118,12 +119,21 @@ class EventHoverDataProcessor extends FullcalendarViewProcessorBase {
       $data['tags'] = array_slice($tags, 0, 3);
     }
 
+    $data['image'] = DefaultEventImage::url();
     if (!$node->get('field_event_image')->isEmpty()) {
       $media = $node->get('field_event_image')->first()->entity;
       if ($media !== NULL && $media->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
         $file = $media->get('field_media_image')->entity;
         if ($file instanceof FileInterface) {
-          $style = ImageStyle::load('gallery_thumb');
+          // gallery_thumb (160x160, square) used to be reused here, but the
+          // hover card's own image box is a 280x140 (2:1) rectangle shown
+          // with background-size: cover -- cropping a square source down to
+          // that shape meant blowing up a thin horizontal sliver of an
+          // already-tight crop, confirmed live as the "scales and crops
+          // weirdly" look. event_hover_card matches the CSS box's own ratio
+          // (at 2x for retina), so cover only has to crop what's actually
+          // outside the frame.
+          $style = ImageStyle::load('event_hover_card');
           if ($style !== NULL) {
             $data['image'] = $style->buildUrl($file->getFileUri());
           }

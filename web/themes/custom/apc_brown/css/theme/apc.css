@@ -48,7 +48,7 @@
   --color-neutral-800: #474238;
   --color-neutral-900: #2e2b25;
 
-  --font-heading: "Caprasimo", system-ui, sans-serif;
+  --font-heading: "Fredoka", system-ui, sans-serif;
   --font-body: var(--font-sans);
 
   --radius-sm: 8px;
@@ -467,4 +467,18 @@
   width: 100%;
   height: auto;
   aspect-ratio: 16 / 9;
+}
+
+/* ══ Default event image ═════════════════════════════════════════════════ */
+
+/* Illustrated fallback (mascot + Austin skyline) shown wherever a
+   calendar_event has no uploaded photo -- FrontPageController's cards, the
+   /calendar popup (EventPopupController) and the full event page's gallery
+   (see DefaultEventImage::url() and apc_brown_preprocess_node()). One rule
+   here rather than three, since it's the same <img> shape in every context. */
+.apc-default-event-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
 }

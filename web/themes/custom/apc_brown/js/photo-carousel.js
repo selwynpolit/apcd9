@@ -133,17 +133,16 @@
         controls.querySelector('.apc-photo-gallery__next').addEventListener('click', next);
 
         if (carousel.closest('[data-apc-photo-lightbox]')) {
-          // nid is already right there in the photo's own link
-          // (views.view.photo_gallery links field_photo_image to
-          // node/[nid]) -- reused as the lookup key into
-          // drupalSettings.apcPhotoGallery rather than duplicating it as a
-          // data attribute.
+          // nid comes from the photo link's own data-photo-nid attribute
+          // (apc_brown_preprocess_views_view_field() -- not parsed from the
+          // href, which is a /photos/[title] alias since
+          // pathauto.pattern.community_photos and carries no nid at all) --
+          // used as the lookup key into drupalSettings.apcPhotoGallery.
           const slideData = (slide) => {
             const link = slide.querySelector('.apc-photo-gallery__photo');
             const slideImg = slide.querySelector('img');
-            const match = link ? link.getAttribute('href').match(/(\d+)\/?$/) : null;
             return {
-              nid: match ? match[1] : null,
+              nid: link ? (link.dataset.photoNid || null) : null,
               fallbackSrc: slideImg ? slideImg.src : '',
               fallbackAlt: slideImg ? slideImg.alt : '',
             };

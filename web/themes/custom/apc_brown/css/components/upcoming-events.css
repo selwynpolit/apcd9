@@ -1,0 +1,192 @@
+/**
+ * @file
+ * /calendar/upcoming: a grid of colorful, clickable event cards plus a
+ * sidebar of recent signs/photos and blog posts. Depends on apc_brown/front-page
+ * (see the library entry) for the shared card markup rules -- .node__meta
+ * hiding, .apc-front__card-title, .apc-front__card-overlay,
+ * .apc-default-event-image -- built for the homepage's cards and reused
+ * as-is here, since EventCardBuilder renders both with the same markup.
+ */
+
+.apc-upcoming {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--container-padding);
+  padding-block: var(--sp2);
+}
+
+.apc-upcoming__title {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight, 600);
+  font-size: 2rem;
+  margin: 0 0 var(--sp1-5, 1.6875rem);
+  color: var(--color-accent-800);
+}
+
+.apc-upcoming__layout {
+  display: block;
+}
+
+@media (min-width: 62.5rem) {
+  .apc-upcoming__layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    gap: var(--sp2);
+    align-items: start;
+  }
+}
+
+.apc-upcoming__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--sp1-5, 1.6875rem);
+  margin-block-end: var(--sp2);
+}
+
+/* Shadowed, alternating-color "index card" treatment -- distinct from the
+   homepage's pinned/tilted cards on purpose: this is a dense paginated
+   grid, where a busy corkboard motif repeated a dozen times would fight
+   the page instead of decorating it. box-shadow does the "pizazz" here,
+   the color does the rest. */
+.apc-upcoming__card {
+  position: relative;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+/* calendar_item is built for the FullCalendar popup dialog -- its
+   node__meta ("By admin, ...") doesn't belong on a card grid. Same fix as
+   the homepage's cards (see front-page.css), just scoped to this page's
+   own card wrapper class. */
+.apc-upcoming__card .node__meta {
+  display: none;
+}
+
+.apc-upcoming__card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.apc-upcoming__card .node__content {
+  padding-inline: var(--sp0-75, 0.84375rem);
+  padding-block-end: var(--sp0-75, 0.84375rem);
+}
+
+.apc-upcoming__card .node__title,
+.apc-upcoming__card .apc-front__card-title {
+  margin: var(--sp0-75, 0.84375rem) 0 var(--sp0-5, 0.5625rem);
+}
+
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+1) {
+  background: var(--color-surface);
+}
+
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+1) .apc-front__card-title,
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+1) .field--name-field-event-date,
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+1) .field--name-field-event-date time {
+  color: var(--color-accent-800);
+}
+
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+2) {
+  background: var(--color-accent-500);
+}
+
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+2) .apc-front__card-title,
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+2) .field--name-field-event-date,
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+2) .field--name-field-event-date time {
+  color: var(--color--white);
+}
+
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+3) {
+  background: var(--color-accent-2);
+}
+
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+3) .apc-front__card-title,
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+3) .field--name-field-event-date,
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n+3) .field--name-field-event-date time {
+  color: var(--color--white);
+}
+
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n) {
+  background: var(--color-accent-900, #3e2d1f);
+}
+
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n) .apc-front__card-title,
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n) .field--name-field-event-date,
+.apc-upcoming__grid .apc-upcoming__card:nth-child(4n) .field--name-field-event-date time {
+  color: var(--color-accent-100, #efe4d8);
+}
+
+.apc-upcoming__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp2);
+  margin-block-start: var(--sp3, 3.375rem);
+}
+
+@media (min-width: 62.5rem) {
+  .apc-upcoming__sidebar {
+    margin-block-start: 0;
+  }
+}
+
+.apc-upcoming__sidebar-box {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--sp1-5, 1.6875rem);
+}
+
+.apc-upcoming__sidebar-heading {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight, 600);
+  font-size: 1.25rem;
+  color: var(--color-accent-800);
+  margin: 0 0 var(--sp1);
+}
+
+/* The signs wall grid is built for full-page width -- three-across breaks
+   down awkwardly at a 20rem sidebar column, so this box asks for a single
+   column instead. */
+.apc-upcoming__sidebar-box .view-photo-gallery .view-content {
+  grid-template-columns: 1fr;
+}
+
+.apc-upcoming__sidebar-box .apc-photo-gallery__item {
+  transform: none;
+}
+
+.apc-upcoming__sidebar-box .apc-photo-gallery__item::before,
+.apc-upcoming__sidebar-box .apc-photo-gallery__item::after {
+  content: none;
+}
+
+/* Captions and tags don't add anything in this narrow sidebar context --
+   the image alone (linking to the lightbox) is the point here. The full
+   wall on the homepage keeps both. */
+.apc-upcoming__sidebar-box .apc-photo-gallery__caption,
+.apc-upcoming__sidebar-box .apc-photo-gallery__tags {
+  display: none;
+}
+
+/* Recent Posts list (views.view.blog:block_recent_posts, Fields row). */
+.apc-upcoming__sidebar-box .views-row {
+  padding-block: var(--sp0-75, 0.84375rem);
+  border-bottom: 1px dashed var(--color-divider);
+}
+
+.apc-upcoming__sidebar-box .views-row:last-child {
+  border-bottom: 0;
+  padding-block-end: 0;
+}
+
+.apc-upcoming__sidebar-box .views-field-title a {
+  font-weight: 700;
+  color: var(--color-accent-800);
+}
+
+.apc-upcoming__sidebar-box .views-field-created {
+  font-size: var(--font-size-s);
+  color: var(--color-neutral-700);
+}
