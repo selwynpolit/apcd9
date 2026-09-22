@@ -24,6 +24,11 @@
 #}
 <div class="apc-front">
 
+  {# The homepage has no visible page title (the generic "Page title" block is
+     hidden on <front>), so give it an <h1> for screen readers and search
+     engines without adding anything to the layout. #}
+  <h1 class="visually-hidden">{{ 'Austin Progressive Calendar'|t }}</h1>
+
   <section class="apc-front__hero">
     <img class="apc-front__mascot" src="{{ directory }}/images/apc_logo.jpg" alt="{{ 'Austin Progressive Calendar mascot'|t }}">
     <div class="apc-front__intro">

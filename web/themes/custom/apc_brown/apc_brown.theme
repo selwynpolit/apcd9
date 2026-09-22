@@ -1270,6 +1270,23 @@ function apc_brown_preprocess_views_view(&$variables) {
   // no code change, just a new block display. The page_1 browse display is
   // deliberately excluded: it's a plain paged grid, not a carousel.
   $view = $variables['view'];
+
+  // /calendar has no visible page title -- the generic "Page title" block is
+  // hidden there (block.block.apc_brown_page_title) so the calendar sits as
+  // high on the page as possible -- which left the page with no <h1> at all
+  // (bad for screen-reader navigation and SEO). Supply one, visually hidden,
+  // so it costs no vertical space. Printed via title_prefix, which
+  // views-view.html.twig always outputs (unlike `title`, which is admin-preview
+  // only).
+  if ($view->id() === 'calendar' && $view->current_display === 'page_1') {
+    $variables['title_prefix']['apc_calendar_h1'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'h1',
+      '#value' => t('Event calendar'),
+      '#attributes' => ['class' => ['visually-hidden']],
+      '#weight' => -100,
+    ];
+  }
   if ($view->id() === 'photo_gallery') {
     // Card/grid CSS is shared by every display (including page_1's plain
     // browse grid); the carousel behavior itself only activates JS-side for
@@ -1286,6 +1303,7 @@ function apc_brown_preprocess_views_view(&$variables) {
       $variables['attributes']['data-apc-photo-grid'] = TRUE;
       $variables['#attached']['library'][] = 'apc_brown/photo-lightbox';
       $variables['#attached']['library'][] = 'apc_brown/disable-views-scroll-top';
+      $variables['#attached']['library'][] = 'apc_brown/photo-filters';
     }
     // The wall (wall_recent_all, embedded on the homepage and the
     // /calendar/upcoming sidebar) is the same kind of plain grid, but opens

@@ -147,13 +147,39 @@
   gap: var(--sp);
 }
 
-/* The logo is a square mark in the design. The source image is 127×100, so
-   object-fit crops rather than distorts until a square asset replaces it. */
+/* Olivero vertically centers the logo+name *within* .site-branding__inner
+   (its own align-items: center), but the OUTER .site-branding band -- which
+   is taller than that inner row below the 75rem breakpoint (a min-height, to
+   leave room for a two-line site name) -- aligns it with align-items:
+   flex-end, so the whole row sat low in the band with empty space above it.
+   Olivero never overrides this per breakpoint, so one rule here covers all
+   of them. */
+.site-branding {
+  align-items: center;
+}
+
+/* apc-logo4.png (2026-09) is a tall 1024×1536 badge, unlike the earlier
+   square mark this rule was written for -- sized by height with width:auto
+   and aspect-ratio (rather than the old fixed width+height square with
+   object-fit: cover) so nothing crops. If the logo ever goes back to a
+   square/landscape asset, object-fit: cover on a fixed box is the simpler
+   rule to return to.
+   apc-logo4-header.png is a 320×480 resize of the source (2.4MB, way past
+   what a ~130px-tall header mark needs) -- set as apc_brown.settings.yml's
+   logo.path. */
 .site-branding__logo img,
 .site-branding img {
-  width: 56px;
-  height: 56px;
-  object-fit: cover;
+  width: auto;
+  height: 72px;
+  /* Overrides Olivero's own max-height on this same element (36px at this
+     breakpoint, 72px at the next) -- max-height always wins over a smaller
+     explicit height, so without this the sizes below were silently capped
+     down to Olivero's own numbers. Pre-existing, not new: the old 56px/72px
+     square logo was capped to 36px on any phone under 31.25rem (~500px, i.e.
+     most phones in portrait) this whole time. */
+  max-height: none;
+  aspect-ratio: 2 / 3;
+  object-fit: contain;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
 }
@@ -161,8 +187,14 @@
 @media (min-width: 43.75rem) {
   .site-branding__logo img,
   .site-branding img {
-    width: 72px;
-    height: 72px;
+    /* 86px is close to the practical ceiling at >=75rem below: Olivero's own
+       .site-branding__inner is a *fixed* (not min) height there, 108px, with
+       9px of padding-block top and bottom baked into that same core rule --
+       86 + 9 + 9 = 104px, just inside it. Kept the same from here up rather
+       than growing further at 75rem and shrinking back down, which would
+       look like the logo got smaller on the widest screens. */
+    height: 86px;
+    max-height: none; /* Olivero's own cap here is 72px -- see the note above. */
     border-radius: var(--radius-lg);
   }
 }
@@ -171,6 +203,25 @@
 .site-branding__name a,
 .site-branding__text {
   color: #fff;
+}
+
+/* Bigger, to go with the bigger logo above -- was 1.125rem/1.75rem/2rem. */
+.site-branding__text {
+  font-size: 1.375rem;
+}
+
+@media (min-width: 43.75rem) {
+  .site-branding__text {
+    font-size: 2.25rem;
+    line-height: 2.25rem;
+  }
+}
+
+@media (min-width: 75rem) {
+  .site-branding__text {
+    font-size: 2.5rem;
+    line-height: 2.5rem;
+  }
 }
 
 .site-branding__slogan {
@@ -481,4 +532,48 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
+}
+
+/* ══ Multi-value field tables on phones ══════════════════════════════════ */
+
+/* Drupal renders a multi-value widget (the add-event form's "Event Date")
+   as a table: drag handle | widget | Remove button. That is ~470px wide, so on
+   a 412px phone the Remove button was clipped and the whole page scrolled
+   sideways -- on the form anonymous visitors use to submit events. Below 40rem
+   the row becomes a two-column grid instead (handle beside the widget, Remove
+   underneath it) and the empty header cell over the Remove column goes. */
+@media (max-width: 40rem) {
+  .field-multiple-table,
+  .field-multiple-table thead,
+  .field-multiple-table tbody,
+  .field-multiple-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .field-multiple-table thead th:not(.field-label) {
+    display: none;
+  }
+
+  .field-multiple-table th.field-label {
+    display: block;
+    width: auto;
+  }
+
+  .field-multiple-table tr.draggable {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 0.5rem;
+  }
+
+  .field-multiple-table tr.draggable > td {
+    display: block;
+    min-width: 0;
+    padding-inline: 0;
+  }
+
+  /* The Remove button's cell. */
+  .field-multiple-table tr.draggable > td:nth-child(3) {
+    grid-column: 2;
+  }
 }

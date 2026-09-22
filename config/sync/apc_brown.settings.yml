@@ -12,7 +12,7 @@ features:
   node_user_picture: true
   slogan: true
 logo:
-  path: themes/custom/apc_brown/images/apc_logo.jpg
+  path: themes/custom/apc_brown/images/apc-logo4-header.png
   use_default: false
 mobile_menu_all_widths: 0
 site_branding_bg_color: default

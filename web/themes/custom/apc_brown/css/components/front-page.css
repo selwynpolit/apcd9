@@ -45,6 +45,46 @@
   gap: var(--sp0-75, 0.84375rem);
 }
 
+/* .button is a fixed var(--sp3) tall, sized for a one-line label. In the
+   hero's narrow intro column "Submit a photo, meme or sign" wraps to several
+   lines, and the text spilled out of the top and bottom of the box, so the
+   border/background surrounded only part of the phrase. Let the button grow
+   with its text instead -- min-height plus an explicit line-height keeps a
+   one-line label exactly as tall as before (padding-block is
+   (sp3 - line-height-s) / 2 in button.css). hyphens: none because the site's
+   global hyphens: auto was splitting "photo" as "pho-to" inside the button. */
+.apc-front__ctas .button {
+  height: auto;
+  min-height: var(--sp3);
+  line-height: var(--line-height-s);
+  hyphens: none;
+}
+
+/* On a phone the mascot and tagline share a row, which leaves the intro
+   column too narrow for the buttons. display: contents lifts the tagline and
+   button row into the hero grid so the buttons can span its full width under
+   the mascot instead. */
+@media (max-width: 40rem) {
+  .apc-front__intro {
+    display: contents;
+  }
+
+  .apc-front__tagline {
+    margin: 0;
+  }
+
+  .apc-front__ctas {
+    grid-column: 1 / -1;
+  }
+
+  /* The flex gap already spaces the buttons; .button's own margins would
+     double it. */
+  .apc-front__ctas .button {
+    flex: 1 1 auto;
+    margin: 0;
+  }
+}
+
 .apc-front__placard {
   grid-column: 1 / -1;
   display: flex;
@@ -353,6 +393,53 @@ a.apc-front__card-title:focus {
    for cork's mottled grain (no image asset needed), a routed-looking inset
    shadow, and a darker frame edge. The pinned cards above sit on top of
    this, which is what the pushpins in ::before are "stuck into". */
+/* The wall reuses photo_gallery's own view-content grid
+   (.view-photo-gallery .view-content in photo-gallery.css), whose
+   minmax(220px, 1fr) column is sized for that view's other, unpadded/
+   unbordered consumers (the /photos browse grid, the carousels). Inside this
+   corkboard's own padding+border, the content box on a narrow phone (as
+   little as ~156px at 320px viewport width) is well under 220px -- a Grid
+   track's minmax() minimum is a hard floor the track won't shrink below, so
+   the single column (and the rotated card riding on it) rendered wider than
+   the board and spilled out past its right edge. min(220px, 100%) keeps the
+   same 220px everywhere the column already had that much room (unchanged at
+   every width this was ever tested at) and only yields on a container this
+   narrow. Confirmed live at 320px: card right edge was 24px past the
+   board's before this, flush with it after. */
+/* .view-photo-gallery in the selector (matching the view's own wrapper,
+   confirmed present between .apc-front__wall and .view-content in the DOM)
+   rather than just ".apc-front__wall .view-content" -- needed for real
+   specificity (3 classes vs. the base rule's 2), not just source order.
+   apc_brown.libraries.yml has no dependency edge between the front-page and
+   photo-gallery-carrying libraries, so which one's CSS ends up later in the
+   aggregate is undefined; confirmed live that front-page.css currently
+   aggregates BEFORE photo-gallery.css, which silently defeated an earlier
+   version of this rule with the base rule's own (equal) specificity, despite
+   this file's own source order looking like it should win.
+   On a phone this narrow (roughly <=348px in DDEV testing -- the corkboard's
+   fixed 92px of padding+border leaves it too little content width for the
+   base rule's 220px column minimum), 220px forces the column, and the pinned
+   card riding on it, wider than the corkboard itself: confirmed live, e.g.
+   24px of spill at 320px viewport width.
+   The obvious-looking fix, minmax(min(220px, 100%), 1fr), turned out not to
+   work in this exact repeat(auto-fill, minmax(...)) construction: confirmed
+   live that even minmax(50%, 1fr) and minmax(100%, 1fr) resolve to the exact
+   same (wrong) pixel value here, not any real percentage of the actual
+   available width -- percentages inside an auto-fill/auto-fit repeat's
+   minmax() are a known, documented CSS Grid edge case (needed to avoid a
+   circular dependency between the repeat count and the percentage they'd
+   resolve against), and evidently not usable here for that reason. A plain
+   pixel value doesn't have that problem (confirmed the same way, with a
+   10px floor correctly producing several real ~10px columns) -- so this
+   still overrides only what's actually broken, with a fixed floor small
+   enough to fit even the narrowest phone this was tested against, rather
+   than trying to make the percentage trick work. */
+@media (max-width: 21.75rem) {
+  .apc-front__wall .view-photo-gallery .view-content {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
 .apc-front__corkboard {
   padding: var(--sp2);
   border-radius: var(--radius-md);
