@@ -102,6 +102,12 @@ ddev drush @apc.prod <command>     # run drush against production over SSH
 There is no custom PHPUnit/JS test suite in this repo (only Drupal core's own tests under
 `web/core/tests`); there are no lint/build scripts defined in `composer.json`.
 
+The closest thing to a regression check is the **anonymous site sweep** — see
+`_readme/anonymous-site-sweep.md`. `python3 _readme/site-sweep-http.py` (status codes, error text,
+dead links/images) plus a browser pass at desktop and phone width (`_readme/site-sweep-browser.js`:
+overflow, overlays, tap targets). Run it after layout/CSS/JS changes and before a deploy; the doc
+also carries the known-open baseline so new problems stand out.
+
 ## Configuration workflow
 
 Because there's no custom code, most "development" here is config management:
