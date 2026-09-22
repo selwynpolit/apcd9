@@ -27,16 +27,83 @@
     0 18px 48px rgb(0 0 0 / 24%);
 }
 
+/* Never wider than the screen. The card links ask for a fixed 800px dialog
+   (data-dialog-options in EventCardBuilder), which jQuery UI applies as an
+   inline width -- on a phone that left the dialog ~2x the viewport, pushing
+   the image and the close button off the right edge with no way to scroll to
+   them. max-width overrides the inline width; jQuery UI measures the dialog
+   after this applies, so it still centers it. Height is already capped to the
+   window by core's dialog.position.js, with the content area scrolling. */
+.ui-dialog:has(.apc-event-popup) {
+  max-width: calc(100vw - 1.5rem);
+}
+
+/* The dimmed backdrop closes the popup when clicked (overlay-history.js) --
+   a pointer cursor says so, and iOS Safari only delivers clicks to a plain
+   element that has one. Only while this popup is open; other dialogs' backdrops
+   do nothing. */
+body:has(.ui-dialog .apc-event-popup) .ui-widget-overlay {
+  cursor: pointer;
+}
+
+/* Close button. jQuery UI's default is a 20px grey square with a tiny sprite
+   "x" -- well under a comfortable touch target (WCAG 2.2 asks for 24px at the
+   very least; 44px is the usual thumb size). Rebuilt as a 44px round button
+   with a plain "×" in the site's brown; the sprite and its hidden "Close" label
+   are switched off (the label stays in the DOM for screen readers). */
+.ui-dialog:has(.apc-event-popup) .ui-dialog-titlebar-close {
+  right: 0.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -1.375rem 0 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-primary-medium);
+  font-size: 0;
+  cursor: pointer;
+}
+
+.ui-dialog:has(.apc-event-popup) .ui-dialog-titlebar-close:hover,
+.ui-dialog:has(.apc-event-popup) .ui-dialog-titlebar-close:focus {
+  background: rgb(0 0 0 / 8%);
+  color: var(--color-text-primary-loud);
+}
+
+.ui-dialog:has(.apc-event-popup) .ui-dialog-titlebar-close:focus-visible {
+  outline: 2px solid var(--color--primary-60);
+  outline-offset: 1px;
+}
+
+.ui-dialog:has(.apc-event-popup) .ui-dialog-titlebar-close .ui-icon {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: visible;
+  background: none;
+  font-size: 0;
+  text-indent: 0;
+}
+
+.ui-dialog:has(.apc-event-popup) .ui-dialog-titlebar-close .ui-icon::before {
+  content: "\00d7";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-sans);
+  font-size: 2rem;
+  line-height: 1;
+}
+
 /* Let the warm dialog background show through the content and titlebar, which
    jQuery UI otherwise paints its own (square-cornered, cold) background on. */
 .ui-dialog:has(.apc-event-popup) .ui-dialog-content,
 .ui-dialog:has(.apc-event-popup) .ui-dialog-titlebar {
   background: transparent;
-}
-
-/* Positioning root for .apc-event-popup__actions below. */
-.apc-event-popup {
-  position: relative;
 }
 
 /* Date/time on the left, "Add to your calendar" on the right, on one row --
@@ -133,22 +200,35 @@
 }
 
 /*
- * Pinned to the top-right corner of the dialog (over the gallery hero,
- * whatever else is at the top) instead of sitting at the bottom of the
- * popup where a viewer might not scroll far enough to find it. Smaller and
- * shadowed so it reads as a floating badge over a photo, not a full-width
- * button competing with it.
+ * At the top-right, beside the title, rather than at the bottom of the
+ * popup where a viewer might not scroll far enough to find it.
+ *
+ * Was position: absolute, pinned to the dialog's top-right corner -- written
+ * assuming the gallery image sat at the top of the popup, so the button
+ * would float over it. That stopped being true once the title moved above
+ * the image (it's first in this view mode's field order): an absolutely
+ * positioned box doesn't push anything else out of the way, so the title's
+ * own text just flowed underneath it, and on any title long enough to wrap
+ * (2+ lines) the button sat directly on top of the text -- confirmed live
+ * with "Paws to the Polls: The Great Austin Pet Election" on both mobile and
+ * desktop widths. `float` instead of `position: absolute` keeps the same
+ * "corner button beside the heading" look but lets the title's text wrap
+ * around it, the classic float-beside-a-heading pattern -- verified with
+ * per-line text geometry (getClientRects() on the title's own text, not the
+ * <h2> box, which stays one full-width rect either way) that no line of a
+ * 3-line-wrapped title overlaps the button at 412px width.
+ * 2026-09-21 feedback: also shortened "View full event" to "Details" and
+ * shrunk the button itself, both to read as a lighter-weight corner control
+ * next to a heading rather than a primary CTA duplicating the dialog's other
+ * "Add to your calendar" action.
  */
 .apc-event-popup__actions {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 2;
-  margin: 0;
+  float: right;
+  margin: 0 0 0.5rem 0.75rem;
 }
 
 .apc-event-popup__actions .button--primary {
-  padding: 0.375rem 0.9375rem;
+  padding: 0.375rem 0.75rem;
   font-size: var(--font-size-s, 0.875rem);
   box-shadow: 0 2px 10px rgb(0 0 0 / 25%);
 

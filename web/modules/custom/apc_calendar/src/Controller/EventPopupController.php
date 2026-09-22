@@ -118,24 +118,27 @@ final class EventPopupController extends ControllerBase {
       ];
     }
 
-    // #type container (not a bare array) so .apc-event-popup can be a
-    // positioning root -- 'actions' below is pinned to its top-right corner,
-    // over the gallery, rather than sitting at the bottom of the dialog.
+    // #type container (not a bare array) so the render array has a wrapper
+    // element -- 'actions' below floats to its top-right corner, beside the
+    // title, rather than sitting at the bottom of the dialog.
     $result = [
       '#type' => 'container',
       '#attributes' => ['class' => ['apc-event-popup']],
       '#attached' => ['library' => ['apc_brown/event-popup']],
     ];
 
-    // Placed first in the render array -- not just visually pinned to the
-    // corner via CSS, but first in DOM/tab order too, matching where a
-    // keyboard or screen-reader user actually encounters it.
+    // Placed first in the render array -- not just floated to the corner via
+    // CSS, but first in DOM/tab order too, matching where a keyboard or
+    // screen-reader user actually encounters it.
+    // 'Details', not 'View full event': shorter label for a smaller,
+    // lighter-weight corner button -- see event-popup.css for why it's a
+    // corner button at all, and why it used to overlap the title.
     $result['actions'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['apc-event-popup__actions']],
       'full' => [
         '#type' => 'link',
-        '#title' => $this->t('View full event'),
+        '#title' => $this->t('Details'),
         '#url' => $node->toUrl(),
         '#attributes' => ['class' => ['button', 'button--primary']],
       ],

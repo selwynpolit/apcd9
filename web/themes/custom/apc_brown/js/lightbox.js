@@ -101,17 +101,24 @@
           resetZoom();
           overlay.hidden = false;
           overlay.querySelector('.apc-lightbox__close').focus();
+          // One history entry per open, so the back gesture closes this
+          // rather than leaving the page (see overlay-history.js).
+          Drupal.apcOverlayHistory.push(close);
         };
+
+        // User-initiated closes go through dismiss() so the history entry
+        // open() pushed is rewound; popstate calls close() directly.
+        const dismiss = () => Drupal.apcOverlayHistory.dismiss(close);
 
         overlay.addEventListener('click', (event) => {
           if (event.target === overlay) {
-            close();
+            dismiss();
           }
         });
-        overlay.querySelector('.apc-lightbox__close').addEventListener('click', close);
+        overlay.querySelector('.apc-lightbox__close').addEventListener('click', dismiss);
         document.addEventListener('keydown', (event) => {
           if (event.key === 'Escape' && !overlay.hidden) {
-            close();
+            dismiss();
           }
         });
 

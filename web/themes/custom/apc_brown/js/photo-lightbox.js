@@ -250,7 +250,14 @@
       render(controller.current());
       overlay.hidden = false;
       overlay.querySelector('.apc-photo-lightbox__close').focus();
+      // One history entry per open, so the back gesture closes this rather
+      // than leaving the page (see overlay-history.js).
+      Drupal.apcOverlayHistory.push(close);
     };
+
+    // User-initiated closes go through dismiss() so the history entry open()
+    // pushed is rewound; popstate calls close() directly.
+    const dismiss = () => Drupal.apcOverlayHistory.dismiss(close);
 
     prevBtn.addEventListener('click', () => {
       if (controller) {
@@ -269,17 +276,17 @@
 
     overlay.addEventListener('click', (event) => {
       if (event.target === overlay) {
-        close();
+        dismiss();
       }
     });
-    overlay.querySelector('.apc-photo-lightbox__close').addEventListener('click', close);
+    overlay.querySelector('.apc-photo-lightbox__close').addEventListener('click', dismiss);
 
     document.addEventListener('keydown', (event) => {
       if (overlay.hidden) {
         return;
       }
       if (event.key === 'Escape') {
-        close();
+        dismiss();
       }
       else if (event.key === 'ArrowLeft' && controller) {
         render(controller.prev());
