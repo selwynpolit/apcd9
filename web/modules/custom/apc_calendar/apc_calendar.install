@@ -448,3 +448,41 @@ function apc_calendar_update_10003(): string {
 
   return (string) t('Trimmed whitespace and/or capitalized @count term name(s).', ['@count' => $changed]);
 }
+
+/**
+ * Adds alt text to the GreenGeeks seal image in the footer "Green Website" block.
+ *
+ * The seal's markup is pasted-in vendor code living in a custom block's body
+ * (block_content, i.e. database content -- not config, so it never travels with
+ * a `git pull`). Its <img> had no alt attribute, which left the surrounding
+ * link with no accessible name on every page of the site. This applies the same
+ * one-attribute edit on any environment that runs `drush updb`.
+ *
+ * Idempotent: leaves the block alone if the image already has an alt. The block
+ * is found by its UUID (from block.block.apc_brown_greenwebsite) rather than an
+ * ID that could differ between environments.
+ */
+function apc_calendar_update_10004(): string {
+  $blocks = \Drupal::entityTypeManager()->getStorage('block_content')
+    ->loadByProperties(['uuid' => '63c57167-713f-4b45-a24b-dc8518271559']);
+  $block = reset($blocks);
+  if (!$block || !$block->hasField('body')) {
+    return (string) t('Green Website block not found; nothing changed.');
+  }
+
+  $body = $block->get('body')->value ?? '';
+  $updated = preg_replace_callback(
+    '#<img(?![^>]*\balt=)([^>]*ggseal[^>]*)>#i',
+    static fn(array $m): string => '<img' . rtrim($m[1], ' /') . ' alt="GreenGeeks: this site runs on green web hosting">',
+    $body,
+    -1,
+    $count
+  );
+  if (!$count) {
+    return (string) t('GreenGeeks seal already has alt text; nothing changed.');
+  }
+
+  $block->set('body', ['value' => $updated, 'format' => $block->get('body')->format]);
+  $block->save();
+  return (string) t('Added alt text to the GreenGeeks seal image.');
+}
