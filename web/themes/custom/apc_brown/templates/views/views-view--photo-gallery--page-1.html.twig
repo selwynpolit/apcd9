@@ -48,9 +48,19 @@
         </div>
       {% endif %}
       {% if exposed %}
-        <div class="view-filters">
-          {{ exposed }}
-        </div>
+        {# Collapsible below 62.5rem, where the filters otherwise push the
+           photos several screens down; always open (summary hidden) above
+           it. Closed in the markup, opened by CSS/JS at desktop width --
+           see photo-filters.js. #}
+        <details class="apc-photo-gallery__filters" data-apc-photo-filters>
+          <summary class="apc-photo-gallery__filters-toggle">
+            <span>{{ 'Filters'|t }}</span>
+            <span class="apc-photo-gallery__filters-count" data-apc-filter-count></span>
+          </summary>
+          <div class="view-filters">
+            {{ exposed }}
+          </div>
+        </details>
       {% endif %}
     </aside>
 

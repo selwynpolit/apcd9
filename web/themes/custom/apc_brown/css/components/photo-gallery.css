@@ -88,6 +88,76 @@
   text-align: center;
 }
 
+/* Same fixed-height-vs-wrapping-label fix as .apc-front__ctas .button in
+   front-page.css: grow with the text, but stay var(--sp3) for one line. */
+.apc-photo-submit-cta .button,
+.apc-photo-detail__cta .button {
+  height: auto;
+  min-height: var(--sp3);
+  line-height: var(--line-height-s);
+  hyphens: none;
+}
+
+/* Filters panel. Below 62.5rem it is a collapsed <details> with a full-width
+   toggle, so the photos start right under the Upload button instead of after
+   two long checkbox lists. At 62.5rem+ the toggle disappears and the panel is
+   always open (photo-filters.js sets `open` too, for browsers without
+   ::details-content). */
+.apc-photo-gallery__filters {
+  margin-block-end: var(--sp1);
+}
+
+.apc-photo-gallery__filters-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp0-5, 0.5625rem);
+  padding: var(--sp0-75, 0.84375rem) var(--sp1);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.apc-photo-gallery__filters-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.apc-photo-gallery__filters-toggle::after {
+  content: "";
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-inline-start: auto;
+  border-inline-end: 2px solid currentcolor;
+  border-block-end: 2px solid currentcolor;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.apc-photo-gallery__filters[open] > .apc-photo-gallery__filters-toggle::after {
+  transform: rotate(-135deg);
+}
+
+.apc-photo-gallery__filters > .view-filters {
+  padding-block-start: var(--sp1);
+}
+
+@media (min-width: 62.5rem) {
+  .apc-photo-gallery__filters-toggle {
+    display: none;
+  }
+
+  .apc-photo-gallery__filters::details-content {
+    content-visibility: visible;
+  }
+
+  .apc-photo-gallery__filters > .view-filters {
+    padding-block-start: 0;
+  }
+}
+
 /* The exposed filters' "Category"/"Photo or sign?" boxes were designed for
    a full-width row of inline radio pills (see the "Inline radio/checkbox
    groups" rule below) -- in the ~18rem sidebar column there isn't room for
@@ -463,7 +533,12 @@ body.page-calendar #block-apc-brown-calendar-photos-mobile > h2 {
   /* Normal flow here, not absolutely positioned -- there's no calendar
      toolbar height budget to fit inside on mobile (the FullCalendar
      toolbar wraps to its own row above the grid at this width), so this
-     can just be sized for what reads well on a small screen. */
+     can just be sized for what reads well on a small screen.
+     2026-09-21 feedback: didn't add enough to be worth the space on a
+     phone. block.block.apc_brown_calendar_photos_mobile is now disabled
+     (status: false) rather than this rule changed to display: none --
+     re-enabling the block is all it'd take to bring it back, this styling
+     included. Left in place rather than deleted for that reason. */
   body.page-calendar #block-apc-brown-calendar-photos-mobile {
     max-width: 18rem;
     margin-inline: auto;
