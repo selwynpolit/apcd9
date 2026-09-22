@@ -39,6 +39,16 @@
   padding-inline: var(--container-padding, 1.5rem);
 }
 
+/* Full-width band for the About blurb -- spans all 3 columns instead of
+   sitting in one of them at >=48rem (see grid-area below); stacks like
+   everything else in the single-column base layout. Separated from the row
+   above with a rule either way. */
+#block-apc-brown-about-site {
+  margin-block-start: var(--sp1, 1.125rem);
+  padding-block-start: var(--sp2, 2.25rem);
+  border-block-start: 1px solid var(--color-divider);
+}
+
 @media (min-width: 48rem) {
   .region--footer_top__inner {
     grid-template-columns: repeat(3, 1fr);
@@ -49,31 +59,35 @@
     gap: var(--sp2, 2.25rem) var(--sp3, 3.9rem);
     align-items: start;
   }
-}
 
-#block-apc-brown-greenwebsite {
-  grid-area: green;
-}
+  /* grid-area only means anything alongside the grid-template-areas that
+     names it -- kept in this same media query, not applied unconditionally
+     like before. Every one of these blocks used to collide into the same
+     cell below 48rem: with no grid-template-areas in scope at the base
+     breakpoint, each unmatched name still tried to resolve as an implicit
+     grid line, and the five blocks piled on top of each other instead of
+     each auto-placing into its own row of the single 1fr column the base
+     rule (above) sets up. Confirmed live -- at 320/412px every block in
+     this region measured the exact same bounding box. */
+  #block-apc-brown-greenwebsite {
+    grid-area: green;
+  }
 
-#block-apc-brown-powered {
-  grid-area: powered;
-}
+  #block-apc-brown-powered {
+    grid-area: powered;
+  }
 
-#block-apc-brown-footer-menu {
-  grid-area: explore;
-}
+  #block-apc-brown-footer-menu {
+    grid-area: explore;
+  }
 
-#block-apc-brown-syndicate {
-  grid-area: follow;
-}
+  #block-apc-brown-syndicate {
+    grid-area: follow;
+  }
 
-/* Full-width band for the About blurb -- spans all 3 columns instead of
-   sitting in one of them. Separated from the row above with a rule. */
-#block-apc-brown-about-site {
-  grid-area: about;
-  margin-block-start: var(--sp1, 1.125rem);
-  padding-block-start: var(--sp2, 2.25rem);
-  border-block-start: 1px solid var(--color-divider);
+  #block-apc-brown-about-site {
+    grid-area: about;
+  }
 }
 
 /* Section headings: the block labels ("Explore", "Follow along", "Green
