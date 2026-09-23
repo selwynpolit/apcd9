@@ -55,6 +55,38 @@ final class EventCardBuilder {
     return (int) $query->countQuery()->execute()->fetchField();
   }
 
+  /**
+   * Finds the single soonest occurrence at or after $now, held at one
+   * specific location.
+   *
+   * Built for the /locations directory (LocationsController), where each
+   * card needs its own "next event here" teaser. Same reasoning as
+   * findEvents()'s own class-level docs -- a raw join on
+   * node__field_event_date, since "soonest upcoming event at this venue"
+   * needs the same per-occurrence matching a recurring event's own delta
+   * values require, not just "this node has some future date somewhere in
+   * its series".
+   *
+   * @return object|null
+   *   A row with ->nid and ->occurrence (the matched field_event_date_value),
+   *   or NULL if this location has nothing upcoming.
+   */
+  public function findNextEventAtLocation(int $location_tid, int $now): ?object {
+    $query = $this->database->select('node_field_data', 'n');
+    $query->innerJoin('node__field_event_date', 'd', 'n.nid = d.entity_id AND d.deleted = 0');
+    $query->innerJoin('node__field_location', 'l', 'n.nid = l.entity_id AND l.deleted = 0');
+    $query->addField('n', 'nid');
+    $query->addField('d', 'field_event_date_value', 'occurrence');
+    $query->condition('n.status', 1);
+    $query->condition('n.type', 'calendar_event');
+    $query->condition('l.field_location_target_id', $location_tid);
+    $query->condition('d.field_event_date_value', $now, '>=');
+    $query->orderBy('d.field_event_date_value', 'ASC');
+    $query->range(0, 1);
+    $row = $query->execute()->fetchObject();
+    return $row ?: NULL;
+  }
+
   private function buildQuery(int $now, ?int $upper_bound, array $exclude_nids, bool $require_promoted) {
     $query = $this->database->select('node_field_data', 'n');
     $query->innerJoin('node__field_event_date', 'd', 'n.nid = d.entity_id AND d.deleted = 0');

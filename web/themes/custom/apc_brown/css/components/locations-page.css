@@ -1,0 +1,90 @@
+/**
+ * @file
+ * /locations: a grid of every published location, each a plain card linking
+ * to its own page. Deliberately simpler than the homepage's tilted
+ * pinned-card treatment -- this is a directory to scan, not a bulletin
+ * board.
+ *
+ * @see templates/locations-page.html.twig
+ * @see apc_brown_preprocess_apc_locations_page()
+ */
+
+.apc-locations {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--container-padding);
+  padding-block: var(--sp2);
+}
+
+.apc-locations__title {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight, 600);
+  font-size: 2rem;
+  color: var(--color-accent-800);
+  margin: 0 0 var(--sp2);
+}
+
+.apc-locations__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--sp1-5, 1.6875rem);
+}
+
+.apc-locations__card {
+  display: block;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.apc-locations__card:hover,
+.apc-locations__card:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.apc-locations__card-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: var(--color-accent-100);
+}
+
+.apc-locations__card-body {
+  padding: var(--sp1, 1.125rem);
+}
+
+.apc-locations__card-name {
+  margin: 0 0 var(--sp0-25, 0.28125rem);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  color: var(--color-accent-800);
+}
+
+.apc-locations__card-address {
+  margin: 0 0 var(--sp0-5, 0.5625rem);
+  color: var(--color-text-neutral-medium);
+  font-size: 0.9rem;
+}
+
+/* Only present on cards with something upcoming -- see
+   EventCardBuilder::findNextEventAtLocation(). A dashed rule separates it
+   from the address above, the same "here's a related but distinct fact"
+   treatment .apc-upcoming__sidebar-box's Recent Posts list uses. */
+.apc-locations__card-next {
+  margin: 0;
+  padding-block-start: var(--sp0-5, 0.5625rem);
+  border-top: 1px dashed var(--color-divider);
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.apc-locations__card-next-label {
+  font-weight: 700;
+  color: var(--color-accent-700);
+}

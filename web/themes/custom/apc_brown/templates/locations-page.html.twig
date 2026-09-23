@@ -1,0 +1,40 @@
+{#
+/**
+ * @file
+ * /locations: a grid of every published location, each linking to its own
+ * page, with its next upcoming event shown if it has one. Card data (image
+ * URL, address line, next_event) built in
+ * apc_brown_preprocess_apc_locations_page().
+ *
+ * @see \Drupal\apc_calendar\Controller\LocationsController
+ * @see apc_brown_preprocess_apc_locations_page()
+ */
+#}
+{{ attach_library('apc_brown/locations-page') }}
+<div class="apc-locations">
+  <h1 class="apc-locations__title">{{ 'Locations'|t }}</h1>
+
+  {% if locations %}
+    <div class="apc-locations__grid">
+      {% for location in locations %}
+        <a class="apc-locations__card" href="{{ location.url }}">
+          <img class="apc-locations__card-image" src="{{ location.image }}" alt="" loading="lazy">
+          <div class="apc-locations__card-body">
+            <h2 class="apc-locations__card-name">{{ location.name }}</h2>
+            {% if location.address %}
+              <p class="apc-locations__card-address">{{ location.address }}</p>
+            {% endif %}
+            {% if location.next_event %}
+              <p class="apc-locations__card-next">
+                <span class="apc-locations__card-next-label">{{ 'Next event'|t }}:</span>
+                {{ location.next_event.title }} — {{ location.next_event.date }}
+              </p>
+            {% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>{{ 'No locations yet.'|t }}</p>
+  {% endif %}
+</div>

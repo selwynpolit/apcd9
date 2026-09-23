@@ -345,6 +345,14 @@ upcoming-events:
   dependencies:
     - apc_brown/front-page
 
+# /locations: a grid of every published location, each a plain card linking
+# to its own page. Attached directly from templates/locations-page.html.twig.
+locations-page:
+  version: VERSION
+  css:
+    theme:
+      css/components/locations-page.css: {}
+
 # Click-to-swap hero + thumbnail rail. Shared by the event/location detail
 # pages (via detail-page's dependency) and the calendar event popup dialog
 # (attached directly from field--field-event-image--calendar-item.html.twig).

@@ -41,6 +41,16 @@ function apc_brown_theme($existing, $type, $theme, $path) {
         'recent_posts' => NULL,
       ],
     ],
+    'apc_locations_page' => [
+      'template' => 'locations-page',
+      'variables' => [
+        // Raw term entities + precomputed next-event data, same split as
+        // apc_front_page's signs_pool -- see
+        // apc_brown_preprocess_apc_locations_page().
+        'terms' => [],
+        'next_events' => [],
+      ],
+    ],
   ];
 }
 
@@ -450,6 +460,53 @@ function apc_brown_preprocess_apc_upcoming_events(&$variables) {
 
   $blog = \Drupal\views\Views::getView('blog');
   $variables['recent_posts'] = $blog?->access('block_recent_posts') ? $blog->buildRenderable('block_recent_posts') : NULL;
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for the apc_locations_page theme hook.
+ *
+ * LocationsController passes raw term entities + precomputed "next event"
+ * data (EventCardBuilder::findNextEventAtLocation()) -- same split as
+ * apc_front_page's signs_pool: the controller owns the query, the theme
+ * layer owns ImageStyle usage for the actual card data.
+ */
+function apc_brown_preprocess_apc_locations_page(&$variables) {
+  $thumb_style = ImageStyle::load('gallery_thumb');
+  $default_image = \Drupal\apc_calendar\DefaultEventImage::url();
+
+  $cards = [];
+  foreach ($variables['terms'] as $term) {
+    $image_url = $default_image;
+    if ($term->hasField('field_location_image') && !$term->get('field_location_image')->isEmpty()) {
+      $media = $term->get('field_location_image')->entity;
+      if ($media !== NULL && $media->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
+        $file = $media->get('field_media_image')->entity;
+        if ($file !== NULL) {
+          $image_url = $thumb_style->buildUrl($file->getFileUri());
+        }
+      }
+    }
+
+    // Locality + state is enough to place a venue at a glance on a card --
+    // the full street address is one click away on the location's own page.
+    $address_line = '';
+    if ($term->hasField('field_address') && !$term->get('field_address')->isEmpty()) {
+      $address = $term->get('field_address')->first()->getValue();
+      $address_line = trim(implode(', ', array_filter([
+        $address['locality'] ?? '',
+        $address['administrative_area'] ?? '',
+      ])));
+    }
+
+    $cards[] = [
+      'name' => $term->label(),
+      'url' => $term->toUrl()->toString(),
+      'image' => $image_url,
+      'address' => $address_line,
+      'next_event' => $variables['next_events'][$term->id()] ?? NULL,
+    ];
+  }
+  $variables['locations'] = $cards;
 }
 
 /**
