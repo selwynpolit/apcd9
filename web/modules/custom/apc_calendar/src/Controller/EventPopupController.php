@@ -167,12 +167,15 @@ final class EventPopupController extends ControllerBase {
     }
 
     // "Add to your calendar" for the clicked occurrence, placed beside the
-    // date/time rather than below the fold at the bottom of the scrollable
-    // dialog. field_event_date is pulled out of the entity view builder's
-    // render array and re-inserted (same weight: 1, right after the weight-0
-    // gallery) as a flex row alongside the control -- see
-    // .apc-event-popup__datebar in event-popup.css. Keyed to $delta so a
-    // recurring event adds the occurrence that was actually clicked.
+    // date/time. Both sit ABOVE the gallery (weight -20, well below the
+    // image's own weight 0 -- or -10 for the default-image fallback just
+    // above -- so this always sorts first regardless of which the event
+    // has) -- so a visitor sees when the event is before scrolling past a
+    // photo to find out. field_event_date is pulled out of the entity view
+    // builder's render array and re-inserted as a flex row alongside the
+    // control -- see .apc-event-popup__datebar in event-popup.css. Keyed to
+    // $delta so a recurring event adds the occurrence that was actually
+    // clicked.
     $add_to_calendar = AddToCalendar::build($node, $delta);
     if ($add_to_calendar) {
       $addtocal_component = [
@@ -195,16 +198,28 @@ final class EventPopupController extends ControllerBase {
         $build['apc_datebar'] = [
           '#type' => 'container',
           '#attributes' => ['class' => ['apc-event-popup__datebar']],
-          '#weight' => 1,
+          '#weight' => -20,
           'date' => $date_field,
           'addtocal' => $addtocal_component,
         ];
       }
       else {
         // No date field on this view mode (unexpected, but degrade gracefully
-        // rather than silently dropping the control): append it on its own.
-        $build['apc_add_to_calendar'] = $addtocal_component + ['#weight' => 1.5];
+        // rather than silently dropping the control): append it on its own,
+        // still above the gallery.
+        $build['apc_add_to_calendar'] = $addtocal_component + ['#weight' => -19];
       }
+    }
+
+    // A remote/virtual event's URL is the whole point of the field here --
+    // the "Event URL" heading (calendar_item's field_event_url is
+    // label: above, unlike the full page's label: hidden) is redundant
+    // clutter once the "Online only" badge above already says what this is.
+    // Left alone for an in-person event that also lists an event URL (a
+    // secondary link, e.g. a ticket page), where the label is the only
+    // thing distinguishing it from "Get directions".
+    if ($occurrence->hasField('field_virtual') && (bool) $occurrence->get('field_virtual')->value && !empty($build['field_event_url'])) {
+      $build['field_event_url']['#label_display'] = 'hidden';
     }
 
     $result['event'] = $build;

@@ -221,8 +221,27 @@ body:has(.ui-dialog .apc-event-popup) .ui-widget-overlay {
  * shrunk the button itself, both to read as a lighter-weight corner control
  * next to a heading rather than a primary CTA duplicating the dialog's other
  * "Add to your calendar" action.
+ * 2026-09-24 report: the Details button didn't respond to clicks on a
+ * long, 3-line-wrapped title ("Paws to the Polls..."), but worked fine on a
+ * shorter one ("Gina Hinojosa...") -- a second, separate float gotcha from
+ * the text-overlap one above, and the reason that earlier "stays one
+ * full-width rect either way" aside about the <h2> box mattered after all.
+ * A float sits *below* a later in-flow block box in the default stacking
+ * order (so text can wrap "in front of" a floated image) -- the title's
+ * text avoids the float, but its <h2> element's own box is still that one
+ * full-width rect, and that whole box, not just its rendered text, was
+ * sitting on top of the button for hit-testing. Confirmed live:
+ * elementFromPoint() at the button's own coordinates returned the <h2>, not
+ * the link, exactly where the title wrapped far enough down to reach the
+ * button -- which a short, single-line title (Gina's) never does, hence no
+ * report there. position: relative + z-index here (float and position:
+ * relative combine fine) lifts the button into its own stacking context,
+ * above the h2's default level -- doesn't change the layout at all, only
+ * which element wins when both occupy the same pixel.
  */
 .apc-event-popup__actions {
+  position: relative;
+  z-index: 1;
   float: right;
   margin: 0 0 0.5rem 0.75rem;
 }
@@ -239,6 +258,28 @@ body:has(.ui-dialog .apc-event-popup) .ui-widget-overlay {
    * this button's brown background.
    */
   color: var(--color--white);
+}
+
+/*
+ * Location card frame: a shaded, bordered panel so the venue info reads as
+ * its own block rather than blending into the rest of the popup's fields --
+ * confirmed live it needed this. The apc.css rule targeting
+ * ".field--name-field-location .taxonomy-term" (written for the full event
+ * page's location_reference card) doesn't reach here: this view mode
+ * (compact_card) renders through core's stock taxonomy-term.html.twig
+ * without contextual-links stripped, and its outermost wrapper in the popup
+ * is actually .contextual-region, with no .taxonomy-term class anywhere in
+ * the DOM -- confirmed by inspecting the live markup, not by reading the
+ * template. Framing .field--name-field-location itself sidesteps that
+ * entirely, and scoping to .apc-event-popup keeps the full page's own
+ * (differently structured, already-styled) location card untouched.
+ */
+.apc-event-popup .field--name-field-location {
+  padding: var(--sp1, 1.125rem);
+  border: 1px solid var(--color-accent-200);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 /*

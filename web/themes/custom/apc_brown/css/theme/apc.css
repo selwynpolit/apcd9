@@ -435,15 +435,32 @@
 .view-location-page .view-header { margin-bottom: var(--sp2); }
 .view-location-page .views-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--sp0-5) var(--sp);
   align-items: baseline;
   padding: var(--sp0-75) 0;
   border-bottom: 1px solid var(--color-divider);
 }
+/* min-width: 0 is what actually lets a flex child shrink below its content's
+   natural width -- without it, flex-wrap: nowrap above just overflows the
+   row instead of truncating. Confirmed live: a long title (comfortably
+   wider alone than the date needs) pushed field_event_date onto its own
+   line the moment the two together exceeded the row's width, which is
+   flex-wrap: wrap doing exactly what it's told -- this keeps them on one
+   line by truncating the title instead. */
 .view-location-page .views-field-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
   font-family: var(--font-heading);
   font-size: 18px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* Fixed-size and never the thing that shrinks -- the date/time is short and
+   short of room is not a place it should start truncating too. */
+.view-location-page .views-field-field-event-date {
+  flex: 0 0 auto;
 }
 
 /* ══ Fieldset spacing ════════════════════════════════════════════════════ */

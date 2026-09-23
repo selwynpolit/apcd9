@@ -13,18 +13,19 @@
 {% if gallery %}{{ attach_library('apc_brown/lightbox') }}{% endif %}
 <div{{ attributes.addClass('apc-detail') }}>
   <div class="apc-detail__breadcrumb">
-    <a href="/locations">{{ 'Locations'|t }}</a> / {{ name }}
+    {# term.label, not the bare "name" variable -- taxonomy's own
+       template_preprocess_taxonomy_term() sets "name" to the rendered
+       *field* render array (a block-level div), not plain text, so
+       printing it inline here forced the location's name onto its own
+       line every time, confirmed live. term.label is the plain string. #}
+    <a href="/locations">{{ 'Locations'|t }}</a> / {{ term.label }}
   </div>
 
   {% if is_unpublished %}
     <div class="apc-unpublished-banner" role="status">{{ 'Unpublished — pending review'|t }}</div>
   {% endif %}
 
-  <h1 class="apc-detail__title">{{ name }}</h1>
-
-  {% if content.field_address %}
-    <div class="apc-detail__meta">{{ content.field_address }}</div>
-  {% endif %}
+  <h1 class="apc-detail__title">{{ term.label }}</h1>
 
   <div class="apc-detail__actions">
     {% if content.directions %}
@@ -63,13 +64,6 @@
               {{ content.field_geofield }}
             </div>
           {% endif %}
-        </div>
-      {% endif %}
-
-      {% if content.description %}
-        <div class="apc-detail__body">
-          <h2 class="apc-detail__section-title">{{ 'About this location'|t }}</h2>
-          {{ content.description }}
         </div>
       {% endif %}
 

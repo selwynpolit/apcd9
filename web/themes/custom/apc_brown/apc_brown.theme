@@ -158,6 +158,20 @@ function apc_brown_preprocess_node(&$variables) {
     $variables['date'] = \Drupal::service('date.formatter')->format($variables['node']->getCreatedTime(), 'apc_brown_medium');
   }
 
+  // The calendar popup (calendar_item view mode) has no use for "By admin,
+  // [submission date]" -- nobody visiting the calendar cares who typed the
+  // event in or when, and EventPopupController already puts the thing that
+  // actually matters (the event's own date + an "Add to calendar" button,
+  // apc_datebar) at the top of content, right where this would otherwise sit
+  // in node.html.twig's <header>. display_submitted is a content-type-wide
+  // setting (node.type.calendar_event.yml), so it's still TRUE for the full
+  // event page -- that page never prints node__meta anyway, being a
+  // from-scratch template (node--calendar-event--full.html.twig) that never
+  // references display_submitted at all.
+  if ($variables['node']->bundle() === 'calendar_event' && $variables['view_mode'] === 'calendar_item') {
+    $variables['display_submitted'] = FALSE;
+  }
+
   // Pass layout variable to template if content type is article in full view
   // mode. This is then used in the template to create a BEM style CSS class to
   // control the layout.
