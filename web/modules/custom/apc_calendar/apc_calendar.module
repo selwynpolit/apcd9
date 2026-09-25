@@ -720,6 +720,52 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
   // submitters alike, so it's attached unconditionally here.
   $form['#attached']['library'][] = 'apc_calendar/media_dialog_scroll_top';
 
+  // Whether this node was created by the Feeds importer (event-import-task.md)
+  // rather than typed in through this form. feeds_item is the authoritative
+  // signal -- it's the same check apc_calendar_node_presave() uses to skip its
+  // auto-publish branch during an import -- unlike field_import_state, which
+  // defaults to "pending" on every node regardless of origin and so can't be
+  // used to tell the two apart. A brand-new node (the add form) is never
+  // imported: Feeds always creates its own nodes directly, it never posts
+  // through this form.
+  /** @var \Drupal\node\NodeInterface $node */
+  $node = $form_state->getFormObject()->getEntity();
+  $is_imported = $node->hasField('feeds_item') && !$node->get('feeds_item')->isEmpty();
+
+  // The Feeds-import bookkeeping fields (event-import-task.md) --
+  // field_event_source, field_import_location_raw, field_import_state and
+  // field_import_recurrence_raw -- are meaningful only for nodes Feeds
+  // actually created; on every other event they're just confusing clutter.
+  // Gated on $is_imported rather than role/anonymity, so even an
+  // event_manager editing a human-submitted event doesn't see them, while a
+  // curator editing an actual imported event still can. Curators change
+  // field_import_state itself through the imported_events view's bulk
+  // actions, not this form -- but field_import_location_raw and
+  // field_import_recurrence_raw are read directly off this form while
+  // curating, so those two still need to show for imported events.
+  if (!$is_imported) {
+    foreach ([
+      'field_event_source',
+      'field_import_location_raw',
+      'field_import_state',
+      'field_import_recurrence_raw',
+    ] as $element) {
+      if (isset($form[$element])) {
+        $form[$element]['#access'] = FALSE;
+      }
+    }
+  }
+
+  // Hide the body summary for everyone. The "Edit summary" toggle and its
+  // textarea are a teaser-preview authoring affordance nothing on this site
+  // ever uses. #access rather than turning off display_summary in the field
+  // config, which would remove the underlying value (and any admin's ability
+  // to turn this back on for a single node) rather than just hiding the
+  // control.
+  if (isset($form['body']['widget'][0]['summary'])) {
+    $form['body']['widget'][0]['summary']['#access'] = FALSE;
+  }
+
   // The confirmation redirect is anonymous-only — authenticated submitters can
   // view their own unpublished node, so core's default behaviour is correct
   // for them.
@@ -733,34 +779,10 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
     // adds these programmatically rather than through the form display, which is
     // why they cannot simply be dragged to Disabled in Manage Form Display —
     // and why they show to a visitor who has no idea what a revision is.
-    //
-    // Also hide the Feeds-import bookkeeping fields (event-import-task.md):
-    // field_event_source, field_import_location_raw, field_import_state and
-    // field_import_recurrence_raw are meaningful only for nodes Feeds
-    // creates -- a human submitter has no "which calendar did this come
-    // from" to answer, and curators change field_import_state through the
-    // imported_events view's bulk actions, not this form.
-    foreach ([
-      'revision',
-      'revision_log',
-      'revision_information',
-      'field_event_source',
-      'field_import_location_raw',
-      'field_import_state',
-      'field_import_recurrence_raw',
-    ] as $element) {
+    foreach (['revision', 'revision_log', 'revision_information'] as $element) {
       if (isset($form[$element])) {
         $form[$element]['#access'] = FALSE;
       }
-    }
-
-    // Hide the body summary. The "Edit summary" toggle and its textarea are a
-    // teaser-preview authoring affordance that means nothing to a visitor
-    // filling out a public submission form. #access rather than turning off
-    // display_summary in the field config, which would remove it for admins
-    // too.
-    if (isset($form['body']['widget'][0]['summary'])) {
-      $form['body']['widget'][0]['summary']['#access'] = FALSE;
     }
   }
 
@@ -780,9 +802,8 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
   // out of its default slot so nothing renders twice; #weight => 100 sorts it
   // after whatever else field_location already carries (the widget itself,
   // and the "Add a new location" link when the permission check above added
-  // it). Anonymous submitters never reach here with the field intact -- the
-  // #access => FALSE set on it earlier in the anonymous branch travels with
-  // the array when it moves.
+  // it). Non-imported nodes never reach here with the field intact -- the
+  // #access => FALSE set on it earlier travels with the array when it moves.
   if (isset($form['field_location']) && isset($form['field_import_location_raw'])) {
     $form['field_location']['field_import_location_raw'] = $form['field_import_location_raw'];
     $form['field_location']['field_import_location_raw']['#weight'] = 100;
@@ -897,9 +918,7 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
   // exactly the kind of date arithmetic a curator gets wrong (see the
   // README's "UNTIL is UTC and will trick you" note). Doing it here means
   // nobody has to.
-  if (isset($form['field_import_recurrence_raw'])) {
-    /** @var \Drupal\node\NodeInterface $node */
-    $node = $form_state->getFormObject()->getEntity();
+  if ($is_imported && isset($form['field_import_recurrence_raw'])) {
     $raw = $node->hasField('field_import_recurrence_raw') ? (string) $node->get('field_import_recurrence_raw')->value : '';
     if ($raw !== '') {
       $parsed = _apc_calendar_parse_recurrence_end($raw);
