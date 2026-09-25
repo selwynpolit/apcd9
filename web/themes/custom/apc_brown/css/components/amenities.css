@@ -1,0 +1,22 @@
+/**
+ * @file
+ * field_amenities (locations vocabulary): a plain "Amenities: A, B, C" line,
+ * not pills, not links (the entity_reference_label formatter is configured
+ * with link: false).
+ *
+ * Scoped to the field's own name class rather than a template wrapper, so
+ * one rule reaches every place it renders with the same label-inline
+ * formatter: the location detail page, the event detail page's Location
+ * card (taxonomy_term.locations.location_reference), and the calendar
+ * popup's Location card (taxonomy_term.locations.compact_card). The
+ * "Label:" + float layout itself comes from apc_brown/global-styling's own
+ * field.css (.field--label-inline, loaded site-wide) -- this only turns the
+ * value list into a comma-separated inline run instead of stacked blocks.
+ */
+.field--name-field-amenities .field__item {
+  display: inline;
+}
+
+.field--name-field-amenities .field__item:not(:last-child)::after {
+  content: ", ";
+}

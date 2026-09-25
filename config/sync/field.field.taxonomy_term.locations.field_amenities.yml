@@ -1,17 +1,17 @@
-uuid: da5d825b-e021-4857-af86-148a837da6ab
+uuid: 3ad95531-31dc-4114-8145-3472466143fd
 langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.taxonomy_term.field_tags
+    - field.storage.taxonomy_term.field_amenities
+    - taxonomy.vocabulary.amenities
     - taxonomy.vocabulary.locations
-    - taxonomy.vocabulary.tags
-id: taxonomy_term.locations.field_tags
-field_name: field_tags
+id: taxonomy_term.locations.field_amenities
+field_name: field_amenities
 entity_type: taxonomy_term
 bundle: locations
 label: Amenities
-description: 'Short tags describing this venue (e.g. Wheelchair accessible, Free parking).'
+description: 'Short attributes describing this venue (e.g. Wheelchair accessible, Free parking).'
 required: false
 translatable: true
 default_value: {  }
@@ -20,8 +20,9 @@ settings:
   handler: 'default:filter_existing_terms'
   handler_settings:
     target_bundles:
-      tags: tags
+      amenities: amenities
     sort:
       field: _none
     auto_create: true
+    auto_create_bundle: amenities
 field_type: entity_reference

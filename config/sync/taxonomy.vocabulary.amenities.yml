@@ -1,0 +1,9 @@
+uuid: a68dfbbb-3b3e-4bf3-aa48-2cb1f566fa23
+langcode: en
+status: true
+dependencies: {  }
+name: Amenities
+vid: amenities
+description: 'Physical attributes of a venue (e.g. Wheelchair accessible, Free parking) -- kept separate from the general "tags" vocabulary, which is event/photo topic categorization, not venue attributes.'
+weight: 0
+new_revision: false

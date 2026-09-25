@@ -67,10 +67,8 @@
         </div>
       {% endif %}
 
-      {% if content.field_tags %}
-        <div class="apc-detail__badges">
-          {{ content.field_tags }}
-        </div>
+      {% if content.field_amenities %}
+        {{ content.field_amenities }}
       {% endif %}
 
       {% if upcoming_events %}
@@ -98,7 +96,6 @@
 
       {% if content.field_notes %}
         <div class="apc-info-card">
-          <p class="apc-info-card__label">{{ 'Accessibility'|t }}</p>
           {{ content.field_notes }}
         </div>
       {% endif %}

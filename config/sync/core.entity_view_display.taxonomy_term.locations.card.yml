@@ -5,10 +5,10 @@ dependencies:
   config:
     - core.entity_view_mode.taxonomy_term.card
     - field.field.taxonomy_term.locations.field_address
+    - field.field.taxonomy_term.locations.field_amenities
     - field.field.taxonomy_term.locations.field_geofield
     - field.field.taxonomy_term.locations.field_location_image
     - field.field.taxonomy_term.locations.field_notes
-    - field.field.taxonomy_term.locations.field_tags
     - field.field.taxonomy_term.locations.field_term_author
     - taxonomy.vocabulary.locations
   module:
@@ -153,5 +153,6 @@ content:
     region: content
 hidden:
   description: true
+  field_amenities: true
   field_tags: true
   field_term_author: true

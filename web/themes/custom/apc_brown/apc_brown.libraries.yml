@@ -308,6 +308,16 @@ detail-page:
       css/components/detail-page.css: {}
   dependencies:
     - apc_brown/gallery
+    - apc_brown/amenities
+
+# field_amenities (locations vocabulary) styling -- shared by the location
+# and event detail pages (via detail-page's dependency above) and the
+# calendar event popup (via event-popup's dependency below).
+amenities:
+  version: VERSION
+  css:
+    theme:
+      css/components/amenities.css: {}
 
 # Homepage: hero with shuffle placard, upcoming-events strip, featured
 # spotlight, and the blended signs/memes wall. The wall's Views display is
@@ -405,6 +415,8 @@ event-popup:
   css:
     theme:
       css/components/event-popup.css: {}
+  dependencies:
+    - apc_brown/amenities
 
 # Media Library grid for the front theme (anonymous submitters). Attached by
 # libraries-extend on media_library/view + media_library/widget.

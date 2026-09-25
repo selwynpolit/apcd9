@@ -4,10 +4,10 @@ status: true
 dependencies:
   config:
     - field.field.taxonomy_term.locations.field_address
+    - field.field.taxonomy_term.locations.field_amenities
     - field.field.taxonomy_term.locations.field_geofield
     - field.field.taxonomy_term.locations.field_location_image
     - field.field.taxonomy_term.locations.field_notes
-    - field.field.taxonomy_term.locations.field_tags
     - field.field.taxonomy_term.locations.field_term_author
     - taxonomy.vocabulary.locations
   module:
@@ -37,6 +37,14 @@ content:
     settings: {  }
     third_party_settings: {  }
     weight: 2
+    region: content
+  field_amenities:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: false
+    third_party_settings: {  }
+    weight: 0
     region: content
   field_geofield:
     type: leaflet_formatter_default
@@ -146,14 +154,7 @@ content:
     third_party_settings: {  }
     weight: 3
     region: content
-  field_tags:
-    type: entity_reference_label
-    label: hidden
-    settings:
-      link: false
-    third_party_settings: {  }
-    weight: 0
-    region: content
 hidden:
   field_location_image: true
+  field_tags: true
   field_term_author: true

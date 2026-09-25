@@ -348,6 +348,13 @@
   border-radius: var(--border-radius);
 }
 
+/* field_notes on the location term (location_reference view mode) --
+   same field the event popup already shows, see compact_card. */
+.apc-location-card .field--name-field-notes {
+  margin-block-start: var(--sp1);
+  font-size: var(--font-size-s);
+}
+
 /* Virtual/online-only badge in the actions row. Filled and icon-led so it
    reads at the same visual weight as the pill buttons beside it, rather than
    the plain small text it used to be. */

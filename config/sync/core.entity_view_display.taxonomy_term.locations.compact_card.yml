@@ -5,10 +5,10 @@ dependencies:
   config:
     - core.entity_view_mode.taxonomy_term.compact_card
     - field.field.taxonomy_term.locations.field_address
+    - field.field.taxonomy_term.locations.field_amenities
     - field.field.taxonomy_term.locations.field_geofield
     - field.field.taxonomy_term.locations.field_location_image
     - field.field.taxonomy_term.locations.field_notes
-    - field.field.taxonomy_term.locations.field_tags
     - field.field.taxonomy_term.locations.field_term_author
     - image.style.thumbnail
     - taxonomy.vocabulary.locations
@@ -32,6 +32,14 @@ content:
     settings: {  }
     third_party_settings: {  }
     weight: 1
+    region: content
+  field_amenities:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: false
+    third_party_settings: {  }
+    weight: 3
     region: content
   field_location_image:
     type: media_thumbnail
