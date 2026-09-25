@@ -70,6 +70,20 @@ router_https_port: "443"
 timezone: America/Chicago
 ```
 
+## Development
+- work in ~/Sites/apc3 on develop branch
+- optionally create a feature branch for a specific task off develop
+- commit and push to github
+- use main for deployment to prod
+
+Merge into main for deployment steps:
+- in ~/Sites/apcd9 branch: main
+- git pull origin develop
+- git push
+- git tag release-2026-09-17
+- git push origin release-2026-09-17
+- follow deployment steps below
+
 
 ## Deployment
 - ssh into greengeeks
