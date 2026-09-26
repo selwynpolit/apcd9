@@ -430,6 +430,18 @@
   font-weight: 700;
 }
 
+/* ══ "Add a new location" modal (AddLocationForm) ════════════════════════
+   The link that opens it (apc_calendar_form_node_calendar_event_form_alter())
+   requests a fixed 520px-wide dialog -- fine on desktop, but jQuery UI sets
+   that as an inline style, so on any viewport narrower than ~520px the
+   dialog ran off the right edge of the screen instead of shrinking.
+   Confirmed live at a 375px mobile width. Same fix, same :has() scoping
+   apc-event-popup already uses in event-popup.css, so only this one dialog
+   is affected. */
+.ui-dialog:has(#apc-add-location-form-wrapper) {
+  max-width: calc(100vw - 1.5rem);
+}
+
 /* ══ Location page (/locations/%) ═══════════════════════════════════════ */
 
 /* Olivero core's own views.css (do not edit) sets .view/.view-content to
