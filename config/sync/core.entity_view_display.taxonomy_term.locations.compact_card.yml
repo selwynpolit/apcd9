@@ -65,3 +65,4 @@ hidden:
   field_geofield: true
   field_tags: true
   field_term_author: true
+  field_website: true
