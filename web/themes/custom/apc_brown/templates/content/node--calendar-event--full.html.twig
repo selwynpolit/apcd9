@@ -113,14 +113,6 @@
         <a class="apc-info-card__link" href="{{ location_url }}">{{ 'View location page'|t }} →</a>
       {% endif %}
     </div>
-  {% elseif not node.field_virtual.value %}
-    {# Location is optional -- a non-virtual event can genuinely have none
-       yet (still being worked out). Without this branch the location card
-       would just silently vanish instead of the visitor seeing why. #}
-    <div class="apc-location-card">
-      <p class="apc-info-card__label">{{ 'Location'|t }}</p>
-      <p class="apc-info-card__body">{{ 'Not yet announced'|t }}</p>
-    </div>
   {% endif %}
 
   {% if content.field_tags %}
