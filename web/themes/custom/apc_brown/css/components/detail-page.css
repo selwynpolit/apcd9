@@ -10,6 +10,30 @@
   padding-inline: var(--container-padding);
 }
 
+/* Pull the page up: .main-content__container's own padding-block-start
+   (layout.css) and the generic .region > * bottom margin (region.css) both
+   size for content-heavy pages with local tasks and several stacked blocks
+   above the content -- too much dead air above a page whose content starts
+   with a big title of its own. Scoped to .page-event-detail/
+   .page-location-detail (set in apc_brown_preprocess_html()) rather than
+   changed site-wide. */
+.page-event-detail .main-content__container,
+.page-location-detail .main-content__container {
+  padding-block-start: var(--sp1-5, 1.6875rem);
+}
+
+@media (min-width: 43.75rem) {
+  .page-event-detail .main-content__container,
+  .page-location-detail .main-content__container {
+    padding-block-start: var(--sp2-5, 2.8125rem);
+  }
+}
+
+.page-event-detail .region--breadcrumb > *,
+.page-location-detail .region--breadcrumb > * {
+  margin-block-end: var(--sp1, 1.125rem);
+}
+
 /* Unpublished banner on the event/location detail pages -- only ever seen by
    a reviewer (event_manager/administrator), since node/term access itself
    keeps everyone else off this page for pending content. Gold matches core's

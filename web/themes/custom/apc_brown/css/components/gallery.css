@@ -16,28 +16,36 @@
   gap: var(--sp0-5, 0.5625rem);
 }
 
-/* No fixed aspect-ratio/object-fit here on purpose -- gallery_hero_mobile
-   and gallery_hero_desktop (image.style.gallery_hero_*) now *scale* rather
-   than crop, so the derivative itself is already whatever shape the
-   original image is. A fixed-ratio box + object-fit: cover here would just
-   crop it a second time at display, undoing that -- most visible on wide
-   event flyers, which lost real content (a logo, a line of text) off the
-   sides under the old 4:3 box. */
+/* Fixed-size box, object-fit: contain -- not cover. gallery_hero_mobile/
+   _desktop (image.style.gallery_hero_*) still *scale* rather than crop
+   (see those styles), so each derivative keeps whatever shape the original
+   image is; without a fixed box here, swapping between a portrait and a
+   landscape photo in the same gallery made the hero itself jump to a wildly
+   different height every click. object-fit: cover would fix the jump but
+   crop a second time at display -- that's the exact thing that was reverted
+   before, after it cost wide event flyers real content (a logo, a line of
+   text) off the sides under an old 4:3 cover box. contain instead letterboxes
+   a non-matching image inside the fixed box (background fills the gap) --
+   stable size, nothing cropped either way. */
 /* A plain <picture> in the calendar popup's smaller gallery (no lightbox
    there -- see field--field-event-image--calendar-item.html.twig), but a
    <button> on the event/location detail pages so the hero can open the
    lightbox (apc_brown/lightbox, wired up in gallery.js); the reset below
    only matters for that second case; #shadow-lg is the same elevated-card
-   treatment the site branding logo and location card already use. */
+   treatment the site branding logo and location card already use.
+   .apc-gallery--popup overrides both the aspect-ratio and the img's
+   object-fit below with its own fixed 16:9/cover treatment (event-popup.css)
+   -- cropping is an accepted trade-off there, for a much smaller box. */
 .apc-gallery__hero {
   display: block;
   order: -1;
   overflow: hidden;
   width: 100%;
+  aspect-ratio: 3 / 2;
   padding: 0;
   border: none;
   border-radius: var(--border-radius);
-  background: none;
+  background: var(--color--gray-95);
   box-shadow: var(--shadow-lg);
   font: inherit;
 }
@@ -45,7 +53,8 @@
 .apc-gallery__hero img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
 }
 
 .apc-gallery__thumbs {

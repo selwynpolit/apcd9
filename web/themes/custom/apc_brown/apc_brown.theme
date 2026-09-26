@@ -84,6 +84,26 @@ function apc_brown_preprocess_html(&$variables) {
     $variables['attributes']['class'][] = 'page-photo-gallery';
   }
 
+  // Event/location detail pages: lets .page-event-detail/.page-location-detail
+  // in css/components/detail-page.css pull the top of the page (the generic
+  // .main-content__container padding and .region--breadcrumb margin, both
+  // sized for content-heavy pages with local tasks and several stacked
+  // blocks) in closer to the title -- these two pages' content starts with a
+  // big title of its own and doesn't need that much clearance above it.
+  $route_name = \Drupal::routeMatch()->getRouteName();
+  if ($route_name === 'entity.node.canonical') {
+    $node = \Drupal::routeMatch()->getParameter('node');
+    if ($node instanceof NodeInterface && $node->bundle() === 'calendar_event') {
+      $variables['attributes']['class'][] = 'page-event-detail';
+    }
+  }
+  elseif ($route_name === 'entity.taxonomy_term.canonical') {
+    $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
+    if ($term instanceof \Drupal\taxonomy\TermInterface && $term->bundle() === 'locations') {
+      $variables['attributes']['class'][] = 'page-location-detail';
+    }
+  }
+
   // Convert custom hex to hsl so we can use the hue value
   $brand_color_hex = theme_get_setting('base_primary_color') ?? '#1b9ae4';
   [$h, $s, $l] = _apc_brown_hex_to_hsl($brand_color_hex);
