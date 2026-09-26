@@ -171,7 +171,7 @@ Add a web/sites/default/settings.local.php which looks like:
 $databases['default']['default'] = array (
   'database' => 'austinpr_apcdev',
   'username' => 'austinpr_apcdev',
-  'password' => 'password goes here',
+  'password' => 'DATABASE-PASSWORD-HERE-FROM-GREENGEEKS-CPANEL',
   'prefix' => '',
   'host' => 'localhost',
   'port' => '3306',
@@ -181,8 +181,30 @@ $databases['default']['default'] = array (
 
 $settings['hash_salt'] = 'bgpC1g9Dz6_kIH5LpsT5-IvYkT1AzBXtxnqsPDYIGMtCr2_hnvOOQXZs6UHEBvvaxIWQb5q1pw%';
 
+
+// 9-17-26:
+// Removed this code that helped make this site work on Drupal 10 but fails on Drupal 11
+//if (isset($GLOBALS['request']) and '/d9/web/index.php' === $GLOBALS['request']->server->get('SCRIPT_NAME')) {
+//    $GLOBALS['request']->server->set('SCRIPT_NAME', '/index.php');
+//}
+
 // 1-4-24: for submitting sitemap to search engines.
 $settings['simple_sitemap_engines.index_now.key'] = '9f170430-2830-413f-9410-f76f761f8f0b';
+
+
+// 9-26-26: use greengeeks smtp email
+$config['system.mail']['interface']['default'] = 'symfony_mailer';
+$config['system.mail']['mailer_dsn'] = [
+  'scheme' => 'smtp',
+  'host' => 'mail.austinprogressivecalendar.com',
+  'port' => 465,
+  'user' => 'website@austinprogressivecalendar.com',
+  'password' => 'PUT-PASSWORD-HERE-FROM-GREENGEEKS-EMAIL-SETTINGS',
+  'options' => [],
+];
+
+
+
 ```
 - drush cim -y in ~/www/apcdev
 - drush cr
