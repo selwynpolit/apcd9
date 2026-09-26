@@ -87,21 +87,19 @@
     </div>
 
     <aside class="apc-detail__sidebar">
-      {% if content.field_address %}
+      {% if not term.field_address.isEmpty %}
         <div class="apc-info-card">
-          <p class="apc-info-card__label">{{ 'Address'|t }}</p>
           {{ content.field_address }}
         </div>
       {% endif %}
 
-      {% if content.field_website %}
-        <div class="apc-info-card">
-          <p class="apc-info-card__label">{{ 'Website'|t }}</p>
-          {{ content.field_website }}
+      {% if not term.field_website.isEmpty %}
+        <div class="apc-info-card apc-info-card--cta">
+          <a class="apc-pill-button apc-pill-button--primary" href="{{ term.field_website.0.uri }}" target="_blank" rel="noopener noreferrer">{{ term.label }} {{ 'website'|t }}</a>
         </div>
       {% endif %}
 
-      {% if content.field_notes %}
+      {% if not term.field_notes.isEmpty %}
         <div class="apc-info-card">
           {{ content.field_notes }}
         </div>
