@@ -3,7 +3,7 @@ _core:
 langcode: en
 extlink_use_external_js_file: false
 extlink_exclude_admin_routes: false
-extlink_target: false
+extlink_target: true
 extlink_target_no_override: false
 extlink_target_display_default_title: true
 extlink_target_default_title_text: '(opens in a new window)'
