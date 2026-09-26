@@ -432,6 +432,21 @@
 
 /* ══ Location page (/locations/%) ═══════════════════════════════════════ */
 
+/* Olivero core's own views.css (do not edit) sets .view/.view-content to
+   display: grid with only grid-template-rows defined -- no column track, so
+   the implicit column defaults to an unconstrained auto width. That auto
+   column doesn't shrink below its content's own intrinsic width, and
+   .views-row below relies on min-width: 0 further down the chain to
+   truncate a long title instead of overflowing -- none of that can kick in
+   if the grid itself is already wider than the page. Confirmed live: this
+   was the actual cause of horizontal scroll on this page at mobile widths,
+   surviving even after .apc-detail__grid/.apc-detail__media were fixed to
+   minmax(0, 1fr) for the same underlying reason. */
+.view-location-page .view,
+.view-location-page .view-content {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .view-location-page .view-header { margin-bottom: var(--sp2); }
 .view-location-page .views-row {
   display: flex;

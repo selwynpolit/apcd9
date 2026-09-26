@@ -95,15 +95,22 @@
   margin-block-end: var(--sp2);
 }
 
+/* minmax(0, ...) rather than a bare 1fr/2fr/1fr -- a bare fr track can't
+   shrink below its content's intrinsic min-width, and the Leaflet map inside
+   .apc-detail__main doesn't shrink itself, so on a narrow viewport the track
+   (and the whole grid) was overflowing the page instead of the map just
+   staying full-width inside a correctly-sized column. Confirmed live: this
+   was producing real horizontal scroll on the location page at mobile
+   widths before this fix. */
 .apc-detail__grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp3);
 }
 
 @media (min-width: 62.5rem) {
   .apc-detail__grid {
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     align-items: start;
   }
 }
@@ -246,7 +253,7 @@
    gets on its own. */
 .apc-detail__media {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp1-5, 1.6875rem);
 }
 
