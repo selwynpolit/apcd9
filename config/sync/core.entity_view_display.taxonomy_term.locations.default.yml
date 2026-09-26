@@ -9,10 +9,12 @@ dependencies:
     - field.field.taxonomy_term.locations.field_location_image
     - field.field.taxonomy_term.locations.field_notes
     - field.field.taxonomy_term.locations.field_term_author
+    - field.field.taxonomy_term.locations.field_website
     - taxonomy.vocabulary.locations
   module:
     - address
     - leaflet
+    - link
     - text
 id: taxonomy_term.locations.default
 targetEntityType: taxonomy_term
@@ -150,6 +152,18 @@ content:
     settings: {  }
     third_party_settings: {  }
     weight: 3
+    region: content
+  field_website:
+    type: link
+    label: hidden
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: _blank
+    third_party_settings: {  }
+    weight: 2
     region: content
 hidden:
   field_location_image: true
