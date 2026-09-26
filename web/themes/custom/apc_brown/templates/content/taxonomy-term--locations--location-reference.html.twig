@@ -1,0 +1,38 @@
+{#
+/**
+ * @file
+ * Compact location card (location_reference view mode), embedded via
+ * content.field_location inside the event page's own .apc-location-card
+ * wrapper (node--calendar-event--full.html.twig).
+ *
+ * Only this view mode needs its own template: core's default
+ * taxonomy-term.html.twig hardcodes the title as a standalone <h2><a>, with
+ * no way to put the directions pseudo-field beside it or to control spacing
+ * against the fields below -- both needed here since this card is meant to
+ * read compactly, unlike the location's own full page.
+ *
+ * @see apc_brown_theme_suggestions_taxonomy_term_alter()
+ */
+#}
+<div{{ attributes }}>
+  <div class="apc-location-reference__header">
+    <h2 class="apc-location-reference__title"><a href="{{ url }}">{{ name }}</a></h2>
+    {% if content.directions %}
+      {{ content.directions }}
+    {% endif %}
+  </div>
+
+  {% if content.field_address %}
+    <div class="apc-location-reference__address">{{ content.field_address }}</div>
+  {% endif %}
+
+  {% if content.field_website %}
+    <div class="apc-location-reference__website">{{ content.field_website }}</div>
+  {% endif %}
+
+  {% if content.field_geofield %}
+    <div class="apc-location-reference__map">{{ content.field_geofield }}</div>
+  {% endif %}
+
+  {{ content|without('directions', 'field_address', 'field_website', 'field_geofield') }}
+</div>

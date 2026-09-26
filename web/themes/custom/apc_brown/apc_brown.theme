@@ -309,7 +309,6 @@ function apc_brown_preprocess_node(&$variables) {
       // rather than leaking its photos/link past the "Pending" card above.
       elseif ($term !== NULL && $term->access('view')) {
         $variables['location_gallery'] = _apc_brown_build_gallery($term, 'field_location_image');
-        $variables['location_url'] = $term->toUrl()->toString();
       }
     }
 

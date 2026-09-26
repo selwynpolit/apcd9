@@ -4,14 +4,15 @@
  * Event detail page (full view mode of a calendar_event node).
  *
  * gallery, add_to_calendar, publish_event_url, is_unpublished,
- * location_gallery, location_url and location_pending are built in
+ * location_gallery and location_pending are built in
  * apc_brown_preprocess_node().
  *
  * Single column, no sidebar -- matches assets/event_detail.pdf. The
- * Location card's address/map/directions come from content.field_location
- * itself (the location_reference view mode embeds all three); its photo
- * row and "View location page" link are built separately in preprocess
- * since they're not part of that view mode.
+ * Location card's title/directions/address/website/map come from
+ * content.field_location itself (the location_reference view mode, with its
+ * own template -- see taxonomy-term--locations--location-reference.html.twig
+ * -- embeds all of them); its photo row is built separately in preprocess
+ * since it isn't part of that view mode.
  *
  * @see apc_brown_preprocess_node()
  */
@@ -86,6 +87,12 @@
     {{ content.body }}
   </div>
 
+  {% if content.field_tags %}
+    <div class="apc-detail__badges">
+      {{ content.field_tags }}
+    </div>
+  {% endif %}
+
   {% if location_pending %}
     <div class="apc-location-card">
       <p class="apc-info-card__label">{{ 'Location'|t }}</p>
@@ -108,16 +115,6 @@
           {% endfor %}
         </ul>
       {% endif %}
-
-      {% if location_url %}
-        <a class="apc-info-card__link" href="{{ location_url }}">{{ 'View location page'|t }} →</a>
-      {% endif %}
-    </div>
-  {% endif %}
-
-  {% if content.field_tags %}
-    <div class="apc-detail__badges">
-      {{ content.field_tags }}
     </div>
   {% endif %}
 

@@ -346,11 +346,15 @@
 }
 
 /* Location card embedded in the event detail page, including its own
-   photo row (opens the lightbox, see apc_brown/lightbox) and map. */
+   photo row (opens the lightbox, see apc_brown/lightbox) and map. Shadowed
+   like the other elevated cards on this page (gallery hero, site branding
+   logo) so it reads as its own distinct block against the page background,
+   which is close in color to the card's own gray-95 fill. */
 .apc-location-card {
   padding: var(--sp1-5, 1.6875rem);
   border-radius: var(--border-radius);
   background: var(--color--gray-95);
+  box-shadow: var(--shadow-md);
 }
 
 /* .apc-location-card__photos/__photo (thumbnail row that opens the
@@ -364,11 +368,43 @@
   font-size: var(--font-size-xs);
 }
 
-.apc-location-card__map {
-  margin-block: var(--sp1);
+/* Title + directions on one row where they fit, wrapping to two lines on a
+   long venue name or a narrow card rather than overflowing. */
+.apc-location-reference__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: var(--sp1, 1.125rem);
+  row-gap: 0.125rem;
 }
 
-.apc-location-card__map .leaflet-container {
+.apc-location-reference__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-l);
+}
+
+.apc-location-reference__header .apc-directions {
+  font-size: var(--font-size-s);
+}
+
+/* Pulled in tight under the title/address above -- this card is meant to
+   read compactly, unlike the location's own full page. */
+.apc-location-reference__address {
+  margin-block-start: 0.25rem;
+}
+
+.apc-location-reference__website {
+  margin-block-start: 0.25rem;
+  font-size: var(--font-size-s);
+}
+
+.apc-location-reference__map {
+  margin-block-start: var(--sp1);
+}
+
+.apc-location-reference__map .leaflet-container {
   border-radius: var(--border-radius);
 }
 
