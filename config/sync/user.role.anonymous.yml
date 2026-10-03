@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - filter.format.basic_html
     - filter.format.restricted_html
     - media.type.image
     - node.type.calendar_event
@@ -38,5 +39,6 @@ permissions:
   - 'dropzone upload files'
   - 'make smart dates recur'
   - 'search content'
+  - 'use text format basic_html'
   - 'use text format restricted_html'
   - 'view media'
