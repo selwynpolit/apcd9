@@ -436,6 +436,35 @@ function _apc_calendar_normalize_geocoder_address(\Geocoder\Model\Address $addre
 }
 
 /**
+ * Implements hook_link_alter().
+ *
+ * The link field formatters are set to open in a new tab, which for a
+ * mailto: link just leaves an empty browser tab behind the mail app.
+ */
+function apc_calendar_link_alter(array &$variables): void {
+  $url = $variables['url'] ?? NULL;
+  if ($url instanceof \Drupal\Core\Url && $url->isExternal() && stripos($url->getUri(), 'mailto:') === 0) {
+    unset($variables['options']['attributes']['target']);
+  }
+}
+
+/**
+ * Element validate: complete a link typed without a scheme.
+ *
+ * A bare email address becomes mailto:, an explicit mailto: is left alone,
+ * and anything else without a scheme gets https://.
+ */
+function apc_calendar_prefix_url_scheme(array &$element, FormStateInterface $form_state): void {
+  $value = trim((string) ($element['#value'] ?? ''));
+  if ($value !== '' && !str_contains($value, '://') && stripos($value, 'mailto:') !== 0) {
+    $value = preg_match('/^[^\s@\/]+@[^\s@\/]+\.[^\s@\/]+$/', $value)
+      ? 'mailto:' . $value
+      : 'https://' . ltrim($value, '/');
+  }
+  $element['#value'] = $value;
+}
+
+/**
  * Implements hook_form_FORM_ID_alter() for node_calendar_event_form (add).
  *
  * @see _apc_calendar_calendar_event_form_alter()
@@ -907,6 +936,22 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
         ':input[name="field_virtual[value]"]' => ['checked' => TRUE],
       ],
     ];
+  }
+
+  // Forgive a missing "https://" on the two link fields. The widget's
+  // #type 'url' box is validated by the browser (type="url") before Drupal
+  // ever sees the value, so it has to become a plain text input; the scheme
+  // is then added server-side, ahead of the widget's own validator.
+  foreach (['field_event_url', 'field_organizer'] as $link_field) {
+    if (isset($form[$link_field]['widget'][0]['uri'])) {
+      $uri = &$form[$link_field]['widget'][0]['uri'];
+      $uri['#type'] = 'textfield';
+      $uri['#attributes']['inputmode'] = 'url';
+      $uri['#attributes']['autocapitalize'] = 'none';
+      $uri['#description'] = t('A web address (such as example.com) or an email address (such as info@example.com). The https:// or mailto: part is added for you.');
+      array_unshift($uri['#element_validate'], 'apc_calendar_prefix_url_scheme');
+      unset($uri);
+    }
   }
 
   // Show the curator a ready-to-enter local end date for the source
