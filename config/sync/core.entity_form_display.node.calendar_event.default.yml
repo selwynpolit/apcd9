@@ -13,6 +13,7 @@ dependencies:
     - field.field.node.calendar_event.field_import_recurrence_raw
     - field.field.node.calendar_event.field_import_state
     - field.field.node.calendar_event.field_location
+    - field.field.node.calendar_event.field_organizer
     - field.field.node.calendar_event.field_tags
     - field.field.node.calendar_event.field_virtual
     - node.type.calendar_event
@@ -119,6 +120,14 @@ content:
       match_limit: 10
       size: 60
       placeholder: 'Start typing a venue name…'
+    third_party_settings: {  }
+  field_organizer:
+    type: link_default
+    weight: 7
+    region: content
+    settings:
+      placeholder_url: 'https://'
+      placeholder_title: 'Organization name'
     third_party_settings: {  }
   field_tags:
     type: entity_reference_autocomplete_tags

@@ -11,8 +11,10 @@ dependencies:
     - field.field.node.calendar_event.field_event_source
     - field.field.node.calendar_event.field_event_url
     - field.field.node.calendar_event.field_import_location_raw
+    - field.field.node.calendar_event.field_import_recurrence_raw
     - field.field.node.calendar_event.field_import_state
     - field.field.node.calendar_event.field_location
+    - field.field.node.calendar_event.field_organizer
     - field.field.node.calendar_event.field_tags
     - field.field.node.calendar_event.field_virtual
     - node.type.calendar_event
@@ -88,6 +90,18 @@ content:
       link: false
     third_party_settings: {  }
     weight: 3
+    region: content
+  field_organizer:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: _blank
+    third_party_settings: {  }
+    weight: 6
     region: content
   field_tags:
     type: entity_reference_label

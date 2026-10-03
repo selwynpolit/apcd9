@@ -118,6 +118,26 @@
     </div>
   {% endif %}
 
+  {# Imported events are credited through event_source_label below instead,
+     so an organizer card on those would be a second, competing attribution. #}
+  {% if not event_source_label and not node.field_organizer.isEmpty %}
+    <div class="apc-location-card">
+      <p class="apc-info-card__label">{{ 'Organizer'|t }}</p>
+      {{ content.field_organizer }}
+    </div>
+  {% endif %}
+
+  {# Virtual events already show field_event_url inside the online badge
+     above -- this covers the in-person case, where a secondary link (a
+     ticket page, a registration form, the organizer's event listing) has
+     nowhere else on the page to appear. #}
+  {% if not node.field_virtual.value and not node.field_event_url.isEmpty %}
+    <div class="apc-location-card">
+      <p class="apc-info-card__label">{{ 'Event website'|t }}</p>
+      {{ content.field_event_url }}
+    </div>
+  {% endif %}
+
   {% if event_source_label %}
     <p class="apc-detail__source">
       {% if event_source_url %}

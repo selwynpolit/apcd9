@@ -372,6 +372,12 @@
   box-shadow: var(--shadow-md);
 }
 
+/* The Location, Organizer and Event website cards sit directly after one
+   another with no wrapper, so give stacked cards breathing room. */
+.apc-location-card + .apc-location-card {
+  margin-block-start: var(--sp2);
+}
+
 /* .apc-location-card__photos/__photo (thumbnail row that opens the
    lightbox) live in css/components/gallery.css -- apc_brown/gallery, shared
    with the event popup's own location card (see

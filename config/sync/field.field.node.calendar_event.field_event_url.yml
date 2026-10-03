@@ -12,7 +12,7 @@ field_name: field_event_url
 entity_type: node
 bundle: calendar_event
 label: 'Event URL'
-description: 'Optional link to the event, such as a Zoom or livestream URL.'
+description: 'Optional link related to the event, such as a Zoom or livestream URL for an online event, or a registration/ticket page or event website for an in-person one.'
 required: false
 translatable: true
 default_value: {  }

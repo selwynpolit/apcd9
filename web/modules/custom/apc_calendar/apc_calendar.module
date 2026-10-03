@@ -888,7 +888,7 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
   }
 
   // The online-only checkbox is available to everyone, anonymous included —
-  // no #access gating. #states below only ever hides these elements in the
+  // no #access gating. #states below only ever hides field_location in the
   // browser; it does not stop a POST that includes both a checked box and a
   // location value. Location itself is optional either way (not just for
   // virtual events) — apc_calendar_node_presave() still clears it whenever
@@ -896,15 +896,15 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
   // location, but a non-virtual event with no location is a valid,
   // supported state (e.g. a location still being worked out) rather than a
   // validation error.
-  if (isset($form['field_location']) && isset($form['field_event_url'])) {
+  //
+  // field_event_url is NOT gated here — an in-person event can carry a
+  // secondary link just as legitimately as a virtual one (a ticket page, a
+  // registration form, the organizer's event listing), so it stays visible
+  // regardless of field_virtual's state.
+  if (isset($form['field_location'])) {
     $form['field_location']['#states'] = [
       'invisible' => [
         ':input[name="field_virtual[value]"]' => ['checked' => TRUE],
-      ],
-    ];
-    $form['field_event_url']['#states'] = [
-      'invisible' => [
-        ':input[name="field_virtual[value]"]' => ['checked' => FALSE],
       ],
     ];
   }

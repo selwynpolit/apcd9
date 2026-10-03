@@ -1,0 +1,23 @@
+uuid: 0049cbfd-5e71-42f7-8a55-3366859f1f44
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_organizer
+    - node.type.calendar_event
+  module:
+    - link
+id: node.calendar_event.field_organizer
+field_name: field_organizer
+entity_type: node
+bundle: calendar_event
+label: Organizer
+description: 'Optional. The group or person putting on the event (not a link to join or buy tickets — use Event URL for that). Enter their website, and if you like, their name as the link text, e.g. "Indivisible Austin".'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  title: 1
+  link_type: 16
+field_type: link
