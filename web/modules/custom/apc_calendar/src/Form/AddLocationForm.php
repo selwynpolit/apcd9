@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\apc_calendar\Form;
 
-use Drupal\apc_calendar\Plugin\EntityReferenceSelection\SessionLocationSelection;
 use Drupal\apc_calendar\UsStates;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CloseModalDialogCommand;
@@ -14,7 +13,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\RendererInterface;
-use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\taxonomy\Entity\Term;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -27,15 +25,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * else about the location is an admin's job at approval time.
  *
  * On success the term is created (unpublished, via
- * apc_calendar_taxonomy_term_presave()), recorded as referenceable for this
- * session, and written straight into the event form's Location autocomplete so
- * the submitter can carry on without losing anything they had typed.
+ * apc_calendar_taxonomy_term_presave()) and written straight into the event
+ * form's Location autocomplete so the submitter can carry on without losing
+ * anything they had typed.
  */
 final class AddLocationForm extends FormBase {
 
   public function __construct(
     protected EntityTypeManagerInterface $entityTypeManager,
-    protected PrivateTempStoreFactory $tempStoreFactory,
     protected RendererInterface $renderer,
   ) {}
 
@@ -45,7 +42,6 @@ final class AddLocationForm extends FormBase {
   public static function create(ContainerInterface $container): self {
     return new self(
       $container->get('entity_type.manager'),
-      $container->get('tempstore.private'),
       $container->get('renderer'),
     );
   }
@@ -171,10 +167,11 @@ final class AddLocationForm extends FormBase {
       return;
     }
 
-    // Cheap duplicate guard. Unapproved locations are invisible in the
-    // autocomplete, so without this a submitter who cannot find "Springdale
-    // Community Hub" adds a second one — and the vocabulary fragments exactly
-    // where it matters. Matching includes unpublished terms on purpose.
+    // Cheap duplicate guard. Matching includes unpublished terms on purpose:
+    // a submitter who did not spot "Springdale Community Hub" in the
+    // autocomplete (it is listed with a "pending" marker while it awaits
+    // approval) would otherwise add a second one, and the vocabulary fragments
+    // exactly where it matters.
     $existing = $this->entityTypeManager->getStorage('taxonomy_term')
       ->getQuery()
       ->accessCheck(FALSE)
@@ -184,7 +181,7 @@ final class AddLocationForm extends FormBase {
       ->execute();
 
     if ($existing) {
-      $form_state->setErrorByName('name', $this->t('We already have a location with that name. Close this window and start typing it in the Location field — if it does not appear, it is waiting for approval and an organiser will sort it out.'));
+      $form_state->setErrorByName('name', $this->t('We already have a location with that name. Close this window and start typing it in the Location field. If it is marked "pending", it is still waiting for approval, but you can select it.'));
     }
   }
 
@@ -226,13 +223,9 @@ final class AddLocationForm extends FormBase {
     // Saved unpublished by apc_calendar_taxonomy_term_presave().
     $term->save();
 
-    // Make this one term referenceable for the rest of this session, so the
-    // event form's validation accepts it despite being unpublished.
-    $this->rememberTerm((int) $term->id());
-
     // The autocomplete widget round-trips its value as "Label (id)".
     //
-    // The " - pending" marker matches what SessionLocationSelection puts in the
+    // The " - pending" marker matches what PendingLocationSelection puts in the
     // dropdown for unpublished locations, so a freshly added venue reads the
     // same whether it was picked from the list or just created here. It is
     // display only — EntityAutocomplete stores the extracted ID, not this text.
@@ -246,20 +239,6 @@ final class AddLocationForm extends FormBase {
       ->addCommand(new CloseModalDialogCommand())
       ->addCommand(new InvokeCommand('[data-apc-location-autocomplete]', 'val', [$value]))
       ->addCommand(new InvokeCommand('[data-apc-location-autocomplete]', 'trigger', ['change']));
-  }
-
-  /**
-   * Records the new term ID in this session's private tempstore.
-   *
-   * @see \Drupal\apc_calendar\Plugin\EntityReferenceSelection\SessionLocationSelection
-   */
-  private function rememberTerm(int $tid): void {
-    $store = $this->tempStoreFactory->get(SessionLocationSelection::COLLECTION);
-    $tids = $store->get(SessionLocationSelection::KEY) ?: [];
-    if (!in_array($tid, $tids, TRUE)) {
-      $tids[] = $tid;
-      $store->set(SessionLocationSelection::KEY, $tids);
-    }
   }
 
 }

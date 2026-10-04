@@ -27,9 +27,9 @@ use Drupal\taxonomy\TermInterface;
  * Implements hook_ENTITY_TYPE_presave() for taxonomy_term entities.
  *
  * Locations terms auto-created by anonymous event submitters are saved
- * unpublished so they stay out of the reference autocomplete (core's
- * TermSelection::buildEntityQuery() filters on status for non-admins) and off
- * the public term page until an admin publishes them.
+ * unpublished so they stay off the public location pages until an admin
+ * publishes them. They are still selectable for events, shown as "pending" in
+ * the autocomplete (see PendingLocationSelection).
  *
  * Gated on the 'bypass location approval' permission rather than
  * !isAnonymous(). Until the event_contributor/event_manager roles existed,
