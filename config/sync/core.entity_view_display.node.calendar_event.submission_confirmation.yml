@@ -19,6 +19,7 @@ dependencies:
     - field.field.node.calendar_event.field_virtual
     - node.type.calendar_event
   module:
+    - apc_calendar
     - link
     - smart_date_recur
     - text
@@ -84,7 +85,7 @@ content:
     weight: 5
     region: content
   field_location:
-    type: entity_reference_label
+    type: apc_unrestricted_label
     label: above
     settings:
       link: false

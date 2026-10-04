@@ -1,0 +1,3 @@
+field.formatter.settings.apc_unrestricted_label:
+  type: field.formatter.settings.entity_reference_label
+  label: 'Label (including unpublished) format settings'
