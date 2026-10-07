@@ -1,13 +1,22 @@
 uuid: f6e3c930-0b9d-4ac4-8e5a-b8e988c3abd0
 langcode: en
 status: true
-dependencies: {  }
+dependencies:
+  module:
+    - apc_calendar
 _core:
   default_config_hash: oz6NyPDAB4HB6N9hgH2LwNVtCd-sXbMG1fbn5KsRIDI
 name: 'Restricted HTML'
 format: restricted_html
 weight: 1
 filters:
+  apc_calendar_filter_bare_domain_links:
+    id: apc_calendar_filter_bare_domain_links
+    provider: apc_calendar
+    status: true
+    weight: 1
+    settings:
+      filter_url_length: 72
   filter_autop:
     id: filter_autop
     provider: filter

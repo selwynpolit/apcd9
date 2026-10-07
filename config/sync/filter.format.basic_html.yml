@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   module:
+    - apc_calendar
     - editor
     - media
 _core:
@@ -11,6 +12,13 @@ name: 'Basic HTML'
 format: basic_html
 weight: 0
 filters:
+  apc_calendar_filter_bare_domain_links:
+    id: apc_calendar_filter_bare_domain_links
+    provider: apc_calendar
+    status: true
+    weight: 1
+    settings:
+      filter_url_length: 72
   editor_file_reference:
     id: editor_file_reference
     provider: editor

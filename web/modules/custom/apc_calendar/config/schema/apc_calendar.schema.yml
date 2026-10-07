@@ -1,3 +1,11 @@
 field.formatter.settings.apc_unrestricted_label:
   type: field.formatter.settings.entity_reference_label
   label: 'Label (including unpublished) format settings'
+
+filter_settings.apc_calendar_filter_bare_domain_links:
+  type: mapping
+  label: 'Bare domain links filter'
+  mapping:
+    filter_url_length:
+      type: integer
+      label: 'URL length'
