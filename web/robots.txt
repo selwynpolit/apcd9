@@ -76,3 +76,7 @@ Disallow: /index.php/user/login
 Disallow: /index.php/user/logout
 Disallow: /index.php/media/oembed
 Disallow: /index.php/*/media/oembed
+
+
+# Sitemap (Simple XML Sitemap)
+Sitemap: https://www.austinprogressivecalendar.com/sitemap.xml

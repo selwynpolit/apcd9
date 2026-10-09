@@ -563,6 +563,16 @@ there. Do them as one change, not three.
 - [ ] Seed 15–30 starter tags.
 - [ ] Confirm asset-packagist is reachable from GreenGeeks before the first production
       `composer install`.
+- [ ] **Submit the sitemap to Google Search Console and Bing Webmaster Tools** (one-time, after the
+      metatag/sitemap/IndexNow work deploys). URL: `https://www.austinprogressivecalendar.com/sitemap.xml`.
+      Search Console → Sitemaps → add `sitemap.xml`. Bing Webmaster Tools → Sitemaps (or just import the
+      site from Search Console). No periodic resubmission: crawlers re-fetch it on their own, it is
+      advertised in `robots.txt`, and it regenerates on cron. Google does **not** support IndexNow, so it
+      finds new events only through the sitemap; Bing and the other IndexNow engines are told the moment
+      something is published (`IndexNowOnPublishSubscriber`). After deploying, also: confirm the next
+      approved event updates `\Drupal::state()->get('simple_sitemap_engines.index_now.last')` on prod, run
+      one event URL through Google's Rich Results Test, and check Search Console's Sitemaps page for
+      "Discovered URLs" in a week or two.
 - [ ] Delete smoke-test content (node 125, term 97).
 - [x] Place blocks into the APC Brown regions — Olivero's `config/` was deliberately not copied
       during the fork, so region assignments do not carry over. Already done, just uncounted:

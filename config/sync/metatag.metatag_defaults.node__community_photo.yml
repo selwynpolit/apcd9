@@ -1,0 +1,12 @@
+uuid: 8a539df4-7b12-4c71-9025-767d631f70d6
+langcode: en
+status: true
+dependencies: {  }
+id: node__community_photo
+label: 'Content: Community photo'
+tags:
+  description: '[node:apc-seo-description]'
+  og_description: '[node:apc-seo-description]'
+  og_image: '[node:apc-seo-image]'
+  twitter_cards_description: '[node:apc-seo-description]'
+  twitter_cards_image: '[node:apc-seo-image]'

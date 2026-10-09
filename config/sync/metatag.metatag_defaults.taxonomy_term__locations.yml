@@ -1,0 +1,17 @@
+uuid: a42d85a3-c8ed-49df-bf71-73039fd2000f
+langcode: en
+status: true
+dependencies: {  }
+id: taxonomy_term__locations
+label: 'Taxonomy term: Locations'
+tags:
+  description: '[term:apc-seo-description]'
+  og_description: '[term:apc-seo-description]'
+  og_image: '[term:apc-seo-image]'
+  og_title: '[term:name]'
+  og_type: place
+  og_url: '[term:url]'
+  twitter_cards_description: '[term:apc-seo-description]'
+  twitter_cards_image: '[term:apc-seo-image]'
+  twitter_cards_page_url: '[term:url]'
+  twitter_cards_title: '[term:name]'

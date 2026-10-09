@@ -68,10 +68,12 @@
         "drupal/leaflet": "^10.4",
         "drupal/linkchecker": "^2",
         "drupal/linkit": "^7.0",
+        "drupal/metatag": "^2.2",
         "drupal/module_filter": "^5.0",
         "drupal/pathauto": "^1.8",
         "drupal/rabbit_hole": "^2",
         "drupal/redirect": "^1.6",
+        "drupal/schema_metatag": "^3.1",
         "drupal/seckit": "^2.0",
         "drupal/select2_all": "^1.0@alpha",
         "drupal/shield": "^1.4",
@@ -119,6 +121,11 @@
         "drupal-scaffold": {
             "locations": {
                 "web-root": "web/"
+            },
+            "file-mapping": {
+                "[web-root]/robots.txt": {
+                    "append": "scaffold/robots-append.txt"
+                }
             }
         },
         "installer-types": ["npm-asset"],

@@ -7,6 +7,7 @@
 
 use Drupal\apc_calendar\Controller\EventSubmittedController;
 use Drupal\apc_calendar\Controller\PhotoSubmittedController;
+use Drupal\apc_calendar\SeoTokens;
 use Drupal\apc_calendar\UsStates;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Component\Serialization\Json;
@@ -17,6 +18,7 @@ use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\Element\EntityAutocomplete;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\file\FileInterface;
@@ -1570,8 +1572,14 @@ function _apc_calendar_utc_midnight_to_local(int $utc_timestamp): int {
  * Notify the site email address when an anonymous visitor submits an event, so
  * the pending queue at /admin/content?type=calendar_event&status=2 does not sit
  * unreviewed simply because nobody knew it had items in it.
+ *
+ * An entity saved already-published (a trusted contributor's event) is
+ * announced to IndexNow instead; see IndexNowOnPublishSubscriber.
  */
 function apc_calendar_node_insert(NodeInterface $node): void {
+  if ($node->isPublished()) {
+    \Drupal::service('apc_calendar.index_now_on_publish')->queue($node);
+  }
   if ($node->bundle() !== 'calendar_event' || $node->isPublished()) {
     return;
   }
@@ -2302,3 +2310,94 @@ function _apc_calendar_add_focal_point_explanation(array &$form, FormStateInterf
 }
 
 
+
+/**
+ * Implements hook_token_info().
+ *
+ * SEO-safe values for the Metatag / Schema.org defaults; see SeoTokens.
+ */
+function apc_calendar_token_info(): array {
+  return [
+    'tokens' => [
+      'node' => [
+        'apc-seo-description' => [
+          'name' => t('SEO description'),
+          'description' => t('Plain-text summary of the content (body summary, or photo caption), or the site-wide description if there is none.'),
+        ],
+        'apc-seo-image' => [
+          'name' => t('SEO image'),
+          'description' => t('Absolute URL of the content\'s image, or the site-wide share image if there is none.'),
+        ],
+        'apc-seo-location-type' => [
+          'name' => t('SEO location type'),
+          'description' => t('"VirtualLocation" for online events, otherwise "Place".'),
+        ],
+        'apc-seo-location-url' => [
+          'name' => t('SEO location URL'),
+          'description' => t('For online events, the event link; otherwise the venue page.'),
+        ],
+        'apc-seo-attendance-mode' => [
+          'name' => t('SEO attendance mode'),
+          'description' => t('The schema.org event attendance mode URL (online or offline).'),
+        ],
+      ],
+      'term' => [
+        'apc-seo-description' => [
+          'name' => t('SEO description'),
+          'description' => t('Plain-text notes or description, or a sentence built from the term name.'),
+        ],
+        'apc-seo-image' => [
+          'name' => t('SEO image'),
+          'description' => t('Absolute URL of the term\'s image, or the site-wide share image if there is none.'),
+        ],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function apc_calendar_tokens(string $type, array $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata): array {
+  if ($type === 'node' && ($data['node'] ?? NULL) instanceof NodeInterface) {
+    return SeoTokens::nodeTokens($data['node'], $tokens, $bubbleable_metadata);
+  }
+  if ($type === 'term' && ($data['term'] ?? NULL) instanceof TermInterface) {
+    return SeoTokens::termTokens($data['term'], $tokens, $bubbleable_metadata);
+  }
+  return [];
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for node entities.
+ *
+ * Announces an event or photo to IndexNow-aware search engines the moment it
+ * is approved (unpublished -> published). Edits to something already live are
+ * left to the regular sitemap crawl.
+ */
+function apc_calendar_node_update(NodeInterface $node): void {
+  if ($node->isPublished() && !$node->getOriginal()?->isPublished()) {
+    \Drupal::service('apc_calendar.index_now_on_publish')->queue($node);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for taxonomy_term entities.
+ */
+function apc_calendar_taxonomy_term_insert(TermInterface $term): void {
+  if ($term->isPublished()) {
+    \Drupal::service('apc_calendar.index_now_on_publish')->queue($term);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for taxonomy_term entities.
+ *
+ * A new location is saved unpublished and goes live when an admin approves it,
+ * usually together with its event (PublishEventAndLocation).
+ */
+function apc_calendar_taxonomy_term_update(TermInterface $term): void {
+  if ($term->isPublished() && !$term->getOriginal()?->isPublished()) {
+    \Drupal::service('apc_calendar.index_now_on_publish')->queue($term);
+  }
+}

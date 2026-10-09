@@ -35,3 +35,13 @@ services:
     arguments: ['@router.request_context']
     tags:
       - { name: event_subscriber }
+
+  apc_calendar.index_now_on_publish:
+    class: Drupal\apc_calendar\EventSubscriber\IndexNowOnPublishSubscriber
+    arguments:
+      - '@entity_type.manager'
+      - '@config.factory'
+      - '@logger.channel.apc_calendar'
+      - '@?simple_sitemap.engines.index_now_submitter'
+    tags:
+      - { name: event_subscriber }

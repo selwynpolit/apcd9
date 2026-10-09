@@ -1,0 +1,24 @@
+uuid: 12d08f72-84e4-4d4e-9805-b8ccaef20dde
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: 1noCXlegCr5HFehQRF1ViXy1jhU1jZ_sNN99a8Sj5jo
+id: front
+label: 'Front page'
+tags:
+  canonical_url: '[site:url]'
+  description: "Austin's community calendar of progressive, peace, justice, and environmental events — plus local photos and news."
+  og_title: '[site:name]'
+  og_url: '[site:url]'
+  schema_organization_logo: 'a:2:{s:5:"@type";s:11:"ImageObject";s:3:"url";s:54:"[site:url]themes/custom/apc_brown/images/apc-logo4.png";}'
+  schema_organization_name: '[site:name]'
+  schema_organization_type: Organization
+  schema_organization_url: '[site:url]'
+  schema_web_site_name: '[site:name]'
+  schema_web_site_type: WebSite
+  schema_web_site_url: '[site:url]'
+  shortlink: '[site:url]'
+  title: '[site:name] | Progressive events in Austin, Texas'
+  twitter_cards_page_url: '[site:url]'
+  twitter_cards_title: '[site:name]'

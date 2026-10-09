@@ -5,3 +5,27 @@ links:
     path: /
     priority: '1.0'
     changefreq: daily
+  -
+    path: /calendar
+    priority: '0.9'
+    changefreq: daily
+  -
+    path: /calendar/upcoming
+    priority: '0.9'
+    changefreq: daily
+  -
+    path: /photos
+    priority: '0.6'
+    changefreq: weekly
+  -
+    path: /blog
+    priority: '0.5'
+    changefreq: weekly
+  -
+    path: /locations
+    priority: '0.6'
+    changefreq: weekly
+  -
+    path: /contact
+    priority: '0.3'
+    changefreq: monthly

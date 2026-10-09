@@ -1,0 +1,19 @@
+uuid: 20763323-29f4-459b-a420-9c94af6d6f35
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: rpwvgyEURXLz_JjgMCrkS1rUv-0k3L79BpO-ReN7fDI
+id: node
+label: Content
+tags:
+  canonical_url: '[node:url]'
+  description: '[node:apc-seo-description]'
+  og_description: '[node:apc-seo-description]'
+  og_title: '[node:title]'
+  og_type: article
+  og_url: '[node:url]'
+  title: '[node:title] | [site:name]'
+  twitter_cards_description: '[node:apc-seo-description]'
+  twitter_cards_page_url: '[node:url]'
+  twitter_cards_title: '[node:title]'

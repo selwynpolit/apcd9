@@ -1,0 +1,23 @@
+uuid: e0547d85-2752-4e00-b8d1-dd6bedca7861
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: sL588ui1E_8-2c_UupwyYxcqX2OVyMFp3HTLbbFqvPc
+id: global
+label: Global
+tags:
+  canonical_url: '[current-page:url]'
+  description: "Austin's community calendar of progressive, peace, justice, and environmental events — plus local photos and news."
+  og_description: "Austin's community calendar of progressive, peace, justice, and environmental events — plus local photos and news."
+  og_image: '[site:url]themes/custom/apc_brown/images/apc-logo4.png'
+  og_site_name: '[site:name]'
+  og_title: '[current-page:title]'
+  og_type: website
+  og_url: '[current-page:url]'
+  title: '[current-page:title] | [site:name]'
+  twitter_cards_description: "Austin's community calendar of progressive, peace, justice, and environmental events — plus local photos and news."
+  twitter_cards_image: '[site:url]themes/custom/apc_brown/images/apc-logo4.png'
+  twitter_cards_page_url: '[current-page:url]'
+  twitter_cards_title: '[current-page:title]'
+  twitter_cards_type: summary_large_image

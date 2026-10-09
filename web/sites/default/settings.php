@@ -947,6 +947,12 @@ if (getenv('IS_DDEV_PROJECT') == 'true') {
   // itself rather than claim to be production traffic.
   $config['geocoder.geocoder_provider.nominatim']['configuration']['userAgent'] = 'apc3.ddev.site';
   $config['geocoder.geocoder_provider.nominatim']['configuration']['referer'] = 'apc3.ddev.site';
+
+  // IndexNow tells Bing et al. "this URL is live" when an event/photo/location
+  // is published (apc_calendar's IndexNowOnPublishSubscriber). A *.ddev.site
+  // URL is meaningless to a search engine -- and the key file isn't served
+  // from this host, so it would be rejected anyway -- so don't send it.
+  $config['simple_sitemap_engines.settings']['index_now_enabled'] = FALSE;
 }
 elseif (str_contains($app_root, '/apcdev/')) {
   $config['config_split.config_split.dev']['status'] = TRUE;
@@ -956,6 +962,10 @@ elseif (str_contains($app_root, '/apcdev/')) {
 
   $config['geocoder.geocoder_provider.nominatim']['configuration']['userAgent'] = 'dev.austinprogressivecalendar.com';
   $config['geocoder.geocoder_provider.nominatim']['configuration']['referer'] = 'dev.austinprogressivecalendar.com';
+
+  // Staging content shouldn't be announced to search engines; see the same
+  // override in the DDEV branch above.
+  $config['simple_sitemap_engines.settings']['index_now_enabled'] = FALSE;
 }
 elseif (str_contains($app_root, '/d9/')) {
   $config['environment_indicator.indicator']['name'] = 'PRODUCTION';
