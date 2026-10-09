@@ -953,6 +953,11 @@ if (getenv('IS_DDEV_PROJECT') == 'true') {
   // URL is meaningless to a search engine -- and the key file isn't served
   // from this host, so it would be rejected anyway -- so don't send it.
   $config['simple_sitemap_engines.settings']['index_now_enabled'] = FALSE;
+
+  // config/sync pins the sitemap's base URL to production, so that no way of
+  // generating it (web cron, or drush with the wrong --uri) can emit another
+  // host; local should list its own URLs instead.
+  $config['simple_sitemap.settings']['base_url'] = 'https://apc3.ddev.site';
 }
 elseif (str_contains($app_root, '/apcdev/')) {
   $config['config_split.config_split.dev']['status'] = TRUE;
@@ -966,6 +971,7 @@ elseif (str_contains($app_root, '/apcdev/')) {
   // Staging content shouldn't be announced to search engines; see the same
   // override in the DDEV branch above.
   $config['simple_sitemap_engines.settings']['index_now_enabled'] = FALSE;
+  $config['simple_sitemap.settings']['base_url'] = 'https://dev.austinprogressivecalendar.com';
 }
 elseif (str_contains($app_root, '/d9/')) {
   $config['environment_indicator.indicator']['name'] = 'PRODUCTION';
