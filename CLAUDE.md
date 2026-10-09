@@ -132,6 +132,50 @@ drush cim -y
 drush cr
 ```
 
+### Apex → www redirect lives outside this repo
+
+The non-www → www redirect is **not** in `web/.htaccess` (its `www` rules there are commented out) and
+**not** in Cloudflare. It is in `/home/austinpr/public_html/.htaccess` on GreenGeeks — the parent of
+`d9/`, which also routes the `www` host into `d9/web/`. That file is untracked, so `git pull` never
+touches it. The apex DNS record points straight at the GreenGeeks origin (DNS-only, not proxied);
+only `www` goes through Cloudflare, so Cloudflare rules can't affect the apex.
+
+The rule must keep the path and force https:
+
+```apache
+RewriteCond %{HTTP_HOST} ^austinprogressivecalendar\.com$ [NC]
+RewriteRule ^(.*)$ https://www.austinprogressivecalendar.com/$1 [R=301,L]
+```
+
+The old rule hardcoded `http://www.austinprogressivecalendar.com` (no `$1`), so every apex URL —
+including the Google Search Console verification file — landed on the homepage over http. Fixed
+2026-10-07. Check with
+`curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://austinprogressivecalendar.com/<path>`
+(expect `301 https://www.austinprogressivecalendar.com/<path>`). Back the file up before editing
+(`.htaccess_bk*` pattern).
+
+This is the current file as of 10-7-26:
+```.sh
+# 10-7-26: fix redirect issue
+# Redirect apex to https://www, preserving path (and query, appended automatically).
+# Cloudflare doesn't handle the apex (DNS-only), so this is the only redirect for it.
+RewriteEngine on
+RewriteCond %{HTTP_HOST} ^austinprogressivecalendar\.com$ [NC]
+RewriteRule ^(.*)$ https://www.austinprogressivecalendar.com/$1 [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^www\.austinprogressivecalendar\.com$ [NC]
+RewriteRule ^$ d9/web/index.php [L]
+RewriteCond %{HTTP_HOST} ^www\.austinprogressivecalendar\.com$ [NC]
+RewriteCond %{DOCUMENT_ROOT}/d9/web%{REQUEST_URI} -f
+RewriteRule .* d9/web/$0 [L]
+RewriteCond %{HTTP_HOST} ^www\.austinprogressivecalendar\.com$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule .* d9/web/index.php?q=$0 [QSA]
+```
+
+
+
 ## Git workflow
 
 Gitflow-style: work happens on `develop`, then merges into `main`; `main` is what gets deployed.
@@ -563,6 +607,22 @@ there. Do them as one change, not three.
 - [ ] Seed 15–30 starter tags.
 - [ ] Confirm asset-packagist is reachable from GreenGeeks before the first production
       `composer install`.
+- [ ] **Update the "Climate Good News and Bad News" page** (node 39,
+      `/climate-good-news-and-bad-news`; renamed from "Climate Crisis News" 2026-10-09). Currently a
+      ~115-character landing page ("Select a month below to read more") that links to the two monthly
+      pages `climate-news-may-2021` and `climate-news-june-2021` — nothing newer than June 2021, and thin
+      enough to be a weak page for search. User will enlist Claude's help on the content/structure later;
+      decide first whether it stays a hand-edited `page` or becomes a proper listing (e.g. a view or a
+      dedicated content type) so new months don't need a new hand-made page each time.
+- [ ] Delete smoke-test content (node 125, term 97).
+- [ ] Force http → https for `www` (low priority). `http://www.austinprogressivecalendar.com/` still
+      serves 200 over plain http; only the apex redirect (see
+      [Apex → www redirect](#apex--www-redirect-lives-outside-this-repo)) upgrades to https. HSTS is
+      already sent on the https side, so returning browsers upgrade themselves — this only affects
+      first-time visitors, crawlers, and old http links. Preferred fix: Cloudflare → SSL/TLS → Edge
+      Certificates → "Always Use HTTPS" (`www` is the only proxied host). Confirm SSL mode is
+      "Full (strict)" first, and leave GreenGeeks' "Force HTTPS Redirect" off to avoid a loop. Verify
+      with `curl -sI http://www.austinprogressivecalendar.com/` → expect a 301 to https.
 - [ ] **Submit the sitemap to Google Search Console and Bing Webmaster Tools** (one-time, after the
       metatag/sitemap/IndexNow work deploys). URL: `https://www.austinprogressivecalendar.com/sitemap.xml`.
       Search Console → Sitemaps → add `sitemap.xml`. Bing Webmaster Tools → Sitemaps (or just import the
@@ -573,7 +633,6 @@ there. Do them as one change, not three.
       approved event updates `\Drupal::state()->get('simple_sitemap_engines.index_now.last')` on prod, run
       one event URL through Google's Rich Results Test, and check Search Console's Sitemaps page for
       "Discovered URLs" in a week or two.
-- [ ] Delete smoke-test content (node 125, term 97).
 - [x] Place blocks into the APC Brown regions — Olivero's `config/` was deliberately not copied
       during the fork, so region assignments do not carry over. Already done, just uncounted:
       every `block.block.apc_brown_*` placement exists, is enabled, and sits in a sensible region
