@@ -1427,25 +1427,38 @@ function apc_calendar_node_access(NodeInterface $node, string $op, AccountInterf
  * Implements hook_entity_operation().
  *
  * Adds a one-click "Publish" operation to each unpublished community_photo,
- * shown wherever node operations render -- notably the moderation queue at
- * /admin/content/photos. It links to apc_calendar.publish_photo, which flips
- * the node published and returns to the list, versus the select-then-apply of
- * the bulk publish action. Weighted first so it is the dropbutton's primary
- * (single-click) action. Gated on the same node.update access the route
- * enforces, so it never appears where following it would 403.
+ * calendar_event or locations term, shown wherever operations render --
+ * notably the moderation queues at /admin/content/photos,
+ * /admin/content/pending-events and /admin/content/locations-pending.
+ * It links to a publish route, versus the select-then-apply of the bulk
+ * publish action. For an event that route publishes the event and, if still
+ * pending, its location (see PublishEventAndLocation). Weighted first so it is
+ * the dropbutton's primary (single-click) action. Gated on the same update
+ * access the route enforces, so it never appears where following it would 403.
  */
 function apc_calendar_entity_operation(EntityInterface $entity): array {
-  if ($entity->getEntityTypeId() !== 'node' || $entity->bundle() !== 'community_photo') {
+  // Keyed by entity type, then bundle: [operation key, route, route parameter].
+  $routes = [
+    'node' => [
+      'community_photo' => ['publish_photo', 'apc_calendar.publish_photo', 'node'],
+      'calendar_event' => ['publish_event', 'apc_calendar.publish_event_and_location', 'node'],
+    ],
+    'taxonomy_term' => [
+      'locations' => ['publish_location', 'apc_calendar.publish_location', 'taxonomy_term'],
+    ],
+  ];
+  $match = $routes[$entity->getEntityTypeId()][$entity->bundle()] ?? NULL;
+  // This hook runs for every entity type, so check the type before calling
+  // isPublished(); not every entity has one.
+  if ($match === NULL || $entity->isPublished() || !$entity->access('update')) {
     return [];
   }
-  if ($entity->isPublished() || !$entity->access('update')) {
-    return [];
-  }
+  [$key, $route, $parameter] = $match;
   return [
-    'publish_photo' => [
+    $key => [
       'title' => t('Publish'),
       'weight' => -10,
-      'url' => Url::fromRoute('apc_calendar.publish_photo', ['node' => $entity->id()]),
+      'url' => Url::fromRoute($route, [$parameter => $entity->id()]),
     ],
   ];
 }

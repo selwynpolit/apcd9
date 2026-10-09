@@ -107,6 +107,20 @@ apc_calendar.publish_event_and_location:
       node:
         type: 'entity:node'
 
+apc_calendar.publish_location:
+  path: '/calendar/location/{taxonomy_term}/publish'
+  defaults:
+    _controller: '\Drupal\apc_calendar\Controller\PublishEventAndLocationController::publishLocation'
+  requirements:
+    # Plain term update access -- the same gate the event page's button checks.
+    _entity_access: 'taxonomy_term.update'
+    taxonomy_term: \d+
+    _csrf_token: 'TRUE'
+  options:
+    parameters:
+      taxonomy_term:
+        type: 'entity:taxonomy_term'
+
 apc_calendar.unpublish_event:
   path: '/calendar/event/{node}/unpublish'
   defaults:

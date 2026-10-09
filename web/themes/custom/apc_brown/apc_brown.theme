@@ -290,25 +290,47 @@ function apc_brown_preprocess_node(&$variables) {
     if ($variables['node']->hasField('field_location') && !$variables['node']->get('field_location')->isEmpty()) {
       $term = $variables['node']->get('field_location')->entity;
 
-      // A location term auto-created by an anonymous submitter stays
-      // unpublished until an admin approves it (apc_calendar_taxonomy_term_
-      // presave()). The event itself can already be published -- e.g. a
-      // manager approved the event but hasn't gotten to the location yet --
-      // so an anonymous visitor can land here with a real term reference
-      // that entity_reference_label's own access check then silently
-      // renders as nothing (content.field_location evaluates to an empty
-      // but still-truthy render array, leaving a "Location" card with a
-      // blank value). Show "Pending" instead of leaving that card looking
-      // broken, without revealing the actual unapproved venue name to a
-      // visitor who has no access to it.
-      if ($term !== NULL && !$term->isPublished() && \Drupal::currentUser()->isAnonymous()) {
+      // A location term auto-created by a submitter stays unpublished until
+      // an admin approves it (apc_calendar_taxonomy_term_presave()), but the
+      // event can already be published. Flag it for everyone, so the card can
+      // carry an "Unapproved" label whoever is looking.
+      if ($term !== NULL && !$term->isPublished()) {
         $variables['location_pending'] = TRUE;
       }
-      // Same access gate as the field formatter itself would apply --
-      // skip building this from a term the current viewer has no access to,
-      // rather than leaking its photos/link past the "Pending" card above.
-      elseif ($term !== NULL && $term->access('view')) {
+
+      // One-click "Publish location" for a reviewer, when the venue is still
+      // pending. Gated on the term's own update access, which is also what the
+      // route requires. Returns to this event page afterwards. The URL embeds
+      // a per-session CSRF token and its visibility depends on permissions,
+      // hence the cache contexts.
+      if ($term !== NULL && !$term->isPublished() && $term->access('update')) {
+        $variables['publish_location_url'] = Url::fromRoute('apc_calendar.publish_location', [
+          'taxonomy_term' => $term->id(),
+        ], [
+          'query' => ['destination' => $variables['node']->toUrl()->toString()],
+        ])->toString();
+        $variables['#cache']['contexts'][] = 'user.permissions';
+        $variables['#cache']['contexts'][] = 'session';
+      }
+
+      // Same access gate as the field formatter itself would apply -- skip
+      // building the photo row from a term the current viewer has no access to.
+      if ($term !== NULL && $term->access('view')) {
         $variables['location_gallery'] = _apc_brown_build_gallery($term, 'field_location_image');
+      }
+      // A pending term the viewer cannot view (anonymous, plain contributors):
+      // entity_reference_entity_view would silently render nothing for it, so
+      // render the same location_reference card ourselves, with its links
+      // turned off so nobody is sent to an unvetted website or map. The
+      // taxonomy-term preprocess below does the link stripping, from the same
+      // access check. Its render cache is split off from the one staff
+      // renderings (which keep their links) share: a distinct cache key, and
+      // user.permissions so it can't be served across access levels.
+      elseif ($term !== NULL && !$term->isPublished()) {
+        $card = \Drupal::entityTypeManager()->getViewBuilder('taxonomy_term')->view($term, 'location_reference');
+        $card['#cache']['keys'][] = 'apc_pending_nolinks';
+        $card['#cache']['contexts'][] = 'user.permissions';
+        $variables['location_pending_card'] = $card;
       }
     }
 
@@ -377,6 +399,22 @@ function apc_brown_preprocess_taxonomy_term(&$variables) {
     // block_past) specifically so they could be embedded here.
     $variables['upcoming_events'] = \Drupal\views\Views::getView('location_page')?->buildRenderable('block_upcoming', [$term->id()]);
     $variables['past_events'] = \Drupal\views\Views::getView('location_page')?->buildRenderable('block_past', [$term->id()]);
+  }
+  elseif ($term->bundle() === 'locations' && $variables['view_mode'] === 'location_reference') {
+    // Compact card on the event page. A pending location the viewer cannot
+    // view is shown anyway (see apc_brown_preprocess_node()), but as plain
+    // text: the template drops the name link, the directions links and
+    // turns the website into plain text. Staff who can view it keep the
+    // links, so a reviewer can still check the address and website.
+    $variables['pending_nolinks'] = !$term->isPublished() && !$term->access('view');
+    if ($variables['pending_nolinks']) {
+      $website = $term->hasField('field_website') ? $term->get('field_website')->uri : NULL;
+      $variables['website_text'] = $website ? (string) $website : NULL;
+      // basic_html notes can carry <a> tags; keep the text, drop the links.
+      $variables['notes_text'] = isset($variables['content']['field_notes'])
+        ? ['#markup' => \Drupal\Core\Render\Markup::create(strip_tags((string) \Drupal::service('renderer')->renderInIsolation($variables['content']['field_notes']), '<p><br><strong><em><b><i><ul><ol><li>'))]
+        : NULL;
+    }
   }
   elseif (in_array($term->bundle(), ['tags', 'photo_categories'], TRUE) && $variables['view_mode'] === 'full') {
     // A tags or photo_categories term page rendered no content at all --

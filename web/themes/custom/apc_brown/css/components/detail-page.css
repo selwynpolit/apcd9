@@ -161,6 +161,11 @@
   color: var(--color--white);
 }
 
+.apc-pill-button--small {
+  padding: 0.125rem var(--sp1, 1.125rem);
+  font-size: var(--font-size-xs);
+}
+
 /* Small pill badges for tags/amenities. */
 .apc-badges {
   display: flex;
@@ -291,6 +296,19 @@
   text-transform: uppercase;
 }
 
+/* "Unapproved" tag next to a pending location's label. Same gold as the
+   unpublished banner, so the two read as the same status. */
+.apc-pending-badge {
+  display: inline-block;
+  margin-inline-start: 0.5rem;
+  padding: 0.0625rem 0.5rem;
+  border-radius: var(--border-radius);
+  background: var(--color--gold);
+  color: var(--color--gray-5);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .apc-info-card__title {
   margin: 0 0 0.25rem;
   font-family: var(--font-heading);
@@ -382,6 +400,20 @@
    lightbox) live in css/components/gallery.css -- apc_brown/gallery, shared
    with the event popup's own location card (see
    field--field-location-image--compact-card.html.twig). */
+
+/* "Location" label, its "Unapproved" tag and (for reviewers) the publish
+   button, on one row. The label's own bottom margin moves to the row. */
+.apc-location-card__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem var(--sp1);
+  margin: 0 0 0.25rem;
+}
+
+.apc-location-card__heading .apc-info-card__label {
+  margin: 0;
+}
 
 .apc-location-card__note {
   margin: 0 0 0.5rem;

@@ -4,7 +4,8 @@
  * Event detail page (full view mode of a calendar_event node).
  *
  * gallery, add_to_calendar, publish_event_url, is_unpublished,
- * location_gallery and location_pending are built in
+ * location_gallery, location_pending, location_pending_card and
+ * publish_location_url are built in
  * apc_brown_preprocess_node().
  *
  * Single column, no sidebar -- matches assets/event_detail.pdf. The
@@ -93,15 +94,23 @@
     </div>
   {% endif %}
 
-  {% if location_pending %}
+  {% if not node.field_location.isEmpty %}
     <div class="apc-location-card">
-      <p class="apc-info-card__label">{{ 'Location'|t }}</p>
-      <p class="apc-info-card__body">{{ 'Pending review'|t }}</p>
-    </div>
-  {% elseif not node.field_location.isEmpty %}
-    <div class="apc-location-card">
-      <p class="apc-info-card__label">{{ 'Location'|t }}</p>
-      {{ content.field_location }}
+      <div class="apc-location-card__heading">
+        <p class="apc-info-card__label">
+          {{ 'Location'|t }}
+          {% if location_pending %}<span class="apc-pending-badge">{{ 'Unapproved'|t }}</span>{% endif %}
+        </p>
+        {% if publish_location_url %}
+          <a class="apc-pill-button apc-pill-button--primary apc-pill-button--small" href="{{ publish_location_url }}">{{ 'Publish location'|t }}</a>
+        {% endif %}
+      </div>
+      {% if location_pending_card %}
+        <p class="apc-location-card__note">{{ 'This location has not been reviewed yet, so its links are turned off.'|t }}</p>
+        {{ location_pending_card }}
+      {% else %}
+        {{ content.field_location }}
+      {% endif %}
 
       {% if location_gallery %}
         <p class="apc-location-card__note">{{ 'Click a photo to view it larger.'|t }}</p>

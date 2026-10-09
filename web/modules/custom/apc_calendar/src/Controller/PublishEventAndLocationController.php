@@ -7,6 +7,7 @@ namespace Drupal\apc_calendar\Controller;
 use Drupal\Core\Action\ActionManager;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\node\NodeInterface;
+use Drupal\taxonomy\TermInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -46,6 +47,25 @@ final class PublishEventAndLocationController extends ControllerBase {
       $this->messenger()->addStatus($this->t('Published "@title".', ['@title' => $node->label()]));
     }
     return $this->redirect('entity.node.canonical', ['node' => $node->id()]);
+  }
+
+  /**
+   * Publishes a pending location on its own, then redirects back.
+   *
+   * For the event page's "Publish location" button, where the event is
+   * already live but its venue is not. A ?destination= on the link takes
+   * precedence over the fallback redirect to the location's own page.
+   */
+  public function publishLocation(TermInterface $taxonomy_term): RedirectResponse {
+    if ($taxonomy_term->bundle() === 'locations' && !$taxonomy_term->isPublished()) {
+      $taxonomy_term->setPublished()->save();
+      $this->getLogger('apc_calendar')->notice('Location %location (term @tid) was published directly from an event page.', [
+        '%location' => $taxonomy_term->label(),
+        '@tid' => $taxonomy_term->id(),
+      ]);
+      $this->messenger()->addStatus($this->t('Published location "@loc".', ['@loc' => $taxonomy_term->label()]));
+    }
+    return $this->redirect('entity.taxonomy_term.canonical', ['taxonomy_term' => $taxonomy_term->id()]);
   }
 
   /**

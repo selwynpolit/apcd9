@@ -6,7 +6,9 @@ namespace Drupal\apc_calendar\Plugin\Field\FieldFormatter;
 
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Field\Attribute\FieldFormatter;
+use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\Plugin\Field\FieldFormatter\EntityReferenceLabelFormatter;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 
@@ -38,6 +40,23 @@ class UnrestrictedLabelFormatter extends EntityReferenceLabelFormatter {
    */
   protected function checkAccess(EntityInterface $entity) {
     return AccessResult::allowed();
+  }
+
+  /**
+   * {@inheritdoc}
+   *
+   * Tags a still-unpublished location "(pending approval)", so the submitter
+   * can tell their new venue is not live yet.
+   */
+  public function viewElements(FieldItemListInterface $items, $langcode) {
+    $elements = parent::viewElements($items, $langcode);
+    foreach ($elements as &$element) {
+      $entity = $element['#entity'] ?? NULL;
+      if ($entity instanceof EntityPublishedInterface && !$entity->isPublished() && isset($element['#plain_text'])) {
+        $element['#plain_text'] .= ' ' . $this->t('(pending approval)');
+      }
+    }
+    return $elements;
   }
 
 }

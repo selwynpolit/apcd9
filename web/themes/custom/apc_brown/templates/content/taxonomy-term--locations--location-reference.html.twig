@@ -16,8 +16,15 @@
 #}
 <div{{ attributes }}>
   <div class="apc-location-reference__header">
-    <h2 class="apc-location-reference__title"><a href="{{ url }}">{{ name }}</a></h2>
-    {% if content.directions %}
+    {# pending_nolinks: an unapproved location shown to someone who can't
+       view it -- plain text only, no links to its page, map directions or
+       website. Set in apc_brown_preprocess_taxonomy_term(). #}
+    {% if pending_nolinks %}
+      <h2 class="apc-location-reference__title">{{ name }}</h2>
+    {% else %}
+      <h2 class="apc-location-reference__title"><a href="{{ url }}">{{ name }}</a></h2>
+    {% endif %}
+    {% if content.directions and not pending_nolinks %}
       {{ content.directions }}
     {% endif %}
   </div>
@@ -26,7 +33,11 @@
     <div class="apc-location-reference__address">{{ content.field_address }}</div>
   {% endif %}
 
-  {% if content.field_website %}
+  {% if pending_nolinks %}
+    {% if website_text %}
+      <div class="apc-location-reference__website">{{ website_text }}</div>
+    {% endif %}
+  {% elseif content.field_website %}
     <div class="apc-location-reference__website">{{ content.field_website }}</div>
   {% endif %}
 
@@ -34,5 +45,12 @@
     <div class="apc-location-reference__map">{{ content.field_geofield }}</div>
   {% endif %}
 
-  {{ content|without('directions', 'field_address', 'field_website', 'field_geofield') }}
+  {% if pending_nolinks %}
+    {% if notes_text %}
+      <div class="field field--name-field-notes">{{ notes_text }}</div>
+    {% endif %}
+    {{ content|without('directions', 'field_address', 'field_website', 'field_geofield', 'field_notes') }}
+  {% else %}
+    {{ content|without('directions', 'field_address', 'field_website', 'field_geofield') }}
+  {% endif %}
 </div>

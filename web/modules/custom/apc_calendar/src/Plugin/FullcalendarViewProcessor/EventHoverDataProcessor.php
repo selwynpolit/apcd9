@@ -101,8 +101,9 @@ class EventHoverDataProcessor extends FullcalendarViewProcessorBase {
     if (!$node->get('field_location')->isEmpty()) {
       $term = $node->get('field_location')->entity;
       // An anonymous submission can reference a location still pending
-      // review -- omit it here rather than naming it, same reasoning as the
-      // node template's "Pending review" fallback.
+      // review -- omit it from the hover popup rather than naming it there.
+      // (The event page itself does show it, labelled "Unapproved", with its
+      // links turned off.)
       if ($term !== NULL && $term->isPublished()) {
         $data['location'] = $term->label();
       }
