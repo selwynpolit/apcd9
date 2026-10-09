@@ -3,7 +3,7 @@ prod:
   host: chi204.greengeeks.net
   user: austinpr
   root: /home/austinpr/public_html/d9/web
-  uri: d9.austinprogressivecalendar.com
+  uri: https://www.austinprogressivecalendar.com
   ssh:
     tty: 0
   paths:
