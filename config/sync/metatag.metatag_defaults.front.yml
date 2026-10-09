@@ -11,7 +11,7 @@ tags:
   description: "Austin's community calendar of progressive, peace, justice, and environmental events — plus local photos and news."
   og_title: '[site:name]'
   og_url: '[site:url]'
-  schema_organization_logo: 'a:2:{s:5:"@type";s:11:"ImageObject";s:3:"url";s:54:"[site:url]themes/custom/apc_brown/images/apc-logo4.png";}'
+  schema_organization_logo: 'a:2:{s:5:"@type";s:11:"ImageObject";s:3:"url";s:54:"[site:url]themes/custom/apc_brown/images/apc-logo2.png";}'
   schema_organization_name: '[site:name]'
   schema_organization_type: Organization
   schema_organization_url: '[site:url]'
