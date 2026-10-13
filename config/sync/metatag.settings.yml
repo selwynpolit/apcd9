@@ -1,7 +1,7 @@
 _core:
   default_config_hash: xF-yd0bqa4S5zWER0Kasv-BK0-xGEegxnFERohs2QTs
 entity_type_groups: {  }
-separator: ''
+separator: ¦
 tag_trim_method: beforeValue
 use_maxlength: true
 tag_trim_maxlength: {  }
