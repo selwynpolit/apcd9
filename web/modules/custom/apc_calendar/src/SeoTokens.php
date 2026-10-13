@@ -45,6 +45,10 @@ final class SeoTokens {
         'apc-seo-image' => self::image($node),
         'apc-seo-location-type' => self::isVirtual($node) ? 'VirtualLocation' : 'Place',
         'apc-seo-location-url' => self::locationUrl($node),
+        'apc-seo-location-name' => self::locationPart($node, 'name'),
+        'apc-seo-address-locality' => self::locationPart($node, 'locality'),
+        'apc-seo-address-region' => self::locationPart($node, 'region'),
+        'apc-seo-address-country' => self::locationPart($node, 'country'),
         'apc-seo-attendance-mode' => 'https://schema.org/' . (self::isVirtual($node) ? 'Online' : 'Offline') . 'EventAttendanceMode',
         'apc-seo-offer-price' => self::offerPrice($node),
         'apc-seo-offer-url' => self::offerPrice($node) === '' ? '' : self::offerUrl($node),
@@ -58,6 +62,11 @@ final class SeoTokens {
     if ($replacements) {
       $bubbleable_metadata->addCacheableDependency($node);
       $bubbleable_metadata->addCacheTags(['config:metatag.metatag_defaults.global']);
+      // The venue's name, address and published state feed several tokens;
+      // renaming or publishing it must refresh this event's markup.
+      if ($venue = self::venue($node)) {
+        $bubbleable_metadata->addCacheableDependency($venue);
+      }
     }
     return $replacements;
   }
@@ -138,6 +147,50 @@ final class SeoTokens {
 
   private static function isVirtual(NodeInterface $node): bool {
     return $node->hasField('field_virtual') && (bool) $node->get('field_virtual')->value;
+  }
+
+  /**
+   * The event's venue term, or NULL (virtual events, or none chosen).
+   */
+  private static function venue(NodeInterface $node): ?TermInterface {
+    $term = $node->hasField('field_location') ? $node->get('field_location')->entity : NULL;
+    return $term instanceof TermInterface ? $term : NULL;
+  }
+
+  /**
+   * One piece of the schema.org Place for an in-person event.
+   *
+   * With a venue these are simply its name and address. With none -- someone
+   * forgot to pick one, or an imported event was accepted without it -- the
+   * place is "Austin, TX": every event on this site is in Austin, and Google
+   * ignores an Event that has no location at all. The event page prints the
+   * same "Austin, TX" (see node--calendar-event--full.html.twig), so the
+   * markup never claims something a visitor can't see. A venue that exists
+   * but lacks an address is left as it is -- guessing a city for it could be
+   * wrong. Virtual events get '' for every part (they use VirtualLocation).
+   */
+  private static function locationPart(NodeInterface $node, string $part): string {
+    if (self::isVirtual($node)) {
+      return '';
+    }
+    $venue = self::venue($node);
+    if (!$venue) {
+      return match ($part) {
+        'name' => 'Austin, TX',
+        'locality' => 'Austin',
+        'region' => 'TX',
+        'country' => 'US',
+      };
+    }
+    if ($part === 'name') {
+      return (string) $venue->label();
+    }
+    $address = $venue->hasField('field_address') ? $venue->get('field_address')->first() : NULL;
+    return (string) match ($part) {
+      'locality' => $address?->locality,
+      'region' => $address?->administrative_area,
+      'country' => $address?->country_code,
+    };
   }
 
   /**

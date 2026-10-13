@@ -2380,6 +2380,22 @@ function apc_calendar_token_info(): array {
           'name' => t('SEO location URL'),
           'description' => t('For online events, the event link; otherwise the venue page.'),
         ],
+        'apc-seo-location-name' => [
+          'name' => t('SEO location name'),
+          'description' => t('The venue name, or "Austin, TX" when an in-person event has no venue. Empty for online events.'),
+        ],
+        'apc-seo-address-locality' => [
+          'name' => t('SEO address: city'),
+          'description' => t('The venue\'s city, or "Austin" when an in-person event has no venue.'),
+        ],
+        'apc-seo-address-region' => [
+          'name' => t('SEO address: state'),
+          'description' => t('The venue\'s state, or "TX" when an in-person event has no venue.'),
+        ],
+        'apc-seo-address-country' => [
+          'name' => t('SEO address: country'),
+          'description' => t('The venue\'s country code, or "US" when an in-person event has no venue.'),
+        ],
         'apc-seo-offer-price' => [
           'name' => t('SEO offer price'),
           'description' => t('"0.00" for a free event, the ticket price if one was entered, otherwise empty (so no offer is published).'),

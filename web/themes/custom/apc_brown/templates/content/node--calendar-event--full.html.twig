@@ -132,6 +132,16 @@
         </ul>
       {% endif %}
     </div>
+  {% elseif not node.field_virtual.value %}
+    {# An in-person event nobody gave a venue. Say so plainly rather than show
+       no location at all; the Event structured data says the same thing
+       ("Austin, TX", see SeoTokens::locationPart()), so what search engines
+       are told is also what visitors read. Virtual events have their own
+       "Online only" badge above. #}
+    <div class="apc-location-card">
+      <p class="apc-info-card__label">{{ 'Location'|t }}</p>
+      <p>{{ 'Austin, TX'|t }}</p>
+    </div>
   {% endif %}
 
   {# Imported events are credited through event_source_label below instead,
