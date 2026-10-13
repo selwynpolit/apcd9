@@ -599,6 +599,60 @@ there. Do them as one change, not three.
       event, which has no location term, never touches either path. Don't re-add guards there later
       on the assumption they're needed.
 
+### Group 6 — Events structured data, cost field, front-page flag (done 2026-10-12, local only — not yet deployed)
+
+Triggered by Google Search Console's "Events structured data" email (non-critical: missing
+`performer`, `eventStatus`, `offers`; only 1 item was flagged, 0 invalid). The Event JSON-LD is the
+`metatag.metatag_defaults.node__calendar_event` config (schema_metatag), fed by the custom tokens in
+`SeoTokens.php` / `apc_calendar_token_info()`.
+
+- [x] **`eventStatus`** — static `https://schema.org/EventScheduled` in that metatag default. Nothing on
+      the site tracks cancellation, so every event is "scheduled".
+- [x] **`offers` via a cost field.** `field_charge` (boolean, "There is a charge for this event") and
+      `field_price` (decimal, USD, shown only when charge is checked via `#states`). Emits an
+      `Offer` (url, price, priceCurrency) from tokens `apc-seo-offer-price` / `-url` / `-currency`.
+      **The one thing to know before touching it: `field_charge` deliberately has NO default value.**
+      A boolean can't otherwise tell "free" from "nobody answered", and a wrong price in structured data
+      is a Google policy problem. Only the form stores an explicit 0 (= free → Offer with price `0.00`).
+      Legacy events and Feeds imports never saw the form, so the field stays NULL → no Offer, no cost
+      line on the page. To mark an old/imported event free, save it once with the box unchecked.
+      Rules baked in: `apc_calendar_validate_event_price()` requires a price when charge is checked;
+      `apc_calendar_node_presave()` clears the price when charge is explicitly unchecked (the form only
+      hides it client-side). Page display: "Free event" / "Tickets from $X" in
+      `node--calendar-event--full.html.twig`.
+      Two traps found by testing: (1) **free is emitted as `"0.00"`, not `"0"`** — schema_metatag's
+      `arrayTrim()` drops anything `empty()` accepts and `empty("0")` is TRUE, so a literal `"0"` price
+      silently vanished; (2) an Offer with only url + currency (no price) would still render, so the url
+      and currency tokens also return '' when there is no price, letting the whole Offer be trimmed.
+- [x] **`performer` deliberately not added.** No performer data exists; mapping `field_organizer` onto it
+      was rejected as a loose fit. It stays as a non-critical suggestion.
+- [ ] **After deploy:** edit+save the flagged event with its cost set, then "Validate fix" in Search
+      Console. The `offers` warning only clears for events saved through the form again.
+- [x] **Testing note for the cost form:** in a *programmatic* `FormState`, `['value' => 0]` on a checkbox
+      still counts as checked (key presence = checked). Represent "unchecked" by omitting the key, as a
+      real POST does, or the test falsely reports `charge=1`.
+
+**"Promoted to front page" is now off by default for every content type** (it was on for events, blog
+entries and community photos). It is **used**, but only by two things:
+- `FrontPageController` (`/home`): the large *featured event* is the soonest upcoming event with
+  `promote = 1`, falling back to the soonest event overall. The "Coming up" strip ignores the flag. So
+  promote is now an editor's pick; prod events were bulk-unpromoted except one on 2026-10-12.
+- The `frontpage` view (`/node`, `/rss.xml`) used to filter on it. **It now filters on content type
+  (blog entry + community photo) instead** — events are deliberately excluded (the feed sorts by
+  created date, which is meaningless for an event). `/rss.xml` is linked from `/home` (feed icon).
+
+**The unused `article` content type was deleted** (zero nodes locally — **verify prod has none before
+`cim`**: `ddev drush @apc.prod sqlq "select count(*) from node_field_data where type='article'"`).
+Deleting it cascaded away `field.storage.node.comment` too (only Article had a comment field). The
+remaining types: blog_entry, calendar_event, community_photo, my_work, page.
+
+**`/admin/content` now uses Views Bulk Operations** (`views_bulk_operations_bulk_form`, same as
+`pending_events`) instead of core's `node_bulk_form`, which can only act on the current page. Gives
+"Select / deselect all results (all pages)", batched 10 at a time. Actions kept: publish, unpublish,
+promote, demote, sticky, not sticky, save, update URL alias, delete. The event-specific actions
+(publish event + location, accept/reject import, apply photo category) stay on their own views.
+Note VBO remembers the selection across pages **and reloads** — clear it before submitting an action.
+
 ### Pre-launch (carried over from `Event Calendar Plan.md`)
 
 - [x] Swap the Nominatim User-Agent/Referer off `apc3.ddev.site` to the production domain.
