@@ -36,6 +36,13 @@
     {% endif %}
   </div>
 
+  {# field_charge is empty for legacy/imported events: say nothing then. #}
+  {% if not node.field_charge.isEmpty and not node.field_charge.value %}
+    <p class="apc-detail__meta apc-detail__cost">{{ 'Free event'|t }}</p>
+  {% elseif node.field_charge.value and not node.field_price.isEmpty %}
+    <p class="apc-detail__meta apc-detail__cost">{{ 'Tickets from $@price'|t({'@price': node.field_price.value|number_format(2)}) }}</p>
+  {% endif %}
+
   {% if publish_event_url or unpublish_event_url or node.field_virtual.value %}
   <div class="apc-detail__actions">
     {% if publish_event_url %}

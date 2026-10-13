@@ -5,6 +5,7 @@ dependencies:
   config:
     - field.field.node.calendar_event.body
     - field.field.node.calendar_event.feeds_item
+    - field.field.node.calendar_event.field_charge
     - field.field.node.calendar_event.field_event_date
     - field.field.node.calendar_event.field_event_image
     - field.field.node.calendar_event.field_event_source
@@ -14,6 +15,7 @@ dependencies:
     - field.field.node.calendar_event.field_import_state
     - field.field.node.calendar_event.field_location
     - field.field.node.calendar_event.field_organizer
+    - field.field.node.calendar_event.field_price
     - field.field.node.calendar_event.field_tags
     - field.field.node.calendar_event.field_virtual
     - node.type.calendar_event
@@ -141,5 +143,7 @@ content:
     region: content
 hidden:
   feeds_item: true
+  field_charge: true
   field_import_recurrence_raw: true
+  field_price: true
   field_virtual: true

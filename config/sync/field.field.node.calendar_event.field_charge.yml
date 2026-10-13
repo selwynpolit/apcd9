@@ -1,0 +1,21 @@
+uuid: 2714d969-ca17-47d1-97eb-2cd4cbedab58
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_charge
+    - node.type.calendar_event
+id: node.calendar_event.field_charge
+field_name: field_charge
+entity_type: node
+bundle: calendar_event
+label: 'There is a charge for this event'
+description: 'Leave unchecked if admission is free. Check this if tickets or admission cost money, then enter the price.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  on_label: 'Yes'
+  off_label: 'No'
+field_type: boolean

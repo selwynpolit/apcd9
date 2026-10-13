@@ -940,6 +940,17 @@ function _apc_calendar_calendar_event_form_alter(array &$form, FormStateInterfac
     ];
   }
 
+  // The price box only makes sense for a paid event; the checkbox decides.
+  // Presave clears a stale price if both were submitted anyway.
+  if (isset($form['field_price'])) {
+    $form['field_price']['#states'] = [
+      'visible' => [
+        ':input[name="field_charge[value]"]' => ['checked' => TRUE],
+      ],
+    ];
+    $form['#validate'][] = 'apc_calendar_validate_event_price';
+  }
+
   // Forgive a missing "https://" on the two link fields. The widget's
   // #type 'url' box is validated by the browser (type="url") before Drupal
   // ever sees the value, so it has to become a plain text input; the scheme
@@ -1501,6 +1512,14 @@ function apc_calendar_node_presave(NodeInterface $node): void {
   if ($node->bundle() === 'calendar_event') {
     if ($node->hasField('field_virtual') && $node->hasField('field_location') && (bool) $node->get('field_virtual')->value) {
       $node->set('field_location', []);
+    }
+
+    // An event explicitly marked as free carries no price; the form only
+    // hides field_price client-side, so enforce it here as well. An EMPTY
+    // field_charge (legacy or imported event, never asked) is left alone.
+    if ($node->hasField('field_charge') && $node->hasField('field_price')
+      && !$node->get('field_charge')->isEmpty() && !$node->get('field_charge')->value) {
+      $node->set('field_price', []);
     }
 
     $is_feeds_import = $node->hasField('feeds_item') && !$node->get('feeds_item')->isEmpty();
@@ -2325,6 +2344,18 @@ function _apc_calendar_add_focal_point_explanation(array &$form, FormStateInterf
 
 
 /**
+ * Form validate: a charged event needs a price.
+ *
+ * Without one, no Offer can be published for the event, so ask for it rather
+ * than accept a half-answered "there is a charge".
+ */
+function apc_calendar_validate_event_price(array &$form, FormStateInterface $form_state): void {
+  if ($form_state->getValue(['field_charge', 'value']) && trim((string) $form_state->getValue(['field_price', 0, 'value'])) === '') {
+    $form_state->setErrorByName('field_price', t('Please enter the ticket price, or uncheck "There is a charge for this event".'));
+  }
+}
+
+/**
  * Implements hook_token_info().
  *
  * SEO-safe values for the Metatag / Schema.org defaults; see SeoTokens.
@@ -2348,6 +2379,18 @@ function apc_calendar_token_info(): array {
         'apc-seo-location-url' => [
           'name' => t('SEO location URL'),
           'description' => t('For online events, the event link; otherwise the venue page.'),
+        ],
+        'apc-seo-offer-price' => [
+          'name' => t('SEO offer price'),
+          'description' => t('"0.00" for a free event, the ticket price if one was entered, otherwise empty (so no offer is published).'),
+        ],
+        'apc-seo-offer-url' => [
+          'name' => t('SEO offer URL'),
+          'description' => t('Where to get in: the event link if there is one, otherwise the event page. Empty when there is no price.'),
+        ],
+        'apc-seo-offer-currency' => [
+          'name' => t('SEO offer currency'),
+          'description' => t('"USD", or empty when there is no price so the whole offer is left out.'),
         ],
         'apc-seo-attendance-mode' => [
           'name' => t('SEO attendance mode'),

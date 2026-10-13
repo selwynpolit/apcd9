@@ -1,0 +1,23 @@
+uuid: 7b71785e-9f75-4872-9435-0a37ce417a1a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_price
+    - node.type.calendar_event
+id: node.calendar_event.field_price
+field_name: field_price
+entity_type: node
+bundle: calendar_event
+label: 'Ticket price (US dollars)'
+description: 'The lowest admission price, for example 10 or 12.50. For a sliding scale or suggested donation, enter the lowest amount.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: 0.01
+  max: null
+  prefix: $
+  suffix: ''
+field_type: decimal

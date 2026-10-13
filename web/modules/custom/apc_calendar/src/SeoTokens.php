@@ -46,6 +46,9 @@ final class SeoTokens {
         'apc-seo-location-type' => self::isVirtual($node) ? 'VirtualLocation' : 'Place',
         'apc-seo-location-url' => self::locationUrl($node),
         'apc-seo-attendance-mode' => 'https://schema.org/' . (self::isVirtual($node) ? 'Online' : 'Offline') . 'EventAttendanceMode',
+        'apc-seo-offer-price' => self::offerPrice($node),
+        'apc-seo-offer-url' => self::offerPrice($node) === '' ? '' : self::offerUrl($node),
+        'apc-seo-offer-currency' => self::offerPrice($node) === '' ? '' : 'USD',
         default => NULL,
       };
       if ($value !== NULL) {
@@ -151,6 +154,38 @@ final class SeoTokens {
     }
     $term = $node->hasField('field_location') ? $node->get('field_location')->entity : NULL;
     return $term && $term->isPublished() ? $term->toUrl('canonical', ['absolute' => TRUE])->toString() : '';
+  }
+
+  /**
+   * "0.00" when marked free, the entered price, else '' (publish no offer).
+   *
+   * Free is "0.00" rather than "0" because schema_metatag's arrayTrim() drops
+   * anything PHP's empty() accepts, and empty("0") is TRUE.
+   *
+   * Never guesses: field_charge is NULL for events that never went through
+   * the form (legacy, Feeds imports), and those publish no Offer. Only an
+   * explicit "no charge" counts as free.
+   */
+  private static function offerPrice(NodeInterface $node): string {
+    if (!$node->hasField('field_charge') || $node->get('field_charge')->isEmpty()) {
+      return '';
+    }
+    if (!$node->get('field_charge')->value) {
+      return '0.00';
+    }
+    if ($node->hasField('field_price') && !$node->get('field_price')->isEmpty()) {
+      return number_format((float) $node->get('field_price')->value, 2, '.', '');
+    }
+    return '';
+  }
+
+  /**
+   * The event's own link (tickets, registration) or else its page here.
+   */
+  private static function offerUrl(NodeInterface $node): string {
+    $link = $node->hasField('field_event_url') ? $node->get('field_event_url')->first() : NULL;
+    $uri = $link ? (string) $link->uri : '';
+    return $uri !== '' ? $uri : $node->toUrl('canonical', ['absolute' => TRUE])->toString();
   }
 
   private static function plainText(string $html): string {
