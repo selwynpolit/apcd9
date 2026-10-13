@@ -632,6 +632,26 @@ Triggered by Google Search Console's "Events structured data" email (non-critica
       still counts as checked (key presence = checked). Represent "unchecked" by omitting the key, as a
       real POST does, or the test falsely reports `charge=1`.
 
+**Event `location` in the structured data (done 2026-10-13, local only — not yet deployed):**
+- **In-person events with no venue** publish a city-level place — name "Austin, TX", city Austin, state TX,
+  country US — and the event page shows a matching "Location: Austin, TX" card (the `elseif` after the
+  Location card in `node--calendar-event--full.html.twig`), so the markup never claims anything a visitor
+  can't see. Done by the `apc-seo-location-name` / `-address-locality` / `-address-region` /
+  `-address-country` tokens (`SeoTokens::locationPart()`). A venue that exists but has no address is
+  deliberately **not** given a guessed city. Checked with Google's Rich Results Test: valid Event.
+  The importer does **not** publish events itself (imports land unpublished and a person clicks Accept),
+  but nothing stops Accept on a location-less event — an optional Accept guard was discussed, not built.
+- **Online-only events get no Google event rich result, and nothing we can honestly do changes that.**
+  Verified in the real Rich Results Test (URL and Code tab, future dates): `OnlineEventAttendanceMode`
+  → "No items detected" (with `VirtualLocation` or a `Place`); without the attendance mode the same
+  markup is recognised but rejected, *Invalid object type for field "location"*. The `VirtualLocation`
+  markup stays (valid schema.org, harmless); don't "fix" it by faking an in-person place.
+- **Comma bug, fixed:** schema_metatag splits nested values on Metatag's separator, which was the default
+  comma, so a venue named "Carver Branch, Austin Public Library" (and any organizer "Last, First") was
+  published as a two-item *array* for `name`. `metatag.settings:separator` is now `¦`, a character nobody
+  types, which fixes every field at once (nothing we publish relies on comma-splitting). Prod's two
+  library-branch venues are affected until this deploys.
+
 **"Promoted to front page" is now off by default for every content type** (it was on for events, blog
 entries and community photos). It is **used**, but only by two things:
 - `FrontPageController` (`/home`): the large *featured event* is the soonest upcoming event with
