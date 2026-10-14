@@ -651,6 +651,14 @@ Triggered by Google Search Console's "Events structured data" email (non-critica
   published as a two-item *array* for `name`. `metatag.settings:separator` is now `¦`, a character nobody
   types, which fixes every field at once (nothing we publish relies on comma-splitting). Prod's two
   library-branch venues are affected until this deploys.
+- [ ] **Title-based meta description for photos without a caption.** As of 2026-10-13, 16 of the sitemap's
+      237 pages that are `community_photo` nodes with no `field_caption` all carry the site-wide fallback
+      description ("Austin's community calendar of progressive, peace, justice…"), identical to each other
+      and to the 7 listing pages (the listing pages are fine; the photos are not). `SeoTokens::nodeDescription()`
+      falls back to `globalTag('description')` when a node has neither body nor caption. For
+      `community_photo`, build a sentence from the node's title instead (e.g. a photo-gallery line naming
+      the photo) so each page has its own description. Don't put the submitter's name in it —
+      `field_credit_publicly` controls whether credit is shown at all. Not built; discussed 2026-10-13.
 
 **"Promoted to front page" is now off by default for every content type** (it was on for events, blog
 entries and community photos). It is **used**, but only by two things:
