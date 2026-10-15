@@ -131,7 +131,8 @@
         "installer-types": ["npm-asset"],
         "patches": {
             "drupal/fullcalendar_view": {
-                "eventClick() ignores the dialogModal setting and navigates anyway": "patches/fullcalendar_view-eventclick-respect-dialogmodal.patch"
+                "eventClick() ignores the dialogModal setting and navigates anyway": "patches/fullcalendar_view-eventclick-respect-dialogmodal.patch",
+                "row_index is set to a field delta but used as an index into $view->result": "patches/fullcalendar_view-row-index-is-a-result-index.patch"
             }
         },
         "installer-paths": {

@@ -1,0 +1,34 @@
+Don't pass a field delta as the view's row_index.
+
+FullcalendarViewPreprocess sets $view->row_index so Views' advancedRender()
+knows which result row it is rendering. For the start-date field it sets it to
+the *delta* ($i) of the date value instead of the row's index. row_index is
+documented and used as an index into $view->result: EntityField::
+prepareItemsByDelta() reads $this->view->result[$this->view->row_index] whenever
+a delta limit is configured on a multi-value field.
+
+The two only coincide by accident. When a node has more date values than the
+view has result rows -- e.g. a weekly series of 17 dates under an exposed filter
+that leaves 4 rows -- the lookup fails with a PHP warning
+("Undefined array key N" in EntityField.php), once per date, on every render.
+With more rows than deltas the lookup silently picks the wrong row instead,
+which is harmless only because the row is then unused.
+
+Use the row's own index for every field. Nothing in the preprocess reads the
+delta back out of row_index; the per-delta values come from $start_dates[$i].
+
+Filed against fullcalendar_view 5.2.5.
+
+--- a/src/FullcalendarViewPreprocess.php
++++ b/src/FullcalendarViewPreprocess.php
+@@ -227,7 +227,9 @@
+             foreach ($fields as $name => $field) {
+               if (method_exists($field, 'advancedRender')) {
+                 // Set the row_index property used by advancedRender function.
+-                $field->view->row_index = preg_match('#^' . $start_field . '(_\d+)?$#', $name) ? $i : $row->index;
++                // It is an index into $view->result, so it must be the row's
++                // own index for every field, the start field included.
++                $field->view->row_index = $row->index;
+                 $des[$idkey] = $field->advancedRender($row);
+               }
+             }

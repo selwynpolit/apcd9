@@ -14,6 +14,8 @@ use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
+use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\Element\EntityAutocomplete;
 use Drupal\Core\Form\FormStateInterface;
@@ -559,6 +561,27 @@ function apc_calendar_form_node_community_photo_edit_form_alter(array &$form, Fo
         '#attributes' => ['class' => ['button', 'button--small', 'apc-edit-media-link']],
       ];
     }
+  }
+}
+
+/**
+ * Implements hook_query_TAG_alter() for the "views_calendar" query tag.
+ *
+ * Makes the /calendar view return one row per event instead of one per
+ * matching date value. views.view.calendar already sets `distinct: true`,
+ * but Views only honours that when the query selects some column besides the
+ * base field, and every field here is an entity-field handler that adds none
+ * -- so it silently did nothing. fullcalendar_view then emits *every* date
+ * value of a row's node, so an event with N dates came out N times per
+ * matching date: ~1,200 events shipped to prod for ~250 distinct ones.
+ *
+ * Safe because the style plugin reads each node's full set of dates from
+ * the entity, not from the row; the row only picks which nodes qualify.
+ * Applies to both the page_1 and page_manage displays (same view id).
+ */
+function apc_calendar_query_views_calendar_alter(AlterableInterface $query): void {
+  if ($query instanceof SelectInterface) {
+    $query->distinct();
   }
 }
 
