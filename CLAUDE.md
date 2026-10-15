@@ -130,7 +130,11 @@ drush cr
 drush cst
 drush cim -y
 drush cr
+curl -s -o /dev/null https://www.austinprogressivecalendar.com/calendar   # re-warm the page cache
 ```
+
+The last line matters: `drush cr` empties the page cache and a cold `/calendar` took ~7 s on prod
+(2026-10-14, before the dedupe below). See Group 7.
 
 ### Apex → www redirect lives outside this repo
 
@@ -680,6 +684,152 @@ remaining types: blog_entry, calendar_event, community_photo, my_work, page.
 promote, demote, sticky, not sticky, save, update URL alias, delete. The event-specific actions
 (publish event + location, accept/reject import, apply photo category) stay on their own views.
 Note VBO remembers the selection across pages **and reloads** — clear it before submitting an action.
+
+### Group 7 — `/calendar` performance (investigated 2026-10-14; code done locally — not yet deployed)
+
+`/calendar` was the slowest page on the site by a wide margin: on prod a cold render (page-cache miss)
+took **5.6–7.5 s** against 0.1–0.5 s for `/home`, `/locations` etc. Cached it was 0.16–0.33 s, so the cost
+was paid by whoever visited first after the hourly expiry, a node save (`node_list` is invalidated by
+*every* node save, including unpublished anonymous submissions and Feeds imports) or a `drush cr`.
+
+**Prod baseline, 2026-10-14 (before any change)** — compare against this after deploying. Cold = a
+unique `?cb=<random>` query string (the page cache keys on the full URL), TTFB:
+`/calendar` cold 5.6–7.5 s (first request after a `drush cr`: 7.45 s) · cached 0.16–0.33 s ·
+`/home` cold 0.13–0.55 s · HTML 998 KB raw / 29 KB gzipped · **1,229 events embedded**.
+Local, same change: cold 1.5–2.0 s → 0.19–0.51 s, HTML 565 KB → 113 KB, 693 → 81 events.
+
+- [x] **Dedupe (the real fix).** `apc_calendar_query_views_calendar_alter()` in `apc_calendar.module`
+      forces `DISTINCT` on the calendar view's query. **The one thing to know:** the view already had
+      `distinct: true`, but Views only honours it when the query selects a column besides the base
+      field — every field here is an entity-field handler that adds none — so it silently did nothing
+      and the view returned one row per matching *date value*. `fullcalendar_view`'s preprocess
+      (`FullcalendarViewPreprocess.php`) then emits **every** date value of each row's node, so a
+      recurring event with N dates was emitted N times per row (quadratic). Of the 693 events locally
+      only 81 were real: the other 612 were malformed all-day entries whose `start` was a raw epoch
+      string (`"1788267600"`), which FullCalendar can't parse. All 81 real events are identical
+      before and after (compared by node + start), and the grid, recurring series and click-popup all
+      work in a real browser. Applies to both `page_1` and `page_manage` (same view id).
+      Don't try Views aggregation (`group_by`) instead — it breaks Smart Date's composite value.
+      **Side effect of deduping, and the patch that fixes it** (`patches/fullcalendar_view-row-index-is-a-result-index.patch`):
+      `FullcalendarViewPreprocess` sets `$view->row_index` to a *date delta* for the start field, but
+      Views treats `row_index` as an index into `$view->result` (`EntityField::prepareItemsByDelta()`
+      reads `result[row_index]` because `field_event_date` has `delta_limit: 1`, which is deliberate —
+      it fixed the manage view's OOM, see `EventPopupProcessor`). With the old 77-row result every delta
+      index happened to exist; after dedupe a filtered render (e.g. 4 rows, a weekly series of 17 dates)
+      logged ~26 `Undefined array key N` PHP warnings **per render** — dblog spam on every use of the
+      category filter. The patch passes `$row->index` for every field (nothing reads a delta back out of
+      it). Verified: 0 warnings for `/calendar`, `/calendar?field_tags_target_id=…` and the drush render,
+      where the unpatched dedupe gave 26. Registered in `composer.json` (+ `patches.lock.json`;
+      `composer.lock` only got a new `content-hash` from `composer update --lock`).
+      **Deploy check:** `contrib/` is gitignored, so prod only gets the patch via composer. After
+      `composer install --no-dev`, confirm
+      `grep -n "view->row_index = " web/modules/contrib/fullcalendar_view/src/FullcalendarViewPreprocess.php`
+      shows `$row->index` on the second line (≈232); if not, `composer patches-repatch`. Without the patch
+      the dedupe still works but filtered renders log warnings.
+- [x] **Re-warm after a save** (`CalendarRewarmTracker` + `EventSubscriber/CalendarRewarmSubscriber`).
+      The tracker is a `cache_tags_invalidator` (no constructor dependencies on purpose — those
+      services are built under the cache layer) that flags `node_list`, `taxonomy_term_list` or
+      `config:views.view.calendar` being invalidated. On `kernel.terminate` the subscriber then does an
+      anonymous GET of `/calendar`, so the *saving* request pays for the rebuild, not a visitor. One
+      warm per request (a bulk approve or an import batch = one), a 60 s lock so overlapping warms
+      don't stack, failures logged as warnings and swallowed. The URL is built from the current
+      request's host, so each environment warms itself. **Off under DDEV** (`IS_DDEV_PROJECT`); force
+      with `$settings['apc_calendar_rewarm'] = TRUE;`. Not triggered from Drush (it doesn't dispatch
+      `kernel.terminate`).
+      Does it slow saving? Shouldn't: prod runs LiteSpeed (`lsphp`), and Symfony's `Response::send()`
+      calls `litespeed_finish_request()`, so the response is flushed before terminate work runs (same
+      mechanism `IndexNowOnPublishSubscriber` already relies on). **Unverified on prod — time an event
+      save after deploying.** Worst case the save waits for one `/calendar` rebuild.
+- [ ] **Cron warm (the safety net, outside the repo).** Re-warm doesn't cover the hourly max-age expiry or
+      `drush cr`. Add a GreenGeeks cPanel cron entry, every 5–10 minutes:
+      `curl -s -o /dev/null --max-time 30 https://www.austinprogressivecalendar.com/calendar`
+      It must be the exact public URL with no query string and no cookies. A cache *hit* does not
+      extend an entry's expiry, so warming every 30 min would still leave up to a 30-minute cold window
+      after each expiry — the interval is the worst-case exposure, not the cache lifetime. A hit costs
+      ~0.2 s, so frequent is cheap. (Prod's cron looks externally driven: `automated_cron` is enabled
+      but its interval reads 0, and cron last ran at :00 — confirm in cPanel.)
+- [ ] **After deploy:** re-measure with the baseline above; time an event save; check `/calendar` returns
+      `x-drupal-cache: HIT` right after a save. If cold is then ~1 s or less, a longer page `max-age`
+      (suggested ~4 h, not the 1-day maximum) matters little. Longer values only cut hourly-expiry
+      misses; tag invalidation already keeps content correct, and the same setting sets `Cache-Control`
+      for browsers, so a day would let a visitor see a fixed or newly approved event up to a day late.
+- **Cloudflare/Purge modules: deliberately not installed.** Cloudflare isn't caching HTML at all
+  (`cf-cache-status: DYNAMIC`; Drupal's page cache is the only HTML cache), so they'd only help if we
+  also added an edge Cache Rule. That has real costs on the free plan (per-location caches, 30 URLs per
+  purge call, tag purging documented inconsistently, `Vary: Cookie,User-Agent` plus anonymous
+  sessions on the forms) for a gain that mostly disappears once the cold render is fast. Revisit only
+  if traffic grows or origin load becomes a problem; start with a short-TTL Cache Rule, no purge module.
+- **Alternatives considered for the grid itself (not chosen):** Calendar View
+  (`drupal/calendar_view`, server-rendered month grid, Smart Date aware, security-covered) would fetch
+  only the displayed month and need no JS, but gives none of our click-popup, hover card
+  (`event-hover.js` reads FullCalendar's in-memory event objects) or "+N more" handling for free; the
+  popup route `/calendar/event/{node}/{delta}` would carry over with `use-ajax` links, the hover card
+  would need rebuilding. Its own open issue ("Slow render time", #3491030) says it renders every row
+  the view returns regardless of the displayed month; the documented fix is offset date filters
+  relative to *now*, which means a fixed window and empty months beyond it. `fullcalendar_view` lists
+  AJAX event loading as a *premium* (unreleased) feature.
+
+**Mobile `/calendar` (built 2026-10-14, local only — not yet deployed).** Below 768 px `fullcalendar_view`
+swapped to `listYear` (`default_mobile_view` in `views.view.calendar`): a *calendar-year* list that
+starts at the first event inside the view's "ends ≥ 1 month ago" window, so a phone landed on
+**September 1** with past events first (on 2026-10-14, 27 of 53 date headings were already in the past —
+≈3,700 px of scrolling before today), events after Dec 31 were hidden until you tapped ›, and the phone
+still downloaded FullCalendar (~110 KB gzipped) plus the whole event payload.
+- **Phones are now sent to `/calendar/upcoming`**, which already existed (`UpcomingEventsController`: 12
+  cards per page, from now onward, popup cards, pager). `js/calendar-mobile-redirect.js`, attached in the
+  `<head>` by `apc_brown_preprocess_views_view()` (library `calendar-mobile-redirect`, `header: true`),
+  does `location.replace()` when `matchMedia('(max-width: 768px)')` matches — the same breakpoint as
+  `fullcalendar_view`'s `mobile_width`. `?view=grid` skips it (narrow desktop window, testing). A
+  category already chosen on `/calendar` (`?field_tags_target_id=12`) carries over as `?tag=12`.
+  Crawlers and desktop are unaffected (it's client-side). **Don't** "fix" the leftover `listYear`
+  setting — it's still what a narrow window sees with `?view=grid`.
+- **Category filter on `/calendar/upcoming`:** plain GET `?tag=<term id>`; the dropdown auto-submits
+  (`js/upcoming-filter.js`; the form's Apply button is the no-JS fallback) so every filtered page is a normal
+  bookmarkable URL and the pager resets to page 1. Options are only tags with an upcoming occurrence,
+  with **occurrence** counts (`EventCardBuilder::countUpcomingByTag()`), so the number beside a category
+  always equals the cards it shows — *not* the same numbers as `/calendar`'s dropdown, which counts
+  distinct events in a wider window (`_apc_calendar_calendar_tag_event_counts()`). An unknown or stale
+  `?tag=` is ignored (shows everything). `findEvents()`/`countEvents()` gained a trailing `$tag_tid`
+  argument, applied as an `IN` subquery so a doubly-tagged event can't duplicate cards. The page's
+  cache varies on `url.query_args:tag`.
+- **Date range + pager (2026-10-14, second pass; collapsed box + past dates 2026-10-15):** `?from=` /
+  `?to=` (YYYY-MM-DD) via two native date pickers, applied with an always-visible **Apply** button (a
+  half-typed date must not fire a request; the category dropdown still submits itself and carries the
+  dates along). **Dates in the past are allowed on purpose** — visitors can go looking for older events.
+  An explicit `from` is taken at its word and runs from that day's midnight (so picking today includes
+  events already over); with no `from` it is still the upcoming list (from now), except a past-only `to`
+  with no `from`, which reaches back to the first event on record. The h1 reads "Events" instead of
+  "Upcoming events" whenever the range reaches before now. Dates are read in the visitor's/site
+  timezone, anything unparsable is ignored, and a `to` earlier than `from` swaps them. Category counts
+  follow the range (`countUpcomingByTag($lower, $upper)`). Verified against direct SQL: 20 Oct–5 Nov = 16
+  occurrences (12 Protest), 1–30 Sep = 31, through 15 Sep = 10. A "Showing 13–24 of 36 events" line sits
+  above the grid, with a "Clear filters" link whenever anything is applied.
+  **The filters live in a collapsed `<details>` box** ("Filter by date or category"), shut by default so
+  the list is the first thing on a phone. While shut, its heading says what is applied
+  (`filter.description`, e.g. "Oct 20 – Nov 5 · Protest"), and the Clear link sits in the "Showing…" line
+  so it works without opening the box. Not auto-opened after a submit.
+  **Pager:** it was already Olivero's first/previous/numbers/next/last; what changed is `#quantity: 5`
+  (default 9 numbers + 4 controls can't share a row on a phone) and phone CSS (≤31.24rem: items shrink
+  to 2.25rem, 2rem under 21rem, first/last hidden) so it stays on **one row down to 320 px** — checked
+  with a worst-case 5-number pager at 320 and 360 px. Pager links keep `from`/`to`/`tag`.
+- **"Tiny dropdown font" — not a site bug.** The small text seen in Chrome was the *option list the
+  browser pops open* for the category dropdown (macOS Chrome's native menu, in a small system font), not
+  the dropdown itself: the select computes to 16 px at 320–412 px with no horizontal overflow, and
+  Firefox's mobile emulation shows it fine. The popup is drawn by the OS/browser and can't be styled
+  with CSS (`option { font-size }` is ignored there); on a real phone it's the platform's own picker.
+  Left alone. The controls in the filter form still have an explicit 16 px font and 44 px height (also
+  stops iOS zooming on focus) — harmless, keep.
+- **"Month view →" link** next to the heading on `/calendar/upcoming` goes to `/calendar`; hidden by CSS
+  at ≤768 px (phones never see a month grid).
+- Verified in real Chrome (iframes at 412/768 px, the way `_readme/anonymous-site-sweep.md` does it):
+  `/calendar` → `/calendar/upcoming`; tag carried over; `?view=grid` stays; the dropdown submits itself
+  and keeps the selection; no horizontal scroll; counts match the cards (Protest: 23 → 12 + 11 over two
+  pages). **Not run:** the full sweep for `/`, `/locations` and a location page (the browser tool timed
+  out twice; the server answered in 0.03–0.57 s) — rerun after deploy. A true 769 px boundary can't be
+  checked in an iframe (its scrollbar eats ~4 px).
+- Considered and not done: a custom FullCalendar list view with a fixed 60-day duration (starts at
+  today) instead of the redirect — the module's UI can't configure custom views, and phones would still
+  download the calendar library.
 
 ### Pre-launch (carried over from `Event Calendar Plan.md`)
 
