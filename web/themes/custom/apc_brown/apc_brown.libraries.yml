@@ -352,8 +352,22 @@ upcoming-events:
   css:
     theme:
       css/components/upcoming-events.css: {}
+  js:
+    js/upcoming-filter.js: {}
   dependencies:
+    - core/drupal
+    - core/once
     - apc_brown/front-page
+
+# /calendar on a phone: send visitors to /calendar/upcoming (a plain list with
+# a category filter) instead of FullCalendar. In the <head> so the redirect
+# happens before the ~110 KB calendar library and the event payload are
+# parsed; the script is a few lines.
+calendar-mobile-redirect:
+  version: VERSION
+  header: true
+  js:
+    js/calendar-mobile-redirect.js: {}
 
 # /locations: a grid of every published location, each a plain card linking
 # to its own page. Attached directly from templates/locations-page.html.twig.

@@ -190,3 +190,207 @@
   font-size: var(--font-size-s);
   color: var(--color-neutral-700);
 }
+
+/* Heading row: title on the left, "Month view" link on the right. */
+.apc-upcoming__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: var(--sp1, 1.125rem);
+}
+
+.apc-upcoming__month-link {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The month grid isn't offered on phones (/calendar sends them to this
+   page), so don't link to it there. Same 768px as the redirect. */
+@media (max-width: 48rem) {
+  .apc-upcoming__month-link {
+    display: none;
+  }
+}
+
+/* The collapsed filter box: a bordered card with a tappable heading. The
+   summary also names whatever is applied, so a shut box is never a mystery.
+   44px tall, 16px text, like the controls inside it. */
+.apc-upcoming__filters {
+  margin: 0 0 var(--sp1, 1.125rem);
+  border: 1px solid var(--color--gray-60, #8a8a8a);
+  border-radius: var(--border-radius, 4px);
+  background-color: var(--color--white, #fff);
+}
+
+.apc-upcoming__filters-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--sp0-75, 0.84375rem);
+  min-height: 2.75rem;
+  padding: 0.6rem 0.75rem;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  list-style: none;
+}
+
+.apc-upcoming__filters-toggle::-webkit-details-marker {
+  display: none;
+}
+
+/* Disclosure arrow, drawn in CSS so it flips with the open state. */
+.apc-upcoming__filters-label::after {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-inline-start: 0.6rem;
+  border-inline-end: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
+  transform: translateY(-0.15rem) rotate(45deg);
+  transition: transform 0.15s ease-out;
+}
+
+.apc-upcoming__filters[open] .apc-upcoming__filters-label::after {
+  transform: translateY(0.1rem) rotate(-135deg);
+}
+
+.apc-upcoming__filters-state {
+  font-weight: 400;
+  color: var(--color-text-primary-medium, #5a3a1e);
+}
+
+.apc-upcoming__filters > .apc-upcoming__filter {
+  margin: 0;
+  padding: 0 0.75rem 0.75rem;
+}
+
+/* Filter form: two date pickers side by side, the category dropdown full
+   width under them, then Apply / Clear. Every control is at least 16px --
+   iOS Safari zooms the whole page when a smaller field is focused, and it
+   reads as "tiny" next to the 16px body text -- and at least 44px tall. */
+.apc-upcoming__filter {
+  display: grid;
+  gap: var(--sp0-75, 0.84375rem);
+  margin: 0 0 var(--sp1, 1.125rem);
+}
+
+.apc-upcoming__filter-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp0-75, 0.84375rem);
+}
+
+.apc-upcoming__field {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.apc-upcoming__label {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.apc-upcoming__control {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.75rem;
+  height: 2.75rem;
+  padding-block: 0;
+  padding-inline: 0.75rem;
+  border: 1px solid var(--color--gray-60, #8a8a8a);
+  border-radius: var(--border-radius, 4px);
+  background-color: var(--color--white, #fff);
+  color: var(--color-text-neutral-loud, #1b1b1b);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+/* The select keeps the theme's own arrow and its right-hand padding. */
+select.apc-upcoming__control {
+  padding-inline-end: var(--sp3, 2.5rem);
+}
+
+.apc-upcoming__control option {
+  font-size: 1rem;
+}
+
+.apc-upcoming__filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp1, 1.125rem);
+}
+
+.apc-upcoming__apply {
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+
+.apc-upcoming__clear {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Very narrow phones: stack the two dates rather than squeeze them. */
+@media (max-width: 21rem) {
+  .apc-upcoming__filter-dates {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 48.0625rem) {
+  .apc-upcoming__filter {
+    grid-template-columns: repeat(auto-fit, minmax(11rem, max-content));
+    align-items: end;
+  }
+
+  .apc-upcoming__filter-dates {
+    display: contents;
+  }
+
+  .apc-upcoming__control {
+    min-width: 11rem;
+  }
+}
+
+.apc-upcoming__summary {
+  margin: 0 0 var(--sp1, 1.125rem);
+  font-weight: 600;
+  color: var(--color-text-neutral-soft, #555);
+}
+
+/* Pager: first / previous / 5 numbers / next / last must share one row. At
+   the theme's 45px per item that is 405px, wider than a phone's content
+   box, so on small screens the items shrink and first/last are dropped
+   (previous/next and the numbers stay; page numbers jump anywhere anyway). */
+.apc-upcoming .pager__items {
+  justify-content: center;
+}
+
+@media (max-width: 31.24rem) {
+  .apc-upcoming .pager__item {
+    width: 2.25rem;
+    height: 2.75rem;
+  }
+
+  .apc-upcoming .pager__item--first,
+  .apc-upcoming .pager__item--last {
+    display: none;
+  }
+}
+
+/* 320px-wide phones: 7 items (previous, 5 numbers, next) at 2.25rem would be
+   a few pixels wider than the content box. */
+@media (max-width: 21rem) {
+  .apc-upcoming .pager__item {
+    width: 2rem;
+  }
+}

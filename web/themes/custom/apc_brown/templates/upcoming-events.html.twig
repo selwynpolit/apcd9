@@ -18,7 +18,64 @@
 
   <div class="apc-upcoming__layout">
     <div class="apc-upcoming__main">
-      <h1 class="apc-upcoming__title">{{ 'Upcoming events'|t }}</h1>
+      <div class="apc-upcoming__head">
+        <h1 class="apc-upcoming__title">{{ heading ?: 'Upcoming events'|t }}</h1>
+        {# Phones never see this: /calendar sends them here, and a month grid
+           doesn't fit their screen (hidden by CSS at the same 768px). #}
+        <a class="apc-upcoming__month-link" href="{{ path('view.calendar.page_1') }}">{{ 'Month view'|t }} &rarr;</a>
+      </div>
+
+      {# Collapsed by default so the list is the first thing on a phone; the
+         summary line says what is applied while it is shut. Plain GET form:
+         every filtered view is a normal, bookmarkable URL. The category
+         dropdown submits itself (upcoming-filter.js); the dates wait for
+         "Apply" because a half-typed date must not fire a request. #}
+      <details class="apc-upcoming__filters">
+        <summary class="apc-upcoming__filters-toggle">
+          <span class="apc-upcoming__filters-label">{{ 'Filter by date or category'|t }}</span>
+          {% if filter.active %}
+            <span class="apc-upcoming__filters-state">{{ filter.description }}</span>
+          {% endif %}
+        </summary>
+
+        <form class="apc-upcoming__filter" method="get" action="{{ path('apc_calendar.upcoming_events') }}">
+          <div class="apc-upcoming__filter-dates">
+            <div class="apc-upcoming__field">
+              <label class="apc-upcoming__label" for="apc-upcoming-from">{{ 'From'|t }}</label>
+              <input class="apc-upcoming__control" type="date" id="apc-upcoming-from" name="from" value="{{ filter.from }}">
+            </div>
+            <div class="apc-upcoming__field">
+              <label class="apc-upcoming__label" for="apc-upcoming-to">{{ 'To'|t }}</label>
+              <input class="apc-upcoming__control" type="date" id="apc-upcoming-to" name="to" value="{{ filter.to }}" {% if filter.from %}min="{{ filter.from }}"{% endif %}>
+            </div>
+          </div>
+
+          {% if filter.options %}
+            <div class="apc-upcoming__field">
+              <label class="apc-upcoming__label" for="apc-upcoming-tag">{{ 'Category'|t }}</label>
+              <select id="apc-upcoming-tag" name="tag" class="apc-upcoming__control apc-upcoming__filter-select">
+                <option value="">{{ '- Any -'|t }}</option>
+                {% for option in filter.options %}
+                  <option value="{{ option.tid }}"{% if option.tid == filter.selected %} selected{% endif %}>{{ option.label }} ({{ option.count }})</option>
+                {% endfor %}
+              </select>
+            </div>
+          {% endif %}
+
+          <div class="apc-upcoming__filter-actions">
+            <button type="submit" class="button button--primary apc-upcoming__apply">{{ 'Apply'|t }}</button>
+          </div>
+        </form>
+      </details>
+
+      {% if summary %}
+        <p class="apc-upcoming__summary">
+          {{ summary }}
+          {% if filter.active %}
+            <a class="apc-upcoming__clear" href="{{ path('apc_calendar.upcoming_events') }}">{{ 'Clear filters'|t }}</a>
+          {% endif %}
+        </p>
+      {% endif %}
 
       {% if cards %}
         <div class="apc-upcoming__grid">
@@ -27,6 +84,8 @@
           {% endfor %}
         </div>
         {{ pager }}
+      {% elseif filter.active %}
+        <p>{{ 'No events match these filters.'|t }} <a href="{{ path('apc_calendar.upcoming_events') }}">{{ 'Clear filters'|t }}</a></p>
       {% else %}
         <p>{{ 'No upcoming events right now -- check back soon.'|t }}</p>
       {% endif %}

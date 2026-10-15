@@ -36,6 +36,9 @@ function apc_brown_theme($existing, $type, $theme, $path) {
       'template' => 'upcoming-events',
       'variables' => [
         'cards' => [],
+        'filter' => NULL,
+        'heading' => NULL,
+        'summary' => NULL,
         'pager' => NULL,
         'signs_sidebar' => NULL,
         'recent_posts' => NULL,
@@ -1407,6 +1410,9 @@ function apc_brown_preprocess_views_view(&$variables) {
   // views-view.html.twig always outputs (unlike `title`, which is admin-preview
   // only).
   if ($view->id() === 'calendar' && $view->current_display === 'page_1') {
+    // Phones get /calendar/upcoming instead of FullCalendar's year list --
+    // see js/calendar-mobile-redirect.js.
+    $variables['#attached']['library'][] = 'apc_brown/calendar-mobile-redirect';
     $variables['title_prefix']['apc_calendar_h1'] = [
       '#type' => 'html_tag',
       '#tag' => 'h1',

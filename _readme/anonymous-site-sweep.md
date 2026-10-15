@@ -72,8 +72,10 @@ DDEV site** was given explicitly; it does not extend to production or any other 
 The page list above is a sample: swap in whatever changed. Event and photo node IDs
 change; pick any published `calendar_event` / `community_photo`
 (`ddev drush sql-query "select nid,type from node_field_data where status=1 and type in ('calendar_event','community_photo') order by nid desc limit 5"`).
-`/calendar` on a phone is a *list* view; its popup opens from the `<a>` inside
-`.fc-list-item` rows, on desktop from `.fc-event` (checked ad hoc, not in `overlays()`).
+`/calendar` at <= 768px **redirects to `/calendar/upcoming`** (`js/calendar-mobile-redirect.js`;
+add `?view=grid` to stay on the calendar), so a phone-width sweep of `/calendar` really measures the
+upcoming list. Its popup opens from the card links; on desktop, from `.fc-event` (checked ad hoc, not
+in `overlays()`).
 
 ### Gotchas learned the hard way
 

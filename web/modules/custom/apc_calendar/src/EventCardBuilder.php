@@ -40,8 +40,8 @@ final class EventCardBuilder {
    * @return object[]
    *   Rows with ->nid and ->occurrence (the matched field_event_date_value).
    */
-  public function findEvents(int $now, ?int $upper_bound, int $limit, array $exclude_nids = [], bool $require_promoted = FALSE, int $offset = 0): array {
-    $query = $this->buildQuery($now, $upper_bound, $exclude_nids, $require_promoted);
+  public function findEvents(int $now, ?int $upper_bound, int $limit, array $exclude_nids = [], bool $require_promoted = FALSE, int $offset = 0, ?int $tag_tid = NULL): array {
+    $query = $this->buildQuery($now, $upper_bound, $exclude_nids, $require_promoted, $tag_tid);
     $query->orderBy('d.field_event_date_value', 'ASC');
     $query->range($offset, $limit);
     return $query->execute()->fetchAll();
@@ -50,9 +50,43 @@ final class EventCardBuilder {
   /**
    * Counts occurrences at or after $now, for paginating findEvents().
    */
-  public function countEvents(int $now, ?int $upper_bound, array $exclude_nids = [], bool $require_promoted = FALSE): int {
-    $query = $this->buildQuery($now, $upper_bound, $exclude_nids, $require_promoted);
+  public function countEvents(int $now, ?int $upper_bound, array $exclude_nids = [], bool $require_promoted = FALSE, ?int $tag_tid = NULL): int {
+    $query = $this->buildQuery($now, $upper_bound, $exclude_nids, $require_promoted, $tag_tid);
     return (int) $query->countQuery()->execute()->fetchField();
+  }
+
+  /**
+   * Counts upcoming occurrences per tag, for the /calendar/upcoming filter.
+   *
+   * Counts *occurrences* (one per card), not distinct events, so the number
+   * beside a category always equals how many cards picking it shows -- a
+   * weekly series tagged "Protest" is 12 cards, and says 12. This is
+   * deliberately different from _apc_calendar_calendar_tag_event_counts(),
+   * which counts distinct events inside /calendar's wider "ended within the
+   * last month" window.
+   *
+   * @return int[]
+   *   Term ID => number of upcoming occurrences carrying that tag.
+   */
+  public function countUpcomingByTag(int $now, ?int $upper_bound = NULL): array {
+    $query = $this->database->select('node_field_data', 'n');
+    $query->innerJoin('node__field_event_date', 'd', 'n.nid = d.entity_id AND d.deleted = 0');
+    $query->innerJoin('node__field_tags', 't', 'n.nid = t.entity_id AND t.deleted = 0');
+    $query->condition('n.status', 1);
+    $query->condition('n.type', 'calendar_event');
+    $query->condition('d.field_event_date_value', $now, '>=');
+    if ($upper_bound !== NULL) {
+      $query->condition('d.field_event_date_value', $upper_bound, '<=');
+    }
+    $query->addField('t', 'field_tags_target_id', 'tid');
+    $query->addExpression('COUNT(*)', 'cnt');
+    $query->groupBy('t.field_tags_target_id');
+
+    $counts = [];
+    foreach ($query->execute() as $row) {
+      $counts[(int) $row->tid] = (int) $row->cnt;
+    }
+    return $counts;
   }
 
   /**
@@ -87,7 +121,7 @@ final class EventCardBuilder {
     return $row ?: NULL;
   }
 
-  private function buildQuery(int $now, ?int $upper_bound, array $exclude_nids, bool $require_promoted) {
+  private function buildQuery(int $now, ?int $upper_bound, array $exclude_nids, bool $require_promoted, ?int $tag_tid = NULL) {
     $query = $this->database->select('node_field_data', 'n');
     $query->innerJoin('node__field_event_date', 'd', 'n.nid = d.entity_id AND d.deleted = 0');
     $query->addField('n', 'nid');
@@ -103,6 +137,15 @@ final class EventCardBuilder {
     }
     if ($exclude_nids) {
       $query->condition('n.nid', $exclude_nids, 'NOT IN');
+    }
+    if ($tag_tid !== NULL) {
+      // A subquery rather than a join, so an event that somehow carries the
+      // same tag twice can't produce duplicate rows (and so duplicate cards).
+      $tagged = $this->database->select('node__field_tags', 'tg');
+      $tagged->addField('tg', 'entity_id');
+      $tagged->condition('tg.field_tags_target_id', $tag_tid);
+      $tagged->condition('tg.deleted', 0);
+      $query->condition('n.nid', $tagged, 'IN');
     }
     return $query;
   }
