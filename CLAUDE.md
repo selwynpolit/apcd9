@@ -125,6 +125,7 @@ ssh into greengeeks
 cd ~/www/d9
 git pull
 composer install --no-dev
+composer patches-repatch                # ONLY when patches/ or composer.json's patches changed (see Group 7)
 drush updb
 drush cr
 drush cst
@@ -133,8 +134,11 @@ drush cr
 curl -s -o /dev/null https://www.austinprogressivecalendar.com/calendar   # re-warm the page cache
 ```
 
-The last line matters: `drush cr` empties the page cache and a cold `/calendar` took ~7 s on prod
-(2026-10-14, before the dedupe below). See Group 7.
+The last line matters: `drush cr` empties the page cache, so the first visitor would otherwise pay for a
+cold `/calendar` render (~7 s on prod before the dedupe in Group 7, ~1.3 s after). **`composer install`
+does not re-apply patches to a package that is already installed** — `contrib/` is gitignored, so a new
+entry under `extra.patches` only reaches prod via `composer patches-repatch` (it deletes and re-downloads
+the patched modules, a few seconds). Check with the `grep` in Group 7's dedupe bullet.
 
 ### Apex → www redirect lives outside this repo
 
@@ -685,7 +689,7 @@ promote, demote, sticky, not sticky, save, update URL alias, delete. The event-s
 (publish event + location, accept/reject import, apply photo category) stay on their own views.
 Note VBO remembers the selection across pages **and reloads** — clear it before submitting an action.
 
-### Group 7 — `/calendar` performance (investigated 2026-10-14; code done locally — not yet deployed)
+### Group 7 — `/calendar` performance (investigated 2026-10-14; deployed and verified on prod 2026-10-15)
 
 `/calendar` was the slowest page on the site by a wide margin: on prod a cold render (page-cache miss)
 took **5.6–7.5 s** against 0.1–0.5 s for `/home`, `/locations` etc. Cached it was 0.16–0.33 s, so the cost
@@ -697,6 +701,13 @@ unique `?cb=<random>` query string (the page cache keys on the full URL), TTFB:
 `/calendar` cold 5.6–7.5 s (first request after a `drush cr`: 7.45 s) · cached 0.16–0.33 s ·
 `/home` cold 0.13–0.55 s · HTML 998 KB raw / 29 KB gzipped · **1,229 events embedded**.
 Local, same change: cold 1.5–2.0 s → 0.19–0.51 s, HTML 565 KB → 113 KB, 693 → 81 events.
+
+**Prod after deploying, 2026-10-15** (same method): `/calendar` cold **1.0–1.35 s** (was 5.6–7.5 s) · cached
+0.10–0.23 s · `/home` cold 0.12–0.27 s · `/calendar/upcoming` incl. tag/date filters 0.28–0.36 s ·
+HTML **178 KB** raw / 20 KB gzipped (was 998 / 29) · **155 events, 0 malformed** (was 1,229). A
+category-filtered `/calendar` (Protest) cold: 0.8–1.7 s, 58 events. Anonymous HTTP sweep of prod (251
+pages, 645 links): no server errors, only the known legacy 404s (plus Cloudflare's `/cdn-cgi/l/email-protection`
+link, which isn't ours).
 
 - [x] **Dedupe (the real fix).** `apc_calendar_query_views_calendar_alter()` in `apc_calendar.module`
       forces `DISTINCT` on the calendar view's query. **The one thing to know:** the view already had
@@ -725,7 +736,9 @@ Local, same change: cold 1.5–2.0 s → 0.19–0.51 s, HTML 565 KB → 113 KB, 
       `composer install --no-dev`, confirm
       `grep -n "view->row_index = " web/modules/contrib/fullcalendar_view/src/FullcalendarViewPreprocess.php`
       shows `$row->index` on the second line (≈232); if not, `composer patches-repatch`. Without the patch
-      the dedupe still works but filtered renders log warnings.
+      the dedupe still works but filtered renders log warnings. **This happened on the 2026-10-15
+      deploy:** the patch file, `composer.json` and `patches.lock.json` were all on prod but the module was
+      unpatched until `composer patches-repatch` was run; afterwards a filtered render logged 0 warnings.
 - [x] **Re-warm after a save** (`CalendarRewarmTracker` + `EventSubscriber/CalendarRewarmSubscriber`).
       The tracker is a `cache_tags_invalidator` (no constructor dependencies on purpose — those
       services are built under the cache layer) that flags `node_list`, `taxonomy_term_list` or
@@ -738,18 +751,27 @@ Local, same change: cold 1.5–2.0 s → 0.19–0.51 s, HTML 565 KB → 113 KB, 
       `kernel.terminate`).
       Does it slow saving? Shouldn't: prod runs LiteSpeed (`lsphp`), and Symfony's `Response::send()`
       calls `litespeed_finish_request()`, so the response is flushed before terminate work runs (same
-      mechanism `IndexNowOnPublishSubscriber` already relies on). **Unverified on prod — time an event
-      save after deploying.** Worst case the save waits for one `/calendar` rebuild.
-- [ ] **Cron warm (the safety net, outside the repo).** Re-warm doesn't cover the hourly max-age expiry or
-      `drush cr`. Add a GreenGeeks cPanel cron entry, every 5–10 minutes:
+      mechanism `IndexNowOnPublishSubscriber` already relies on). **Verified on prod 2026-10-15** by
+      saving an event through the admin UI: the cached `/calendar` was rebuilt 1–2 s after the save (its
+      `Last-Modified` header moved to the save second, and it was a `HIT` immediately after, well clear
+      of any cron warm). A second save, posted with `fetch()`, got its redirect back in **331 ms** while the
+      calendar's `Last-Modified` moved ~1 s *later* — i.e. the response left before the re-warm finished,
+      so saves are not slowed. (Tip for repeating it: `last-modified` on a `HEAD /calendar` shows when the
+      page-cache entry was built.)
+- [x] **Cron warm (the safety net, outside the repo) — in place on prod, 2026-10-15.** The crontab has
+      `*/15 * * * * curl -s -o /dev/null --max-time 30 https://www.austinprogressivecalendar.com/calendar`
+      (every **15** minutes, not 10 — fine, it just bounds the cold window at 15 min), next to the existing
+      `0,30 * * * *` Drupal cron `wget`. Re-warm doesn't cover the hourly max-age expiry or
+      `drush cr`; this does. Recommended entry, every 5–10 minutes:
       `curl -s -o /dev/null --max-time 30 https://www.austinprogressivecalendar.com/calendar`
       It must be the exact public URL with no query string and no cookies. A cache *hit* does not
       extend an entry's expiry, so warming every 30 min would still leave up to a 30-minute cold window
       after each expiry — the interval is the worst-case exposure, not the cache lifetime. A hit costs
       ~0.2 s, so frequent is cheap. (Prod's cron looks externally driven: `automated_cron` is enabled
       but its interval reads 0, and cron last ran at :00 — confirm in cPanel.)
-- [ ] **After deploy:** re-measure with the baseline above; time an event save; check `/calendar` returns
-      `x-drupal-cache: HIT` right after a save. If cold is then ~1 s or less, a longer page `max-age`
+- [x] **After deploy (done 2026-10-15; see the prod numbers above):** re-measure with the baseline above;
+      time an event save; check `/calendar` returns `x-drupal-cache: HIT` right after a save. Cold is now
+      ~1.3 s, so a longer page `max-age`
       (suggested ~4 h, not the 1-day maximum) matters little. Longer values only cut hourly-expiry
       misses; tag invalidation already keeps content correct, and the same setting sets `Cache-Control`
       for browsers, so a day would let a visitor see a fixed or newly approved event up to a day late.
@@ -769,7 +791,7 @@ Local, same change: cold 1.5–2.0 s → 0.19–0.51 s, HTML 565 KB → 113 KB, 
   relative to *now*, which means a fixed window and empty months beyond it. `fullcalendar_view` lists
   AJAX event loading as a *premium* (unreleased) feature.
 
-**Mobile `/calendar` (built 2026-10-14, local only — not yet deployed).** Below 768 px `fullcalendar_view`
+**Mobile `/calendar` (built 2026-10-14, deployed 2026-10-15).** Below 768 px `fullcalendar_view`
 swapped to `listYear` (`default_mobile_view` in `views.view.calendar`): a *calendar-year* list that
 starts at the first event inside the view's "ends ≥ 1 month ago" window, so a phone landed on
 **September 1** with past events first (on 2026-10-14, 27 of 53 date headings were already in the past —
@@ -824,9 +846,12 @@ still downloaded FullCalendar (~110 KB gzipped) plus the whole event payload.
 - Verified in real Chrome (iframes at 412/768 px, the way `_readme/anonymous-site-sweep.md` does it):
   `/calendar` → `/calendar/upcoming`; tag carried over; `?view=grid` stays; the dropdown submits itself
   and keeps the selection; no horizontal scroll; counts match the cards (Protest: 23 → 12 + 11 over two
-  pages). **Not run:** the full sweep for `/`, `/locations` and a location page (the browser tool timed
-  out twice; the server answered in 0.03–0.57 s) — rerun after deploy. A true 769 px boundary can't be
-  checked in an iframe (its scrollbar eats ~4 px).
+  pages). Phone-width browser sweep (anonymous, local, 412 px) later passed `/` (7,058 px tall),
+  `/locations` (9,127 px) and `/locations/acc-highland` (2,662 px) with no issues — it needs one page
+  per call and patience (each iframe load is slow; running several in one call timed out). On prod, the
+  redirect, `?view=grid`, the collapsed filter box, past-range "Events" heading and 16 px controls were
+  re-checked in Chrome at 412 px. A true 769 px boundary can't be checked in an iframe (its scrollbar
+  eats ~4 px).
 - Considered and not done: a custom FullCalendar list view with a fixed 60-day duration (starts at
   today) instead of the redirect — the module's UI can't configure custom views, and phones would still
   download the calendar library.
