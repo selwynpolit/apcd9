@@ -83,13 +83,13 @@ display:
           show_select_all: default
           selected_actions:
             -
-              action_id: entity:publish_action:node
+              action_id: 'entity:publish_action:node'
               preconfiguration:
                 add_confirmation: false
                 confirm_help_text: ''
                 label_override: ''
             -
-              action_id: entity:unpublish_action:node
+              action_id: 'entity:unpublish_action:node'
               preconfiguration:
                 add_confirmation: false
                 confirm_help_text: ''
@@ -119,7 +119,7 @@ display:
                 confirm_help_text: ''
                 label_override: ''
             -
-              action_id: entity:save_action:node
+              action_id: 'entity:save_action:node'
               preconfiguration:
                 add_confirmation: false
                 confirm_help_text: ''
