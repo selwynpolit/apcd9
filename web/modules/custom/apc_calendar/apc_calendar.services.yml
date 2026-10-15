@@ -36,6 +36,21 @@ services:
     tags:
       - { name: event_subscriber }
 
+  apc_calendar.calendar_rewarm_tracker:
+    class: Drupal\apc_calendar\CalendarRewarmTracker
+    tags:
+      - { name: cache_tags_invalidator }
+
+  apc_calendar.calendar_rewarm:
+    class: Drupal\apc_calendar\EventSubscriber\CalendarRewarmSubscriber
+    arguments:
+      - '@apc_calendar.calendar_rewarm_tracker'
+      - '@http_client'
+      - '@lock'
+      - '@logger.channel.apc_calendar'
+    tags:
+      - { name: event_subscriber }
+
   apc_calendar.index_now_on_publish:
     class: Drupal\apc_calendar\EventSubscriber\IndexNowOnPublishSubscriber
     arguments:
