@@ -52,6 +52,7 @@ global-styling:
     theme:
       # APC additions: accent ramps, calendar, location and directions rules.
       css/theme/apc.css: {}
+      css/components/text-content-tables.css: {}
 
   js:
     js/checkbox.js: {}

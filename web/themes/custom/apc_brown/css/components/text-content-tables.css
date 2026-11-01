@@ -1,0 +1,95 @@
+/**
+ * @file
+ * Tables in body text (.text-content), made phone-safe.
+ *
+ * Olivero's table.css assumes short cells. Pages pasted in from a word
+ * processor (e.g. the Election Support Project resource list) carry long
+ * link labels and 3-4 columns, which made every such table wider than the
+ * screen and the whole page scroll sideways.
+ *
+ * Two parts:
+ *  - everywhere: long link labels and headers may wrap anywhere, so a table
+ *    never has to be wider than its column;
+ *  - below 48rem (the same 768px break fullcalendar_view and the calendar
+ *    redirect use): each row stacks into a block -- first cell as the
+ *    row's title, then the rest -- and the header row is visually hidden
+ *    (kept for screen readers). Cell order (title / link / notes) reads
+ *    fine without per-cell labels.
+ */
+.text-content table td a,
+.text-content table th {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 47.99rem) {
+  .text-content table,
+  .text-content table tbody,
+  .text-content table tr,
+  .text-content table td,
+  .text-content table th {
+    display: block;
+    width: auto;
+  }
+
+  .text-content table thead {
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    inline-size: 1px;
+    block-size: 1px;
+  }
+
+  .text-content table tbody tr {
+    padding-block: var(--sp1);
+    border-block-end: 2px solid var(--color--gray-65);
+  }
+
+  .text-content table tbody tr:last-child {
+    border-block-end: 0;
+  }
+
+  .text-content table td {
+    padding-block: var(--sp0-25);
+    padding-inline-end: 0;
+    border-block-end: 0;
+  }
+
+  /* The first cell is the row's title; in a multi-line cell only its first
+     line is (the rest is date/credit detail). */
+  .text-content table td:first-child {
+    font-weight: 700;
+  }
+
+  .text-content table td:first-child p:not(:first-child) {
+    font-weight: 400;
+  }
+
+  /* Full-width divider rows, e.g. "Completed events": the th carries the
+     rule, so the row must not add its own. */
+  .text-content table tbody tr:has(> th[colspan]) {
+    padding-block: 0;
+    border-block-end: 0;
+  }
+
+  .text-content table tbody th[colspan] {
+    padding-block: var(--sp1);
+    border-block-end: 2px solid var(--color--primary-50);
+  }
+}
+
+/**
+ * Resource lists: the list form of a table whose notes column was too busy
+ * (bold title + link on one line, the notes as an indented paragraph below).
+ * Opt-in via class, so ordinary body-text lists keep the default spacing.
+ */
+.text-content ul.resource-list > li {
+  margin-block: 0 var(--sp1-5);
+}
+
+.text-content ul.resource-list > li > p {
+  margin-block: 0 var(--sp0-5);
+}
+
+.text-content ul.resource-list > li > p:last-child {
+  margin-block-end: 0;
+}
