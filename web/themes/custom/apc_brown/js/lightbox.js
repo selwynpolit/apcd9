@@ -27,6 +27,8 @@
         overlay.hidden = true;
         overlay.innerHTML =
           '<button type="button" class="apc-lightbox__close" aria-label="Close">&times;</button>' +
+          '<button type="button" class="apc-lightbox__nav apc-lightbox__nav--prev" aria-label="Previous photo" hidden>&#8249;</button>' +
+          '<button type="button" class="apc-lightbox__nav apc-lightbox__nav--next" aria-label="Next photo" hidden>&#8250;</button>' +
           '<div class="apc-lightbox__viewport">' +
           '<img class="apc-lightbox__img apc-lightbox__img--transition" alt="">' +
           '</div>' +
@@ -85,20 +87,37 @@
           applyTransform();
         }
 
+        const prevButton = overlay.querySelector('.apc-lightbox__nav--prev');
+        const nextButton = overlay.querySelector('.apc-lightbox__nav--next');
+        // Optional {prev(), next()} supplied by the opener (each returns
+        // {src, alt}) -- when present, the arrows and arrow keys step
+        // through the opener's set. Null for single-image callers.
+        let nav = null;
+
         const close = () => {
           overlay.hidden = true;
           img.src = '';
+          nav = null;
+          prevButton.hidden = true;
+          nextButton.hidden = true;
           resetZoom();
           if (lastFocused) {
             lastFocused.focus();
           }
         };
 
-        const open = (src, alt, trigger) => {
-          lastFocused = trigger;
+        const show = (src, alt) => {
           img.src = src;
           img.alt = alt || '';
           resetZoom();
+        };
+
+        const open = (src, alt, trigger, openNav) => {
+          lastFocused = trigger;
+          nav = openNav || null;
+          prevButton.hidden = !nav;
+          nextButton.hidden = !nav;
+          show(src, alt);
           overlay.hidden = false;
           overlay.querySelector('.apc-lightbox__close').focus();
           // One history entry per open, so the back gesture closes this
@@ -106,19 +125,60 @@
           Drupal.apcOverlayHistory.push(close);
         };
 
+        const step = (direction) => {
+          if (!nav) {
+            return;
+          }
+          const next = direction < 0 ? nav.prev() : nav.next();
+          if (next) {
+            show(next.src, next.alt);
+          }
+        };
+
         // User-initiated closes go through dismiss() so the history entry
         // open() pushed is rewound; popstate calls close() directly.
         const dismiss = () => Drupal.apcOverlayHistory.dismiss(close);
 
+        // True when a click on the <img> landed on the empty margin around
+        // the photo rather than the photo itself. The <img> fills its whole
+        // fixed box (object-fit: contain), so those margins are part of the
+        // element and a plain `target === overlay` test never sees them.
+        // Computes where the contained image is actually drawn.
+        const clickedOutsidePhoto = (event) => {
+          if (scale > MIN_SCALE || !img.naturalWidth || !img.naturalHeight) {
+            return false;
+          }
+          const box = img.getBoundingClientRect();
+          const ratio = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight);
+          const drawnWidth = img.naturalWidth * ratio;
+          const drawnHeight = img.naturalHeight * ratio;
+          const left = box.left + (box.width - drawnWidth) / 2;
+          const top = box.top + (box.height - drawnHeight) / 2;
+          return event.clientX < left || event.clientX > left + drawnWidth
+            || event.clientY < top || event.clientY > top + drawnHeight;
+        };
+
         overlay.addEventListener('click', (event) => {
-          if (event.target === overlay) {
+          if (event.target === overlay || event.target === viewport
+            || (event.target === img && clickedOutsidePhoto(event))) {
             dismiss();
           }
         });
         overlay.querySelector('.apc-lightbox__close').addEventListener('click', dismiss);
+        prevButton.addEventListener('click', () => step(-1));
+        nextButton.addEventListener('click', () => step(1));
         document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape' && !overlay.hidden) {
+          if (overlay.hidden) {
+            return;
+          }
+          if (event.key === 'Escape') {
             dismiss();
+          }
+          else if (event.key === 'ArrowLeft') {
+            step(-1);
+          }
+          else if (event.key === 'ArrowRight') {
+            step(1);
           }
         });
 

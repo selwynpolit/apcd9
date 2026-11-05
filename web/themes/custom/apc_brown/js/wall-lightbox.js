@@ -36,12 +36,23 @@
             return;
           }
 
-          const trigger = event.target.closest('.apc-photo-gallery__photo, .apc-photo-gallery__caption a');
+          // A browse grid (the /photos page, data-apc-wall-browse) leaves
+          // the caption link alone so it navigates to the node. Every grid,
+          // browse or not, gets prev/next arrows through its photos.
+          const browse = grid.hasAttribute('data-apc-wall-browse');
+          const trigger = event.target.closest(browse
+            ? '.apc-photo-gallery__photo'
+            : '.apc-photo-gallery__photo, .apc-photo-gallery__caption a');
           if (!trigger || !document.body.__apcLightboxOpen) {
             return;
           }
 
           const item = trigger.closest('.apc-photo-gallery__item');
+          const dataFor = (el) => {
+            const link = el ? el.querySelector('.apc-photo-gallery__photo') : null;
+            const photoNid = link ? link.dataset.photoNid : null;
+            return photoNid ? (drupalSettings.apcPhotoGallery || {})[photoNid] : null;
+          };
           const photoLink = item ? item.querySelector('.apc-photo-gallery__photo') : trigger;
           const nid = photoLink ? photoLink.dataset.photoNid : null;
           const data = nid ? (drupalSettings.apcPhotoGallery || {})[nid] : null;
@@ -50,7 +61,20 @@
           }
 
           event.preventDefault();
-          document.body.__apcLightboxOpen(data.full, data.alt, trigger);
+
+          let nav = null;
+          if (item) {
+            // Only items with lightbox data take part; wraps at the ends.
+            const items = Array.from(grid.querySelectorAll('.apc-photo-gallery__item')).filter(dataFor);
+            let index = items.indexOf(item);
+            const move = (delta) => {
+              index = (index + delta + items.length) % items.length;
+              const d = dataFor(items[index]);
+              return { src: d.full, alt: d.alt };
+            };
+            nav = { prev: () => move(-1), next: () => move(1) };
+          }
+          document.body.__apcLightboxOpen(data.full, data.alt, trigger, nav);
         });
       });
     },

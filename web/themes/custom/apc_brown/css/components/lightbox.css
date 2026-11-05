@@ -84,6 +84,41 @@
   background: var(--color--gray-90);
 }
 
+/* Prev/next arrows -- only unhidden when the opener supplies a set to step
+   through (the /photos grid). */
+.apc-lightbox__nav {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--color--white);
+  color: var(--color--gray-5);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.apc-lightbox__nav[hidden] {
+  display: none;
+}
+
+.apc-lightbox__nav--prev {
+  left: var(--sp1);
+}
+
+.apc-lightbox__nav--next {
+  right: var(--sp1);
+}
+
+.apc-lightbox__nav:hover,
+.apc-lightbox__nav:focus {
+  background: var(--color--gray-90);
+}
+
 .apc-lightbox__zoom {
   position: absolute;
   bottom: var(--sp1);

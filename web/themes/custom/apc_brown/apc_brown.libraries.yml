@@ -493,10 +493,11 @@ photo-carousel:
     - core/drupalSettings
 
 # Full-size zoomable lightbox with caption/credit, for photo_gallery carousel
-# blocks only (not the generic apc_brown/lightbox used on event/location
-# photos, and not the /photos browse grid, which still just links to the
-# node). Attached by apc_brown_preprocess_block() on exactly the block
-# placements marked [data-apc-photo-lightbox]; see photo-carousel.js.
+# blocks and the photo detail page's related thumbnails (not the generic
+# apc_brown/lightbox used on event/location photos, the signs wall and the
+# /photos browse grid -- see wall-lightbox.js). Attached by
+# apc_brown_preprocess_block() on the block placements marked
+# [data-apc-photo-lightbox]; see photo-carousel.js.
 photo-lightbox:
   version: VERSION
   css:

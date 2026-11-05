@@ -299,14 +299,17 @@
    overflow:hidden (above) -- their images are large enough that the same
    hover zoom would otherwise poke past the frame. Photo clicks there open
    the lightbox anyway, so the pencil isn't the interaction that matters. */
-[data-apc-photo-grid] .apc-photo-gallery__photo {
+[data-apc-photo-grid] .apc-photo-gallery__photo,
+[data-apc-wall-browse] .apc-photo-gallery__photo {
   overflow: visible;
 }
 
 /* Lift the hovered/focused card (and therefore its contextual menu) above
    its grid neighbours so the dropdown isn't painted under the next card. */
 [data-apc-photo-grid] .apc-photo-gallery__photo:hover,
-[data-apc-photo-grid] .apc-photo-gallery__photo:focus-within {
+[data-apc-photo-grid] .apc-photo-gallery__photo:focus-within,
+[data-apc-wall-browse] .apc-photo-gallery__photo:hover,
+[data-apc-wall-browse] .apc-photo-gallery__photo:focus-within {
   position: relative;
   z-index: 1;
 }
