@@ -47,6 +47,7 @@
         "drupal/core-composer-scaffold": "^11.4",
         "drupal/core-project-message": "^11.4",
         "drupal/core-recommended": "^11.4",
+        "drupal/diff": "^2.1",
         "drupal/dropzonejs": "^2.11",
         "drupal/dynamic_entity_reference": "^4.0@alpha",
         "drupal/editor_advanced_link": "^2.2",
