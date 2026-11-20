@@ -87,14 +87,38 @@ Merge into main for deployment steps:
 
 ## Deployment
 - ssh into greengeeks
-- cd ~/www/d9
+- cd ~/www/d9   (staging: ~/www/apcdev)
+- same as ~/public_html/d9 and ~/public_html/apcdev
+- `chmod u+w web/sites/default web/sites/default/settings.php`  (unlock — see below)
 - git pull
 - composer install --no-dev
+- composer patches-repatch  (ONLY when patches/ or composer.json's patches changed)
 - drush updb
 - drush cr
 - drush cst
 - drush cim -y
 - drush cr
+- `chmod 444 web/sites/default/settings.php; chmod 555 web/sites/default`  (re-lock)
+- `curl -s -o /dev/null https://www.austinprogressivecalendar.com/calendar`  (re-warm the page cache)
+
+### "Permission denied" on web/sites/default/settings.php
+
+Drupal sets `web/sites/default` to `555` and `settings.php` to `444`. Git (and Composer's scaffold
+step, which rewrites `default.settings.php` / `default.services.yml`) need write access to that
+*directory* to replace files, so a deploy fails with:
+
+```
+error: unable to unlink old 'web/sites/default/settings.php': Permission denied
+```
+
+(and `git pull` then aborts with "local changes would be overwritten", because the locked file looks
+modified.)
+
+- Run the unlock `chmod` **before** `git pull` / `composer install`, and the re-lock at the end.
+- Use `u+w`, **not `chmod 777`** — you own the directory, so owner-write is enough. If a past deploy
+  left it at `777`, `chmod 555 web/sites/default` puts it back.
+- Optional, once per clone: `git config core.fileMode false` stops the locked `settings.php` (`444`
+  vs the committed `644`) showing as a local modification. It doesn't remove the need to unlock.
 
 
 ## Local setup
