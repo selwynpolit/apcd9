@@ -708,6 +708,20 @@ $settings['container_yamls'][] = $app_root . '/' . $site_path . '/services.yml';
  *
  * @see https://www.drupal.org/docs/installing-drupal/trusted-host-settings
  */
+
+/**
+ * Redirect the bare apex domain to https://www, preserving path and query.
+ *
+ * Once the apex is an addon domain whose docroot is d9/web, it reaches Drupal
+ * directly (the parent public_html/.htaccess redirect no longer applies), and
+ * the trusted-host check below would answer it with a 400. This runs first.
+ * Inert until then, because the apex never reaches Drupal today.
+ */
+if (PHP_SAPI !== 'cli' && strcasecmp($_SERVER['HTTP_HOST'] ?? '', 'austinprogressivecalendar.com') === 0) {
+  header('Location: https://www.austinprogressivecalendar.com' . $_SERVER['REQUEST_URI'], TRUE, 301);
+  exit;
+}
+
 $settings['trusted_host_patterns'] = [
   '^www\.austinprogressivecalendar\.com$',
   '^d9\.austinprogressivecalendar\.com$',
