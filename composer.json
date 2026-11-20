@@ -126,6 +126,9 @@
             "file-mapping": {
                 "[web-root]/robots.txt": {
                     "append": "scaffold/robots-append.txt"
+                },
+                "[web-root]/.htaccess": {
+                    "prepend": "scaffold/htaccess-prepend.txt"
                 }
             }
         },

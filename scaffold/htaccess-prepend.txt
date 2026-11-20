@@ -1,0 +1,10 @@
+# Redirect the bare apex domain to https://www, preserving path (the query
+# string is appended automatically). Prepended by the Drupal scaffold (see
+# composer.json) so it survives core updates and runs before Drupal's own
+# front-controller rule. settings.php has a PHP fallback for the same redirect.
+<IfModule mod_rewrite.c>
+  RewriteEngine on
+  RewriteCond %{HTTP_HOST} ^austinprogressivecalendar\.com$ [NC]
+  RewriteRule ^(.*)$ https://www.austinprogressivecalendar.com/$1 [R=301,L]
+</IfModule>
+
